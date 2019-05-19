@@ -1,0 +1,71 @@
+<html>
+  <body style="font-family:sans-serif;">
+    <table id=log style="border-spacing:8px;"></table>
+    <script>
+
+      function hashed(hash, assign) {
+        op=assign.split(/=/)
+        if (op[1]) hash[op[0]]=op[1]
+        return hash
+      }
+
+      let query = window.location.href.split(/\?/)[1]||''
+      let args = query.split(/&/)
+      let params = args.reduce(hashed,{})
+  
+      fetch('http://found.ward.bay.wiki.org/assets/pages/k9ox-qsl-log/k9ox.adif')
+        .then(res=>res.text())
+        .then(text=>parse(text.split(/\r?\n/)))
+
+      // <FREQ:9>14.076055
+      // <DISTANCE:6>1181.8
+      // <MODE:3>FT8
+      // <OPERATOR:4>K9OX
+      // <MY_GRIDSQUARE:6>CN85pl
+      // <QSO_DATE:8>20190512
+      // <TIME_ON:6>155014
+      // <APP_PSKREP_SNR:3:N>-13
+      // <CALL:6>KA7QJN
+      // <COUNTRY:13>United States
+      // <DXCC:3>291
+      // <GRIDSQUARE:8>DM37jo71
+      // <QSO_COMPLETE:3>NIL
+      // <SWL:1>1
+      // <eor>
+
+      let uniq = {}
+
+      function parse(lines) {
+        let report = [`<tr><th>date<th>time<th>call<th>grid<th>snr<th>miles<td>country`]
+        for (let line of lines) {
+          if (!line.match(/^</)) continue 
+          let field = /<(\w+):.*?>([^<]*)/g
+          let record = {}
+          while (m = field.exec(line)) {
+            record[m[1].toLowerCase()] = m[2].trim()
+          }
+          // console.log('record',record)
+          if (params.grid && !record.gridsquare.startsWith(params.grid)) continue
+          if (params.snr && (record.app_pskrep_snr||0) < parseInt(params.snr)) continue
+          if (params.miles && (record.distance||0) < parseInt(params.miles)) continue
+          if (params.call && !record.call.startsWith(params.call)) continue
+          if (params.uniq && uniq[record.call]==true) continue
+          uniq[record.call]=true
+
+          report.push(`<tr>
+            <td>${record.qso_date}
+            <td>${record.time_on}
+            <td>${record.call}
+            <td>${record.gridsquare}
+            <td>${record.app_pskrep_snr||''}
+            <td>${record.distance}
+            <td>${record.country == 'United States' ? '' : record.country}
+          `)
+        }
+        log.innerHTML = report.join("\n")
+        console.log(uniq)
+      }
+
+    </script>
+  </body>
+</html>      

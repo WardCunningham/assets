@@ -1,0 +1,34 @@
+<html>
+  <body style="font-family:sans-serif;">
+    <table id=log style="border-spacing:8px;"></table>
+    <script>
+  
+      fetch('http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi')
+        .then(res=>res.text())
+        .then(text=>parse(text.split(/\r?\n/)))
+
+      function parse(lines) {
+        let report = [`<tr><th>date<th>time<th>call<th>loc<th>sent<th>rcvd`]
+        for (let line of lines) {
+          if (!line.match(/^</)) continue 
+          let field = /<(\w+):\d+>([^<]*)/g
+          let record = {}
+          while (m = field.exec(line)) {
+            record[m[1]] = m[2].trim()
+          }
+          console.log('record',record)
+          report.push(`<tr>
+            <td>${record.qso_date}
+            <td>${record.time_on}
+            <td>${record.call}
+            <td>${record.gridsquare}
+            <td>${record.rst_sent}
+            <td>${record.rst_rcvd}
+          `)
+        }
+        log.innerHTML = report.join("\n")
+      }
+
+    </script>
+  </body>
+</html>      
