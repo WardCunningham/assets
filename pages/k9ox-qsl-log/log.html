@@ -36,7 +36,7 @@
       let uniq = {}
 
       function parse(lines) {
-        let report = [`<tr><th>date<th>time<th>call<th>grid<th>snr<th>miles<td>country`]
+        let report = [`<tr><th>call<th>grid<th>snr<th>miles<th>country`]
         for (let line of lines) {
           if (!line.match(/^</)) continue 
           let field = /<(\w+):.*?>([^<]*)/g
@@ -52,9 +52,9 @@
           if (params.uniq && uniq[record.call]==true) continue
           uniq[record.call]=true
 
+          // <td>${record.qso_date}
+          // <td>${record.time_on}
           report.push(`<tr>
-            <td>${record.qso_date}
-            <td>${record.time_on}
             <td>${record.call}
             <td>${record.gridsquare}
             <td>${record.app_pskrep_snr||''}
