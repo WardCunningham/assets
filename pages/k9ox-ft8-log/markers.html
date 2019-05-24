@@ -33,6 +33,7 @@
       }
 
       function fields(line) {
+        // http://www.adif.org.uk/
         const field = /<(\w+):\d+>([^<]*)/g
         let row = {}
         while (m = field.exec(line)) {
