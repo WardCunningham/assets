@@ -9,14 +9,13 @@
       function get(file) {
         return fetch(`http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/${file}`)
           .then(res=>res.text())
-          .then(text=>text.split(/\r?\n/))
+          .then(text=>text.trim().split(/\r?\n/))
       }
 
       function report(calls, lines) {
-        calls.pop()
         let latlon = {}
         for (let line of calls) {
-          [call, grid] = line.split(/\t/)
+          let [call, grid] = line.split(/\t/)
           latlon[call] = maidenhead(grid.toUpperCase())
         }
         let report = []
