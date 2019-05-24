@@ -1,6 +1,10 @@
 <html>
+  <head>
+    <title>Markers</title>
+    <link id='favicon' href='/favicon.png' rel='icon' type='image/png'>
+  </head>
   <body style="font-family:sans-serif;">
-    <pre id=log style="border-spacing:8px;"></pre>
+    <pre id=log></pre>
     <script>
 
       Promise.all([get('callbook.txt'), get('wsjtx_log.adi')])
