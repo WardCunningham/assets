@@ -12,31 +12,34 @@
           .then(text=>text.trim().split(/\r?\n/))
       }
 
-      function callbook(calls) {
+      function callbook(spots) {
+        // curl -s 'https://pskreporter.info/cgi-bin/pskdata.pl?adif=1&days=7&receiverCallsign=k9ox'| \
+        //   perl -ne 'print "$1\t$2\n" if /<CALL:\d+>(.*?)<.*?<GRIDSQUARE:\d+>(.*?)</' | sort | uniq > callbook.txt
         let latlon = {}
-        for (let line of calls) {
-          let [call, grid] = line.split(/\t/)
+        for (let spot of spots) {
+          let [call, grid] = spot.split(/\t/)
           latlon[call] = maidenhead(grid.toUpperCase())
         }
         return latlon
       }
 
-      function markers(lines, latlon) {
+      function markers(contacts, latlon) {
+        // http://found.ward.bay.wiki.org/about-map-plugin.html
         let report = []
-        for (let line of lines) {
-          if (!line.match(/^</)) continue
-          let row = fields(line)
+        for (let contact of contacts) {
+          if (!contact.match(/^</)) continue
+          let row = fields(contact)
           let geo = latlon[row.call] || maidenhead(row.gridsquare)
           report.push(`${geo[0]}, ${geo[1]} ${row.call}`)
         }
         return report.join("\n")
       }
 
-      function fields(line) {
+      function fields(contact) {
         // http://www.adif.org.uk/
         const field = /<(\w+):\d+>([^<]*)/g
         let row = {}
-        while (m = field.exec(line)) {
+        while (m = field.exec(contact)) {
           row[m[1]] = m[2].trim()
         }
         return row
