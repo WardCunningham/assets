@@ -4,7 +4,7 @@
     <script>
 
       Promise.all([get('callbook.txt'), get('wsjtx_log.adi')])
-        .then(files=>report(...files))
+        .then(f => log.innerHTML = markers(f[1], callbook(f[0])))
 
       function get(file) {
         return fetch(`http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/${file}`)
@@ -12,24 +12,33 @@
           .then(text=>text.trim().split(/\r?\n/))
       }
 
-      function report(calls, lines) {
+      function callbook(calls) {
         let latlon = {}
         for (let line of calls) {
           let [call, grid] = line.split(/\t/)
           latlon[call] = maidenhead(grid.toUpperCase())
         }
+        return latlon
+      }
+
+      function markers(lines, latlon) {
         let report = []
         for (let line of lines) {
-          if (!line.match(/^</)) continue 
-          let field = /<(\w+):\d+>([^<]*)/g
-          let record = {}
-          while (m = field.exec(line)) {
-            record[m[1]] = m[2].trim()
-          }
-          let geo = latlon[record.call] || maidenhead(record.gridsquare)
-          report.push(`${geo[0]}, ${geo[1]} ${record.call}`)
+          if (!line.match(/^</)) continue
+          let row = fields(line)
+          let geo = latlon[row.call] || maidenhead(row.gridsquare)
+          report.push(`${geo[0]}, ${geo[1]} ${row.call}`)
         }
-        log.innerHTML = report.join("\n")
+        return report.join("\n")
+      }
+
+      function fields(line) {
+        const field = /<(\w+):\d+>([^<]*)/g
+        let row = {}
+        while (m = field.exec(line)) {
+          row[m[1]] = m[2].trim()
+        }
+        return row
       }
 
       function maidenhead(grid) {
