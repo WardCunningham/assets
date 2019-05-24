@@ -2,12 +2,23 @@
   <body style="font-family:sans-serif;">
     <pre id=log style="border-spacing:8px;"></pre>
     <script>
-  
-      fetch('http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi')
-        .then(res=>res.text())
-        .then(text=>parse(text.split(/\r?\n/)))
 
-      function parse(lines) {
+      Promise.all([get('callbook.txt'), get('wsjtx_log.adi')])
+        .then(files=>report(...files))
+
+      function get(file) {
+        return fetch(`http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/${file}`)
+          .then(res=>res.text())
+          .then(text=>text.split(/\r?\n/))
+      }
+
+      function report(calls, lines) {
+        calls.pop()
+        let latlon = {}
+        for (let line of calls) {
+          [call, grid] = line.split(/\t/)
+          latlon[call] = maidenhead(grid.toUpperCase())
+        }
         let report = []
         for (let line of lines) {
           if (!line.match(/^</)) continue 
@@ -16,22 +27,19 @@
           while (m = field.exec(line)) {
             record[m[1]] = m[2].trim()
           }
-          let grid = record.gridsquare
-          let alp = 'A'.charCodeAt(0)
-          let num = '0'.charCodeAt(0)
-          let lat = (grid.charCodeAt(1)-alp)*10-90 + (grid.charCodeAt(3)-num)*1 + 0.5 + 1*(Math.random()*0.1).toFixed(3)
-          let lon = (grid.charCodeAt(0)-alp)*20-180 + (grid.charCodeAt(2)-num)*2 + 1  + -1*(Math.random()*0.2).toFixed(3)
-          report.push(`${lat}, ${lon} ${record.call}`)
-          // report.push(`<tr>
-          //   <td>${record.qso_date}
-          //   <td>${record.time_on}
-          //   <td>${record.call}
-          //   <td>${record.gridsquare}
-          //   <td>${record.rst_sent}
-          //   <td>${record.rst_rcvd}
-          // `)
+          let geo = latlon[record.call] || maidenhead(record.gridsquare)
+          report.push(`${geo[0]}, ${geo[1]} ${record.call}`)
         }
         log.innerHTML = report.join("\n")
+      }
+
+      function maidenhead(grid) {
+        // https://en.wikipedia.org/wiki/Maidenhead_Locator_System
+        const a = i => grid.charCodeAt(i)-'A'.charCodeAt(0) || 0
+        const n = i => grid.charCodeAt(i)-'0'.charCodeAt(0) || 0
+        let lat = a(1)*10 + n(3)*1 + a(5)/24 + n(7)/240 - 90
+        let lon = a(0)*20 + n(2)*2 + a(4)/12 + n(6)/120 - 180
+        return [1*lat.toFixed(5),1*lon.toFixed(5)]
       }
 
     </script>
