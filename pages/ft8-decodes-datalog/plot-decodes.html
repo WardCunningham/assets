@@ -1,0 +1,71 @@
+
+<head>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+  <h3>wsjt ft8 decodes in moving window</h3>
+  <!-- <pre id="result">working</pre> -->
+  <div id="graph" style="width:100%;height:90%;"></div>
+
+  <script>
+
+  function hashed(hash, assign) {
+    op=assign.split(/=/)
+    if (op[1]) hash[op[0]]=op[1]
+    return hash
+  }
+
+  let query = window.location.href.split(/\?/)[1]||''
+  let args = query.split(/&/)
+  let params = args.reduce(hashed,{})
+  let protocol = params.protocol || location.protocol
+  let site = params.site || location.host
+  let slug = params.slug || 'ft8-decodes-datalog'
+  let chunk = params.chunk || 'day'
+  let keep = params.keep || 2
+
+  function offset(n) {
+    return fetch(`${protocol}//${site}/plugin/datalog/${slug}/${chunk}/${n}`)
+      .then(response => response.ok ? response.text() : '')
+      .then(text => text.split(/\r?\n/).filter(line => line.length > 0).map(line => JSON.parse(line)))
+      .catch(error => console.log(error)||[])
+  }
+
+  function sample() {
+    let pages = []
+    for (let n = keep*1-1; n >= 0; n--) {
+      pages.push(offset(n))
+    }
+    Promise.all(pages)
+      .then(json => {
+        // result.innerHTML = JSON.stringify(json.flat(),null,2)
+        plot(json.flat())
+      })
+  }
+
+  function plot (logs) {
+    console.log('plop logs',logs)
+    let traces = {}
+    for (var i=0; i<logs.length; i++) {
+      let log = logs[i]
+      let date = new Date(log.clock)
+      let results = log.result
+      for (var j=0; j<results.length; j++) {
+        let result = results[j]
+        let readings = result.data
+        console.log({date,readings})
+        for(name in readings) {
+          let scale = name == 'decodes' ? readings['slots'] : 1
+          trace = traces[name] = traces[name] || {x:[],y:[],name:name}
+          trace.x.push(date)
+          trace.y.push(readings[name]/scale)
+        }
+      }
+    }
+    Plotly.plot('graph', Object.values(traces))
+  }
+
+  sample()
+
+  </script>
+</body>
