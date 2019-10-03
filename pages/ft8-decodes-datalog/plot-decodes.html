@@ -3,7 +3,7 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-  <h3>wsjt ft8 decodes in moving window</h3>
+  <!-- <h3>wsjt ft8 decodes in moving window</h3> -->
   <!-- <pre id="result">working</pre> -->
   <div id="graph" style="width:100%;height:90%;"></div>
 
@@ -23,6 +23,7 @@
   let slug = params.slug || 'ft8-decodes-datalog'
   let chunk = params.chunk || 'day'
   let keep = params.keep || 2
+  let min = params.min ? params.min-0 : null
 
   function offset(n) {
     return fetch(`${protocol}//${site}/plugin/datalog/${slug}/${chunk}/${n}`)
@@ -44,7 +45,7 @@
   }
 
   function plot (logs) {
-    console.log('plop logs',logs)
+    console.log('plot logs',logs)
     let traces = {}
     for (var i=0; i<logs.length; i++) {
       let log = logs[i]
@@ -53,7 +54,6 @@
       for (var j=0; j<results.length; j++) {
         let result = results[j]
         let readings = result.data
-        console.log({date,readings})
         for(name in readings) {
           let scale = name == 'decodes' ? readings['slots'] : 1
           trace = traces[name] = traces[name] || {x:[],y:[],name:name}
@@ -62,7 +62,11 @@
         }
       }
     }
-    Plotly.plot('graph', Object.values(traces))
+    let data = Object.values(traces)
+    if (min) {
+      data = data.filter(t=>Math.max(...t.y)>min)
+    }
+    Plotly.plot('graph', data)
   }
 
   sample()
