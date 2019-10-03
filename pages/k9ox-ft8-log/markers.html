@@ -7,6 +7,16 @@
     <pre id=log></pre>
     <script>
 
+      function hashed(hash, assign) {
+        op=assign.split(/=/)
+        if (op[1]) hash[op[0]]=op[1]
+        return hash
+      }
+
+      let query = window.location.href.split(/\?/)[1]||''
+      let args = query.split(/&/)
+      var params = args.reduce(hashed,{})
+
       Promise.all([get('callbook.txt'), get('wsjtx_log.adi')])
         .then(f => log.innerHTML = markers(f[1], callbook(f[0])))
 
@@ -27,12 +37,19 @@
         return latlon
       }
 
+      function match(want, row) {
+        let regex = new RegExp(`^${want}`, 'i')
+        return row.gridsquare.match(regex)
+      }
+
       function markers(contacts, latlon) {
         // http://found.ward.bay.wiki.org/about-map-plugin.html
         let report = []
         for (let contact of contacts) {
           if (!contact.match(/^</)) continue
           let row = fields(contact)
+          if (params.allow && !match(params.allow,row)) continue
+          if (params.deny && match(params.deny,row)) continue
           let geo = latlon[row.call] || maidenhead(row.gridsquare)
           report.push(`${geo[0]}, ${geo[1]} ${row.call}`)
         }
