@@ -1,0 +1,68 @@
+<html>
+  <body style="font-family:sans-serif;">
+    <style>
+     td {text-align: center}
+    </style>
+    <table id=timecard border=1 cellpadding=2 style="font-size:10px; border-spacing:8px; border-collapse: collapse;"></table>
+    <script>
+  
+      fetch('http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi')
+        .then(res=>res.text())
+        .then(text=>report(text.split(/\r?\n/)))
+
+      let tally = {}
+      let grids = {}
+
+      function report(lines) {
+        parse(lines)
+        timecard.innerHTML = table()
+      }
+
+      function parse(lines) {
+        for (let line of lines) {
+          if (!line.match(/^</)) continue 
+          let field = /<(\w+):\d+>([^<]*)/g
+          let r = {}
+          while (m = field.exec(line)) {
+            r[m[1]] = m[2].trim()
+          }
+
+          // r.qso_date
+          // r.time_on
+          // r.call
+          // r.gridsquare
+          // r.rst_sent
+          // r.rst_rcvd
+
+          let t = 0+r.time_on.substring(0,2)-0
+          let row = tally[r.qso_date] = tally[r.qso_date] || new Array(24).fill(0)
+          row[t] = (row[t]||0) + 1
+          if (r.gridsquare != '')
+            grids[r.gridsquare] = grids[r.gidsquare] || r.qso_date*100 + t
+        }
+      }
+
+      function row(day) {
+        let cols = []
+        for (let h=0; h<24; h++) {
+          let count = tally[day][h]
+          let feature = (Object.values(grids).indexOf(day*100+h) > -1) ? ' style="background-color: #db9"' : ''
+          cols.push(`<td${feature}>${count||''}`)
+        }
+        return cols.join('')
+      }
+
+      function table() {
+        let days = Object.keys(tally).sort()
+        days.reverse()
+        let cols = ['00','01','02','03','04','05','06','','','','','',12,13,14,15,16,17,18,19,20,21,22,23]
+        let rows = [`<tr><th>${cols.map(d => `<th>${d}`).join('')}`]
+        for (let day of days) {
+          rows.push(`<tr><th>${day.substr(4)}${row(day)}`)
+        }
+        return rows.join("\n")
+      }
+
+    </script>
+  </body>
+</html>      
