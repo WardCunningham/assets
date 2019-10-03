@@ -8,7 +8,8 @@
         .then(text=>parse(text.split(/\r?\n/)))
 
       function parse(lines) {
-        let report = [`<tr><th>date<th>time<th>call<th>loc<th>sent<th>rcvd`]
+        lines.reverse()
+        let report = [`<tr><th>date<th>time<th>call<th>grid<th>sent<th>rcvd`]
         for (let line of lines) {
           if (!line.match(/^</)) continue 
           let field = /<(\w+):\d+>([^<]*)/g
