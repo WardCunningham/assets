@@ -60,6 +60,12 @@
           trace.x.push(date)
           trace.y.push(readings[name]/scale)
         }
+        for(name in traces) {
+          if(!readings[name]) {
+            traces[name].x.push(date)
+            traces[name].y.push(null)
+          }
+        }
       }
     }
     let data = Object.values(traces)
