@@ -61,7 +61,7 @@
           trace.y.push(readings[name]/scale)
         }
         for(name in traces) {
-          if(!readings[name]) {
+          if(readings && !readings[name]) {
             traces[name].x.push(date)
             traces[name].y.push(null)
           }
