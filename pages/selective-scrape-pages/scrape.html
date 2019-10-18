@@ -1,7 +1,6 @@
 
 <html>
     <head>
-        <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
         <style>
             pre {
                 width: 400px;
@@ -19,23 +18,23 @@
       <div class='column' >
         <div>
             <h3> sites todo (0)</h3>
-            <pre class="sites todo"></pre>
+            <pre id="sitestodo"></pre>
         </div>
         <div>
             <h3> sites done (0)</h3>
-            <pre class="sites done"></pre>
+            <pre id="sitesdone"></pre>
         </div>
       </div>
       <div class='column'>
         <div>
             <h3> pages todo (0)</h3>
-            <pre class="pages todo"></pre>
+            <pre id="pagestodo"></pre>
         </div>
       </div>
       <div class='column'>
         <div>
             <h3> pages done (0)</h3>
-            <pre class="pages done"></pre>
+            <pre id="pagesdone"></pre>
         </div>
       </div>
         <script>
@@ -55,27 +54,27 @@
             }
 
             function count (id,list) {
-                heading = $(id).parent().find('h3')
-                heading.text(heading.text().replace(/\d+/, list.length))
+                heading = id.parentElement.querySelector('h3')
+                heading.innerText = (heading.innerText.replace(/\d+/, list.length))
             }
 
             function show(id,list) {
-                $(id).text(list.join("\n"));
+                id.innerText = (list.join("\n"));
                 count(id,list)
                 return list;
             }
 
             function showr(id,list) {
-                $(id).text(list.slice().reverse().join("\n"));
+                id.innerText = (list.slice().reverse().join("\n"));
                 count(id,list)
                 return list;
             }
 
             function report() {
-                showr('.sites.todo',sites_todo);
-                showr('.sites.done',sites_done);
-                show('.pages.todo',pages_todo);
-                showr('.pages.done',pages_done);
+                showr(sitestodo, sites_todo);
+                showr(sitesdone, sites_done);
+                show(pagestodo, pages_todo);
+                showr(pagesdone, pages_done);
             }
 
             function new_site (site) {
@@ -145,18 +144,18 @@
             function fetch_site(site) {
                 sites_done.push(site); //report()
                 var url = 'http://' + site + '/system/sitemap.json';
-                $.getJSON(url, function(sitemap) {
-                    do_site(site, sitemap)
-                })
+                fetch(url)
+                    .then(res=>res.json())
+                    .then(sitemap=>do_site(site, sitemap))
             }
 
             function fetch_page(site_page) {
                 pages_done.push(site_page); //report()
                 var detail = site_page.split('/'),
                     url = 'http://' + detail[0] + '/' + detail[1] + '.json'
-                $.getJSON(url, function(page) {
-                    do_page(detail[0], detail[1], page)
-                })
+                fetch(url)
+                    .then(res=>res.json())
+                    .then(page=>do_page(detail[0], detail[1], page))
             }
 
             function next () {
