@@ -30,6 +30,10 @@
             <h3> pages todo (0)</h3>
             <pre id="pagestodo"></pre>
         </div>
+        <div>
+            <h3> json graph (0)</h3>
+            <pre id="jsongraph"></pre>
+        </div>
       </div>
       <div class='column'>
         <div>
@@ -63,6 +67,8 @@
 
             var pages_todo = [],
                 pages_done = [];
+
+            var json_graph = [];
 
             var oldest = Date.now() - 1000*60*60*24*days
 
@@ -123,13 +129,21 @@
                                 pages_todo.push(site_page)
                             }
                             //report();
+                            let node = {
+                                site,
+                                slug: entry.slug,
+                                title: entry.title,
+                                links: [],
+                                forks: []
+                            }
+                            json_graph.push(JSON.stringify(node,null,2))
                         }
                     }
                     catch (e) {
                     }
                 }
                 pages_todo.sort(chronological);
-                //report();
+                show(jsongraph, json_graph)
             }
 
             function do_page(site, slug, page) {
