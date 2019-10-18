@@ -39,15 +39,32 @@
       </div>
         <script>
 
+        function params () {
+
+            function hashed(hash, assign) {
+                let op=assign.split(/=/)
+                if (op[1]) hash[op[0]]=op[1]
+                return hash
+            }
+
+            let query = window.location.href.split(/\?/)[1]||''
+            let args = query.split(/&/)
+            return args.reduce(hashed,{})
+        }
+
         function main() {
 
-            var sites_todo = ['ward.asia.wiki.org'],
+            let p = params()
+            let site = p.site || 'found.ward.bay.wiki.org'
+            let days = p.days || 30
+
+            var sites_todo = [site],
                 sites_done = [];
 
             var pages_todo = [],
                 pages_done = [];
 
-            var oldest = Date.now() - 1000*60*60*24*365*5
+            var oldest = Date.now() - 1000*60*60*24*days
 
             function chronological (a, b) {
               return a.date - b.date
