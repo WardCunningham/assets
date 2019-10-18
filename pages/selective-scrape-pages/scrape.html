@@ -1,0 +1,180 @@
+
+<html>
+    <head>
+        <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
+        <style>
+            pre {
+                width: 400px;
+                background-color: #eee;
+                margin: 20px;
+                padding: 5px;
+                overflow: hidden;
+            }
+            div.column {
+              float:left;
+            }
+        </style>
+    </head>
+    <body>
+      <div class='column' >
+        <div>
+            <h3> sites todo (0)</h3>
+            <pre class="sites todo"></pre>
+        </div>
+        <div>
+            <h3> sites done (0)</h3>
+            <pre class="sites done"></pre>
+        </div>
+      </div>
+      <div class='column'>
+        <div>
+            <h3> pages todo (0)</h3>
+            <pre class="pages todo"></pre>
+        </div>
+      </div>
+      <div class='column'>
+        <div>
+            <h3> pages done (0)</h3>
+            <pre class="pages done"></pre>
+        </div>
+      </div>
+        <script>
+
+        function main() {
+
+            var sites_todo = ['ward.asia.wiki.org'],
+                sites_done = [];
+
+            var pages_todo = [],
+                pages_done = [];
+
+            var oldest = Date.now() - 1000*60*60*24*365*5
+
+            function chronological (a, b) {
+              return a.date - b.date
+            }
+
+            function count (id,list) {
+                heading = $(id).parent().find('h3')
+                heading.text(heading.text().replace(/\d+/, list.length))
+            }
+
+            function show(id,list) {
+                $(id).text(list.join("\n"));
+                count(id,list)
+                return list;
+            }
+
+            function showr(id,list) {
+                $(id).text(list.slice().reverse().join("\n"));
+                count(id,list)
+                return list;
+            }
+
+            function report() {
+                showr('.sites.todo',sites_todo);
+                showr('.sites.done',sites_done);
+                show('.pages.todo',pages_todo);
+                showr('.pages.done',pages_done);
+            }
+
+            function new_site (site) {
+                return sites_done.indexOf(site) < 0 &&
+                       sites_todo.indexOf(site) < 0
+            }
+
+            function new_page (site_page) {
+                return pages_done.indexOf(site_page) < 0 &&
+                       pages_todo.indexOf(site_page) < 0
+            }
+
+            function remove (array, element) {
+                var index = array.indexOf(element);
+                if (index > -1) {
+                    array.splice(index, 1);
+                }
+                return element
+            }
+
+            function do_site(site, sitemap) {
+                for (var i=0; i<sitemap.length; i++) {
+                    try {
+                        var entry = sitemap[i];
+                        // {date, slug, title, synopsis}
+                        if (entry.date > oldest) {
+                            var site_page = site + '/' + entry.slug
+                            if (new_page(site_page)) {
+                                pages_todo.push(site_page)
+                            }
+                            //report();
+                        }
+                    }
+                    catch (e) {
+                    }
+                }
+                pages_todo.sort(chronological);
+                //report();
+            }
+
+            function do_page(site, slug, page) {
+                // {title, story, journal}
+                 try {
+                    for (var i=0; i<page.story.length; i++) {
+                        var item = page.story[i]
+                        // {type:'paragraph', text}
+                        // {type:'image', text, url}
+                        // {type:'reference', text, site, slug}
+                        if (item.site && new_site(item.site)) {
+                            sites_todo.push(item.site)
+                        }
+                    }
+                    for (var i=0; i<page.journal.length; i++) {
+                        var action = page.journal[i]
+                        // {type, date}
+                        // {type:'fork', date, site}
+                        if (action.site && new_site(action.site)) {
+                            sites_todo.push(action.site)
+                        }
+                    }
+                }
+                catch (e) {
+                }
+
+            }
+
+            function fetch_site(site) {
+                sites_done.push(site); //report()
+                var url = 'http://' + site + '/system/sitemap.json';
+                $.getJSON(url, function(sitemap) {
+                    do_site(site, sitemap)
+                })
+            }
+
+            function fetch_page(site_page) {
+                pages_done.push(site_page); //report()
+                var detail = site_page.split('/'),
+                    url = 'http://' + detail[0] + '/' + detail[1] + '.json'
+                $.getJSON(url, function(page) {
+                    do_page(detail[0], detail[1], page)
+                })
+            }
+
+            function next () {
+                if (sites_todo.length && Math.random() < 0.1) {
+                    fetch_site(sites_todo.shift())
+                }
+                if (pages_todo.length) {
+                    fetch_page(pages_todo.shift())
+                }
+                report()
+            }
+
+            setInterval(next, 100)
+
+        }
+
+        main();
+
+        </script>
+    </body>
+</html>
