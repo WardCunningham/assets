@@ -30,10 +30,6 @@
             <h3> pages todo (0)</h3>
             <pre id="pagestodo"></pre>
         </div>
-        <div>
-            <h3> json graph (0)</h3>
-            <pre id="jsongraph"></pre>
-        </div>
       </div>
       <div class='column'>
         <div>
@@ -68,7 +64,7 @@
             var pages_todo = [],
                 pages_done = [];
 
-            var json_graph = [];
+            var json_graph = {} // site => slug => links
 
             var oldest = Date.now() - 1000*60*60*24*days
 
@@ -119,6 +115,7 @@
             }
 
             function do_site(site, sitemap) {
+                var site_graph = json_graph[site] = {}
                 for (var i=0; i<sitemap.length; i++) {
                     try {
                         var entry = sitemap[i];
@@ -129,21 +126,18 @@
                                 pages_todo.push(site_page)
                             }
                             //report();
-                            let node = {
-                                site,
-                                slug: entry.slug,
+                            site_graph[entry.slug] = {
+                                date: entry.date,
                                 title: entry.title,
-                                links: [],
-                                forks: []
+                                synopsis: entry.synopsis
                             }
-                            json_graph.push(JSON.stringify(node,null,2))
                         }
                     }
                     catch (e) {
                     }
                 }
                 pages_todo.sort(chronological);
-                show(jsongraph, json_graph)
+                sites_inflight--
             }
 
             function do_page(site, slug, page) {
@@ -169,10 +163,12 @@
                 }
                 catch (e) {
                 }
+                pages_inflight--
 
             }
 
             function fetch_site(site) {
+                sites_inflight++
                 sites_done.push(site); //report()
                 var url = 'http://' + site + '/system/sitemap.json';
                 fetch(url)
@@ -181,6 +177,7 @@
             }
 
             function fetch_page(site_page) {
+                pages_inflight++
                 pages_done.push(site_page); //report()
                 var detail = site_page.split('/'),
                     url = 'http://' + detail[0] + '/' + detail[1] + '.json'
@@ -197,9 +194,16 @@
                     fetch_page(pages_todo.shift())
                 }
                 report()
+                if ((sites_todo.length + sites_inflight +
+                     pages_todo.length + pages_inflight) == 0) {
+                        console.log(json_graph)
+                        clearInterval(timer)
+                }
             }
 
-            setInterval(next, 100)
+            var timer = setInterval(next, 100)
+            var sites_inflight = 0
+            var pages_inflight = 0
 
         }
 
