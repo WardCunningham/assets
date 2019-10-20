@@ -200,6 +200,16 @@
                     .then(page=>do_page(detail[0], detail[1], page))
             }
 
+            function download(filename, text) {
+                var element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', filename);
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            }
+
             function next () {
                 if (sites_todo.length && Math.random() < 0.1) {
                     fetch_site(sites_todo.shift())
@@ -210,15 +220,15 @@
                 report()
                 if ((sites_todo.length + sites_inflight +
                      pages_todo.length + pages_inflight) == 0) {
-                        console.log(json_graph)
                         clearInterval(timer)
+                        // console.log(json_graph)
+                        download(`scrape-${site}-${days}.json`, JSON.stringify(json_graph,null,2))
                 }
             }
 
-            var timer = setInterval(next, 100)
             var sites_inflight = 0
             var pages_inflight = 0
-
+            var timer = setInterval(next, 100)
         }
 
         main();
