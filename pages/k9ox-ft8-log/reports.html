@@ -1,0 +1,58 @@
+<html>
+  <head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  </head>
+  <body style="font-family:sans-serif;">
+    <style>
+     td {text-align: center}
+    </style>
+    <div id="chart"></div>
+    <script>
+  
+      fetch('http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi')
+        .then(res=>res.text())
+        .then(text=>parse(text.split(/\r?\n/)))
+
+      let sent = {}
+      let rcvd = {}
+
+      function parse(lines) {
+
+        function inc (hash, val) {
+          hash[val] = hash[val] || 0
+          hash[val] = hash[val] + 1
+        }
+
+        function bars(name, hash) {
+          trace = {name,x:[],y:[],type:'bar'}
+          for (x = -24; x <= 20; x++) {
+            trace.x.push(x)
+            trace.y.push(hash[x]||0)
+          }
+          return trace
+        }
+
+        for (let line of lines) {
+          if (!line.match(/^</)) continue 
+          let field = /<(\w+):\d+>([^<]*)/g
+          let r = {}
+          while (m = field.exec(line)) {
+            r[m[1]] = m[2].trim()
+          }
+
+          // r.qso_date
+          // r.time_on
+          // r.call
+          // r.gridsquare
+          // r.rst_sent
+          // r.rst_rcvd
+
+          inc(sent, r.rst_sent-0)
+          inc(rcvd, r.rst_rcvd-0)
+        }
+        Plotly.newPlot('chart', [bars('sent',sent),bars('rcvd',rcvd)], {barmode: 'group'});
+      }
+
+    </script>
+  </body>
+</html>      
