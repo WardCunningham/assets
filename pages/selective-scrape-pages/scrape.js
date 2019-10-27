@@ -26,15 +26,21 @@ function quote(name) {
 
 console.log('strict digraph {')
 console.log('node [shape=box style=filled fillcolor=palegreen]')
+console.log('edge [penwidth=2]')
 for (let site in graph) {
   for (let slug in graph[site]) {
     let node = graph[site][slug]
     for (let link of node.links) {
       let found = resolve(node, link)
       if (found) {
-        console.log(quote(site), '->', quote(found))        
+        console.log(quote(site), '->', quote(found))
       }
     }
+  }
+}
+for (let site in graph) {
+  for (let slug in graph[site]) {
+    let node = graph[site][slug]
     if (node.sites.length > 1) {
       console.log(quote(site), '->', quote(node.sites[1]), '[style=dotted]')
     }
