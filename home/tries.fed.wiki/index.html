@@ -1,7 +1,9 @@
 <html>
   <body>
     <center>
-      <h1>Try Federated Wiki</h1>
+      <div id="explain">
+        <p>loading</p>
+      </div>
       <style>
         input {width:300px;}
         form {width:330px; padding:16px;background-color: #ccc;}
@@ -11,6 +13,47 @@
         <input id="code" type="text" placeholder="create code"></input><br>
         <button>Create</button>
       </form>
+      <a href=/welcome-visitors.html>welcome</a>
     </center>
+
+    <script>
+
+    fetch('/welcome-visitors.json')
+      .then(res => res.json())
+      .then(json => welcome(json))
+
+    function welcome(page) {
+      console.log('welcome',page)
+      let doshare = page.story.find(item => item.id == "05e2fa92643677ca")
+      if (!doshare) return trouble("Can't find item for 'do and share'.")
+      let m = doshare.text.match(/\[\[(.*?)\]\]/)
+      if (!m) return trouble("Can't find link in 'do and share' item.")
+      fetch(`/${asSlug(m[1])}.json`)
+        .then(res => res.ok ? res.json() : trouble(`${res.statusText}<br>${res.url}`))
+        .then(json => json ? heading(json) : null)
+        .catch(err => trouble(err.message))
+    }
+
+    function heading(page) {
+      console.log('heading',page)
+      explain.innerHTML = `
+        <h1>${page.title}</h1>
+        <p>${page.story[0].text}</p>
+      `
+    }
+
+    function trouble(message) {
+      console.log('trouble',message)
+      explain.innerHTML = message
+    }
+
+    function asSlug(title) {
+      return title
+        .replace(/\s/g, '-')
+        .replace(/[^A-Za-z0-9-]/g, '')
+        .toLowerCase()
+    }
+
+    </script>
   </body>
 </html>
