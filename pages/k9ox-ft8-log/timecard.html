@@ -38,7 +38,7 @@
           let row = tally[r.qso_date] = tally[r.qso_date] || new Array(24).fill(0)
           row[t] = (row[t]||0) + 1
           if (r.gridsquare != '')
-            grids[r.gridsquare] = grids[r.gidsquare] || r.qso_date*100 + t
+            grids[r.gridsquare] = grids[r.gridsquare] || r.qso_date*100 + t
         }
       }
 
