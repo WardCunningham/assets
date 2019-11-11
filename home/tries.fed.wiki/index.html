@@ -5,12 +5,15 @@
         <p>loading</p>
       </div>
       <style>
+        p {width: 300px;}
         input {width:300px;}
-        form {width:330px; padding:16px;background-color: #ccc;}
+        label {width:300px; text-align: left;}
+        form {width:330px; padding:16px; background-color: #eee;}
       </style>
       <form>
-        <input id="name" type="text" placeholder="full name"></input><br>
-        <input id="code" type="text" placeholder="create code"></input><br>
+        <div id="inputs">
+          <p>loading</p>
+        </div>
         <button>Create</button>
       </form>
       <a href=/welcome-visitors.html>welcome</a>
@@ -18,40 +21,88 @@
 
     <script>
 
-    fetch('/welcome-visitors.json')
-      .then(res => res.json())
-      .then(json => welcome(json))
+    describe()
+    engage()
 
-    function welcome(page) {
-      console.log('welcome',page)
-      let doshare = page.story.find(item => item.id == "05e2fa92643677ca")
-      if (!doshare) return trouble("Can't find item for 'do and share'.")
-      let m = doshare.text.match(/\[\[(.*?)\]\]/)
-      if (!m) return trouble("Can't find link in 'do and share' item.")
-      fetch(`/${asSlug(m[1])}.json`)
-        .then(res => res.ok ? res.json() : trouble(`${res.statusText}<br>${res.url}`))
-        .then(json => json ? heading(json) : null)
-        .catch(err => trouble(err.message))
+    function describe() {
+
+      // display the title and sysnopsis that describes what we do and share
+
+      fetch('/welcome-visitors.json')
+        .then(res => res.json())
+        .then(json => welcome(json))
+
+      function welcome(page) {
+        console.log('welcome',page)
+        let doshare = page.story.find(item => item.id == "05e2fa92643677ca")
+        if (!doshare) return trouble("Can't find item for 'do and share'.")
+        let m = doshare.text.match(/\[\[(.*?)\]\]/)
+        if (!m) return trouble("Can't find link in 'do and share' item.")
+        fetch(`/${asSlug(m[1])}.json`)
+          .then(res => res.ok ? res.json() : trouble(`${res.statusText}<br>${res.url}`))
+          .then(json => json ? heading(json) : null)
+          .catch(err => trouble(err.message))
+      }
+
+      function heading(page) {
+        console.log('heading',page)
+        explain.innerHTML = `
+          <h1>${page.title}</h1>
+          <p>${page.story[0].text}</p>
+        `
+      }
+
+      function trouble(message) {
+        console.log('trouble',message)
+        explain.innerHTML = message
+        return null
+      }
+
+      function asSlug(title) {
+        return title
+          .replace(/\s/g, '-')
+          .replace(/[^A-Za-z0-9-]/g, '')
+          .toLowerCase()
+      }
+
     }
 
-    function heading(page) {
-      console.log('heading',page)
-      explain.innerHTML = `
-        <h1>${page.title}</h1>
-        <p>${page.story[0].text}</p>
-      `
-    }
+    function engage() {
 
-    function trouble(message) {
-      console.log('trouble',message)
-      explain.innerHTML = message
-    }
+      // Manage the interaction while registering a new site
 
-    function asSlug(title) {
-      return title
-        .replace(/\s/g, '-')
-        .replace(/[^A-Za-z0-9-]/g, '')
-        .toLowerCase()
+      fetch('/plugin/register/needs')
+        .then(res => res.ok ? res.json() : console.log('needs', res))
+        .then(json => build(json))
+
+      function build(fields) {
+        console.log('fields',fields)
+        elems = []
+        for (need of fields.need.concat(fields.want)) {
+          switch(need) {
+            case 'name':
+              field(need,"full name as you would be known here")
+              break
+            case 'domain':
+              field(need,"short alphanumeric handle used in urls")
+              break
+            case 'code':
+              field(need,"create code provided by site operator")
+              break
+            default:
+              field(need,"additional detail explained elsewhere")
+          }
+        }
+        inputs.innerHTML = elems.join("\n")
+      }
+
+      function field(need, description) {
+        elems.push(`
+          <label for=need>${need}</label><br>
+          <input id="${need}" type="text" placeholder="${description}"></input><br>
+        `)
+
+      }
     }
 
     </script>
