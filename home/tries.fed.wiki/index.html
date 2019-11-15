@@ -14,7 +14,7 @@
         <div id="inputs">
           <p>loading</p>
         </div>
-        <button>Create</button>
+        <button id="create">Create</button>
       </form>
       <a href=/welcome-visitors.html>welcome</a>
     </center>
@@ -75,6 +75,14 @@
         .then(res => res.ok ? res.json() : console.log('needs', res))
         .then(json => build(json))
 
+      create.addEventListener('click', (e) => {
+        e.preventDefault()
+        fetch('/plugin/register/has', post())
+          .then(res => res.ok ? res.json() : console.log('has', res))
+          .then(json => console.log(json))
+      })
+
+
       function build(fields) {
         console.log('fields',fields)
         elems = []
@@ -101,7 +109,18 @@
           <label for=need>${need}</label><br>
           <input id="${need}" type="text" placeholder="${description}"></input><br>
         `)
+      }
 
+      function post() {
+        let params = {}
+        for (var field of inputs.querySelectorAll("input[type=text]")) {
+          params[field.id] = field.value
+        }
+        return {
+          method:'POST',
+          body:JSON.stringify(params),
+          headers:{'Content-Type': 'application/json'}
+        }
       }
     }
 
