@@ -1,15 +1,58 @@
 <html>
+  <head>
+    <style>
+      input {
+        width: 250px;
+        padding: 3px;
+        border: 0.1em solid black;
+      }
+      label {
+        width: 60px;
+        display: inline-block;
+        text-align: left;
+        padding-top: 7px;
+      }
+      form {
+        width: 330px;
+        padding: 16px;
+        background-color: #eee;
+        margin: auto;
+        text-align: left;
+        margin-bottom: 20px;
+      }
+      body {
+        background: #eeeeee url("/images/crosses.png");
+      }
+      #dialog {
+        box-shadow: 2px 1px 24px rgba(0, 0, 0, 0.4);
+        margin: auto;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        padding: 25px;
+        background-color: white;
+        width: 400px;
+        height: 400px;
+        position: absolute;
+        text-align: center;
+      }
+      button {
+        margin: auto;
+        margin-top: 12px;
+        width: 100px;
+        display: block;
+        padding: 0.35em 1.2em;
+        border: 0.1em solid black;
+        transition: all 0.2s;
+      }
+    </style>
+  </head>
   <body>
-    <center>
+    <div id="dialog">
       <div id="explain">
         <p>loading</p>
       </div>
-      <style>
-        p {width: 300px;}
-        input {width:300px;}
-        label {width:300px; text-align: left;}
-        form {width:330px; padding:16px; background-color: #eee;}
-      </style>
       <form>
         <div id="inputs">
           <p>loading</p>
@@ -17,7 +60,7 @@
         <button id="create">Create</button>
       </form>
       <a href=/welcome-visitors.html>welcome</a>
-    </center>
+    </div>
 
     <script>
 
@@ -106,7 +149,7 @@
 
       function field(need, description) {
         elems.push(`
-          <label for=need>${need}</label><br>
+          <label for=need>${need}</label>
           <input id="${need}" type="text" placeholder="${description}"></input><br>
         `)
       }
