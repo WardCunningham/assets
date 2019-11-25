@@ -20,6 +20,9 @@
         text-align: left;
         margin-bottom: 20px;
       }
+      #response {
+        text-align: center;
+      }
       body {
         background: #eeeeee url("/images/crosses.png");
       }
@@ -58,6 +61,7 @@
           <p>loading</p>
         </div>
         <button id="create">Create</button>
+        <div id="response"></div>
       </form>
       <a href=/welcome-visitors.html>welcome</a>
     </div>
@@ -112,17 +116,35 @@
 
     function engage() {
 
+      function trouble(op, res) {
+        return res.text().then(msg => {
+          console.log('trouble', msg)
+          response.innerHTML = msg
+          return null
+        })
+      }
+
+      function created(json) {
+        response.innerHTML = `
+          New Site Created<br>
+          <a href="//${json.created}">${json.created}</a>
+        `
+      }
+
       // Manage the interaction while registering a new site
 
       fetch('/plugin/register/needs')
-        .then(res => res.ok ? res.json() : console.log('needs', res))
-        .then(json => build(json))
+        .then(res => res.ok ? res.json() : trouble('needs', res))
+        .then(json => json ? build(json) : null)
+        .catch(err => response.innerHTML = err.message)
 
       create.addEventListener('click', (e) => {
         e.preventDefault()
+        response.innerHTML = ''
         fetch('/plugin/register/has', post())
-          .then(res => res.ok ? res.json() : console.log('has', res))
-          .then(json => console.log(json))
+          .then(res => res.ok ? res.json() : trouble('has', res))
+          .then(json => json ? created(json) : null)
+          .catch(err => response.innerHTML = err.message)
       })
 
 
