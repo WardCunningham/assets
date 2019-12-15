@@ -1,0 +1,134 @@
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.14.2/d3.js"></script>
+  </head>
+  <body style="font-family:sans-serif;">
+    <div id="scene"></div>
+    <script>
+  
+      logged = {}
+      decodes = []
+      done = {}
+
+      fetch('http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi')
+        .then(res=>res.text())
+        .then(text=>rawlog(text.split(/\r?\n/)))
+
+      fetch('http://ward.asia.wiki.org/plugin/wsjt/copy')
+        .then(res=>res.text())
+        .then(text=>rawcopy(text.split(/\r?\n/)))
+
+      // http://ward.asia.wiki.org/plugin/wsjt/copy?last=500
+
+
+      function rawlog(lines) {
+        for (let line of lines) {
+          if (!line.match(/^</)) continue 
+          let field = /<(\w+):\d+>([^<]*)/g
+          let r = {}
+          while (m = field.exec(line)) {
+            r[m[1]] = m[2].trim()
+          }
+
+          // r.qso_date
+          // r.time_on
+          // r.call
+          // r.gridsquare
+          // r.rst_sent
+          // r.rst_rcvd
+
+          logged[r.call] = true
+        }
+        console.log('logged', logged)
+        done['rawlog'] = true
+        if (done['rawcopy']) report()
+      }
+
+      function rawcopy(lines) {
+        for (let line of lines) {
+          if (!line.length) continue
+          let fields = line.split(' ')
+          if (fields[0] != '73.157.190.193') continue
+          slot = fields[1]
+          time = sec(slot)
+          freq = 1*fields[2]
+          // if (time/15%2 != 0) continue
+          call = fields[fields.length-2]
+          decodes.push({slot,time,freq,call})
+        }
+        console.log('decodes',decodes)
+        done['rawcopy'] = true
+        if (done['rawlog']) report()
+      }
+
+      function sec(slot) {
+        m = slot.match(/(..)(..)(..)/)
+        return 3600*m[1]+60*m[2]+1*m[3]
+      }
+
+      function report() {
+        // set the dimensions and margins of the graph
+        var margin = {top: 30, right: 30, bottom: 30, left: 60},
+            width = 1000 - margin.left - margin.right,
+            height = 6000 - margin.top - margin.bottom;
+
+        // append the svg object to the body of the page
+        var svg = d3.select("#scene")
+          .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform",
+                  "translate(" + margin.left + "," + margin.top + ")");
+
+        // Add X axis
+        var x = d3.scaleLinear()
+          .domain([200, 3000])
+          .range([ 0, width ]);
+        svg.append("g")
+          
+          .call(d3.axisTop(x));
+
+        // Add Y axis
+        var y = d3.scaleLinear()
+          .domain([decodes[0].time-15, decodes[decodes.length-1].time])
+          .range([ height, 0]);
+        svg.append("g")
+          .call(d3.axisLeft(y));
+
+        // function make_y_gridlines() {   
+        //   let d = y.domain()
+        //   let t = d[1]-d[0]
+        //   let n = t/60
+        //   return d3.axisLeft(y)
+        //     .ticks(n)
+        // }
+
+        // // add the Y gridlines
+        // svg.append("g")     
+        //   .attr("class", "grid")
+        //   .call(make_y_gridlines()
+        //     .tickSize(-width)
+        //     .tickFormat("")
+        //   )        
+
+        // Add dots
+        svg.append('g')
+          .selectAll("dot")
+          .data(decodes)
+          .enter()
+          .append("rect")
+            .attr("x", function (d) { return x(d.freq); } )
+            .attr("y", function (d) { return y(d.time); } )
+            .attr("width", x(1050)-x(1000))
+            .attr("height", y(decodes[0].time)-y(decodes[0].time+15))
+            .style("fill", function (d) {return logged[d.call] ? "#f80" : "#08f"})
+            .style("fill-opacity", 0.5)
+
+        return
+      }
+
+
+    </script>
+  </body>
+</html>      
