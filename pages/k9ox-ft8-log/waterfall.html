@@ -6,15 +6,28 @@
     <div id="scene"></div>
     <script>
   
+      function hashed(hash, assign) {
+        op=assign.split(/=/)
+        if (op[1]) hash[op[0]]=op[1]
+        return hash
+      }
+
+      let query = window.location.href.split(/\?/)[1]||''
+      let args = query.split(/&/)
+      let params = args.reduce(hashed,{})
+      let log = params.log || 'http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi'
+      let copy = params.copy || 'http://ward.asia.wiki.org/plugin/wsjt/copy'
+
+
       logged = {}
       decodes = []
       done = {}
 
-      fetch('http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi')
+      fetch(log)
         .then(res=>res.text())
         .then(text=>rawlog(text.split(/\r?\n/)))
 
-      fetch('http://ward.asia.wiki.org/plugin/wsjt/copy')
+      fetch(copy)
         .then(res=>res.text())
         .then(text=>rawcopy(text.split(/\r?\n/)))
 
