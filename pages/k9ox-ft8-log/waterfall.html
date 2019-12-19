@@ -17,6 +17,7 @@
       let params = args.reduce(hashed,{})
       let log = params.log || 'http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi'
       let copy = params.copy || 'http://ward.asia.wiki.org/plugin/wsjt/copy'
+      // also width & height below
 
 
       logged = {}
@@ -58,16 +59,18 @@
       }
 
       function rawcopy(lines) {
+        let today = Date.now()-Date.now()%86400000
         for (let line of lines) {
           if (!line.length) continue
           let fields = line.split(' ')
-          if (fields[0] != '73.157.190.193') continue
+          // if (fields[0] != '73.157.190.193') continue
+          addr = fields[0]
           slot = fields[1]
-          time = sec(slot)
+          time = new Date(today+sec(slot)*1000)
           freq = 1*fields[2]
           // if (time/15%2 != 0) continue
           call = fields[fields.length-2]
-          decodes.push({slot,time,freq,call})
+          decodes.push({addr,slot,time,freq,call})
         }
         console.log('decodes',decodes)
         done['rawcopy'] = true
@@ -82,8 +85,8 @@
       function report() {
         // set the dimensions and margins of the graph
         var margin = {top: 30, right: 30, bottom: 30, left: 60},
-            width = 1000 - margin.left - margin.right,
-            height = 6000 - margin.top - margin.bottom;
+            width = (params.width||1000) - margin.left - margin.right,
+            height = (params.height||6000) - margin.top - margin.bottom;
 
         // append the svg object to the body of the page
         var svg = d3.select("#scene")
@@ -96,15 +99,15 @@
 
         // Add X axis
         var x = d3.scaleLinear()
-          .domain([200, 3000])
+          .domain([0, 3000])
           .range([ 0, width ]);
         svg.append("g")
           
           .call(d3.axisTop(x));
 
         // Add Y axis
-        var y = d3.scaleLinear()
-          .domain([decodes[0].time-15, decodes[decodes.length-1].time])
+        var y = d3.scaleTime()
+          .domain([decodes[0].time, decodes[decodes.length-1].time])
           .range([ height, 0]);
         svg.append("g")
           .call(d3.axisLeft(y));
@@ -125,7 +128,18 @@
         //     .tickFormat("")
         //   )        
 
-        // Add dots
+        function color(d) {
+          if(d.addr != '73.157.190.193')
+            return "#888"
+          else if(logged[d.call])
+            return "#f80"
+          else
+            return "#08f"
+        }
+
+        let xw = x(1050)-x(1000)
+        let yh = y(decodes[0].time)-y(new Date(decodes[0].time.getTime()+15000))
+
         svg.append('g')
           .selectAll("dot")
           .data(decodes)
@@ -133,9 +147,9 @@
           .append("rect")
             .attr("x", function (d) { return x(d.freq); } )
             .attr("y", function (d) { return y(d.time); } )
-            .attr("width", x(1050)-x(1000))
-            .attr("height", y(decodes[0].time)-y(decodes[0].time+15))
-            .style("fill", function (d) {return logged[d.call] ? "#f80" : "#08f"})
+            .attr("width", xw)
+            .attr("height", yh)
+            .style("fill", color)
             .style("fill-opacity", 0.5)
 
         return
