@@ -17,7 +17,7 @@
       let params = args.reduce(hashed,{})
       let log = params.log || 'http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi'
       let copy = params.copy || 'http://ward.asia.wiki.org/plugin/wsjt/copy'
-      // also width & height below
+      // also offset, width & height below
 
 
       logged = {}
@@ -68,6 +68,7 @@
           slot = fields[1]
           time = new Date(today+sec(slot)*1000)
           freq = 1*fields[2]
+          if(addr=='75.139.193.15') freq += 1*(params.offset||0)
           // if (time/15%2 != 0) continue
           call = fields[fields.length-2]
           decodes.push({addr,slot,time,freq,call})
@@ -85,7 +86,7 @@
       function report() {
         // set the dimensions and margins of the graph
         var margin = {top: 30, right: 30, bottom: 30, left: 60},
-            width = (params.width||1000) - margin.left - margin.right,
+            width = (params.width||1200) - margin.left - margin.right,
             height = (params.height||6000) - margin.top - margin.bottom;
 
         // append the svg object to the body of the page
@@ -99,7 +100,7 @@
 
         // Add X axis
         var x = d3.scaleLinear()
-          .domain([0, 3000])
+          .domain([0, 3500])
           .range([ 0, width ]);
         svg.append("g")
           
