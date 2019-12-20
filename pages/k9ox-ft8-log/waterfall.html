@@ -3,10 +3,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.14.2/d3.js"></script>
   </head>
   <body style="font-family:sans-serif;">
+    <style>
+      .grid {color:#ccc;}
+    </style>
     <p style="margin:30px;">
       We simulate in 2d a visualization we intend to produce in 3d table-top augmented reality.<br>
       Signals from multiple radios are plotted by frequency and time and layered vertically.<br>
-      The viewpoint sequences through six positions including looking straight down.
+      Portland blue, Medford green, previously contacted stations show as brown.<br>
+      Viewpoints sequence through six positions including looking straight down.
     </p>
     <div id="scene"></div>
     <script>
@@ -101,12 +105,11 @@
 // R E P O R T
 
       function report() {
-        // set the dimensions and margins of the graph
+
         var margin = {top: 30, right: 30, bottom: 30, left: 60},
             width = (params.width||1200) - margin.left - margin.right,
             height = (params.height||6000) - margin.top - margin.bottom;
 
-        // append the svg object to the body of the page
         var svg = d3.select("#scene")
           .append("svg")
             .attr("width", width + margin.left + margin.right)
@@ -115,14 +118,21 @@
             .attr("transform",
                   "translate(" + margin.left + "," + margin.top + ")");
 
-        // Add X axis
         // https://stackoverflow.com/questions/35953892/d3-scale-linear-vs-d3-scalelinear
         // https://stackoverflow.com/questions/46510876/what-is-the-alternative-of-orient-in-the-new-d3-api
+
+        // Add X axis
         var x = d3.scaleLinear()
           .domain([0, 3500])
           .range([ 0, width ]);
         svg.append("g")
           .call(d3.axisTop(x));
+        svg.append("g")
+          .attr("class", "grid")
+          .call(d3.axisTop(x)
+            .tickSize(-height)
+            .tickFormat("")
+          )
 
         // Add Y axis
         var y = d3.scaleTime()
@@ -130,26 +140,17 @@
           .range([ height, 0]);
         svg.append("g")
           .call(d3.axisLeft(y));
-
-        // function make_y_gridlines() {   
-        //   let d = y.domain()
-        //   let t = d[1]-d[0]
-        //   let n = t/60
-        //   return d3.axisLeft(y)
-        //     .ticks(n)
-        // }
-
-        // // add the Y gridlines
-        // svg.append("g")     
-        //   .attr("class", "grid")
-        //   .call(make_y_gridlines()
-        //     .tickSize(-width)
-        //     .tickFormat("")
-        //   )        
+        svg.append("g")
+          .attr("class", "grid")
+          .call(d3.axisLeft(y)
+            .ticks(40)
+            .tickSize(-width)
+            .tickFormat("")
+          )
 
         function color(d) {
           if(d.addr != '73.157.190.193')
-            return "#888"
+            return "#8f8"
           else if(logged[d.call])
             return "#f80"
           else
@@ -160,7 +161,7 @@
         let yh = y(decodes[0].time)-y(new Date(decodes[0].time.getTime()+15000))
 
         let waterfall = svg.append('g')
-          .selectAll("dot")
+          .selectAll("decode")
           .data(decodes)
           .enter()
           .append("rect")
@@ -175,8 +176,8 @@
 // A N I M A T E
 
         let pos = [
-          {x:-10,y:0}, {x:-10,y:10}, {x:0,y:10}, {x:10,y:10}, {x:10,y:0}, {x:0,y:0},
-          {x:10,y:0}, {x:10,y:10}, {x:0,y:10}, {x:-10,y:10}, {x:-10,y:0}, {x:0,y:0}]
+          {x:-10,y:0}, {x:-10,y:10}, {x:0,y:10}, {x:10,y:10}, {x:10,y:0}, {x:0,y:0}, {x:0,y:0},
+          {x:10,y:0}, {x:10,y:10}, {x:0,y:10}, {x:-10,y:10}, {x:-10,y:0}, {x:0,y:0}, {x:0,y:0}]
         let t = 0
 
         setInterval(animate,1500);
