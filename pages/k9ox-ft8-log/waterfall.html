@@ -115,8 +115,7 @@
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
           .append("g")
-            .attr("transform",
-                  "translate(" + margin.left + "," + margin.top + ")");
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         // https://stackoverflow.com/questions/35953892/d3-scale-linear-vs-d3-scalelinear
         // https://stackoverflow.com/questions/46510876/what-is-the-alternative-of-orient-in-the-new-d3-api
@@ -179,8 +178,30 @@
           {x:-10,y:0}, {x:-10,y:10}, {x:0,y:10}, {x:10,y:10}, {x:10,y:0}, {x:0,y:0}, {x:0,y:0},
           {x:10,y:0}, {x:10,y:10}, {x:0,y:10}, {x:-10,y:10}, {x:-10,y:0}, {x:0,y:0}, {x:0,y:0}]
         let t = 0
+        let interval = null
 
-        setInterval(animate,1500);
+        waterfall
+          .on("mouseover", over)
+          .on("mouseout", out)
+
+        // readout = svg.append("g")
+        //   .append("text")
+        //     .attr("x",100)
+        //     .attr("y",100)
+        //     .text("Hello World")
+
+        function out(d) {
+          interval = setInterval(animate,1500);
+        }
+
+        function over(d) {
+          clearInterval(interval)
+          console.log(d.call)
+          // readout.select("text")
+          //   .attr("x", d.x)
+          //   .attr("y", d.y)
+          //   .text(d.call)
+        }
 
         function animate() {
           let p = pos[t++%pos.length]
