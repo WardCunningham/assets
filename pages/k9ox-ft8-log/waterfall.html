@@ -3,6 +3,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.14.2/d3.js"></script>
   </head>
   <body style="font-family:sans-serif;">
+    <p>
+      We simulate in 2d a visualization we intend to produce in 3d table-top augmented reality.<br>
+      Signals from multiple radios are plotted by frequency and time and layered vertically.<br>
+      The viewpoint sequences through six positions including looking straight down.
+    </p>
     <div id="scene"></div>
     <script>
 
@@ -73,10 +78,14 @@
           slot = fields[1]
           time = new Date(today+sec(slot)*1000)
           freq = 1*fields[2]
-          if(addr=='75.139.193.15') freq += 1*(params.offset||0)
+          elev = 200
+          if(addr=='75.139.193.15') {
+            freq += 1*(params.offset||0)
+            elev -= 100
+          }
           // if (time/15%2 != 0) continue
           call = fields[fields.length-2]
-          decodes.push({addr,slot,time,freq,call})
+          decodes.push({addr,slot,time,freq,elev,call})
         }
         console.log('decodes',decodes)
         done['rawcopy'] = true
@@ -107,11 +116,12 @@
                   "translate(" + margin.left + "," + margin.top + ")");
 
         // Add X axis
+        // https://stackoverflow.com/questions/35953892/d3-scale-linear-vs-d3-scalelinear
+        // https://stackoverflow.com/questions/46510876/what-is-the-alternative-of-orient-in-the-new-d3-api
         var x = d3.scaleLinear()
           .domain([0, 3500])
           .range([ 0, width ]);
         svg.append("g")
-          
           .call(d3.axisTop(x));
 
         // Add Y axis
@@ -149,7 +159,7 @@
         let xw = x(1050)-x(1000)
         let yh = y(decodes[0].time)-y(new Date(decodes[0].time.getTime()+15000))
 
-        svg.append('g')
+        let waterfall = svg.append('g')
           .selectAll("dot")
           .data(decodes)
           .enter()
@@ -160,6 +170,23 @@
             .attr("height", yh)
             .style("fill", color)
             .style("fill-opacity", 0.5)
+
+
+// A N I M A T E
+
+        let pos = [
+          {x:-10,y:0}, {x:-10,y:10}, {x:0,y:10}, {x:10,y:10}, {x:10,y:0}, {x:0,y:0},
+          {x:10,y:0}, {x:10,y:10}, {x:0,y:10}, {x:-10,y:10}, {x:-10,y:0}, {x:0,y:0}]
+        let t = 0
+
+        setInterval(animate,1500);
+
+        function animate() {
+          let p = pos[t++%pos.length]
+          waterfall.transition().duration(1500)
+            .attr("x", function (d) { return x(d.freq) + d.elev*p.x/100; } )
+            .attr("y", function (d) { return y(d.time) + d.elev*p.y/100; } )
+        }
 
         return
       }
