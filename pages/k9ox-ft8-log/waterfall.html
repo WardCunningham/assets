@@ -6,12 +6,14 @@
     <style>
       .grid {color:#ccc;}
     </style>
-    <p style="margin:30px;">
-      We simulate in 2d a visualization we intend to produce in 3d table-top augmented reality.<br>
-      Signals from multiple radios are plotted by frequency and time and layered vertically.<br>
-      Portland blue, Medford green, previously contacted stations show as brown.<br>
-      Viewpoints sequence through six positions including looking straight down.
-    </p>
+    <table cellpadding=30><tr>
+      <td>
+        We simulate in 2d a visualization we intend to produce in 3d table-top augmented reality.<br>
+        Signals from multiple radios are plotted by frequency and time and layered vertically.<br>
+        Portland blue, Medford green, previously contacted stations show as brown.<br>
+        Viewpoints sequence through six positions including looking straight down.
+      <td id="output">
+    </table>
     <div id="scene"></div>
     <script>
 
@@ -92,6 +94,7 @@
           decodes.push({addr,slot,time,freq,elev,call})
         }
         console.log('decodes',decodes)
+        offsetter()
         done['rawcopy'] = true
         if (done['rawlog']) report()
       }
@@ -99,6 +102,34 @@
       function sec(slot) {
         m = slot.match(/(..)(..)(..)/)
         return 3600*m[1]+60*m[2]+1*m[3]
+      }
+
+      function offsetter () {
+        matches = {}
+        for (let d of decodes) {
+          let slots = matches[d.slot] = matches[d.slot] || {}
+          let calls = slots[d.call] = slots[d.call] || {count:0}
+          calls.count += 1
+          calls[d.addr=='73.157.190.193' ? 'me' : 'him'] = d.freq
+        }
+        let sum = n = 0
+        for (let k of Object.keys(matches).sort()) {
+          let slots = matches[k]
+          for (let j of Object.keys(slots).sort()) {
+            let call = slots[j]
+            if (call.count == 2 && call.him && call.me) {
+              sum += (call.me - call.him)
+              n++
+            }
+          }
+        }
+        if (n==0) return
+        let avg = Math.floor(sum/n)
+        output.innerHTML = `
+          ${decodes.length} decodes<br>
+          ${n} callsign matches<br>
+          ${avg} additional offset to align freq
+        `
       }
 
 
@@ -196,11 +227,16 @@
 
         function over(d) {
           clearInterval(interval)
-          console.log(d.call)
           // readout.select("text")
           //   .attr("x", d.x)
           //   .attr("y", d.y)
           //   .text(d.call)
+          output.innerHTML = `
+            ${d.call}<br>
+            ${d.freq} Hz<br>
+            ${d.addr}
+          `
+
         }
 
         function animate() {
