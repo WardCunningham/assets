@@ -104,6 +104,9 @@
         return 3600*m[1]+60*m[2]+1*m[3]
       }
 
+
+// C A L I B R A T I O N
+
       function offsetter () {
         matches = {}
         for (let d of decodes) {
@@ -123,13 +126,12 @@
             }
           }
         }
-        if (n==0) return
-        let avg = Math.floor(sum/n)
-        output.innerHTML = `
-          ${decodes.length} decodes<br>
-          ${n} callsign matches<br>
-          ${avg} additional offset to align freq
-        `
+        let stats = [`${decodes.length} decodes`]
+        if (n!=0) {
+          stats.push(`${n} callsign matches`)
+          stats.push(`${Math.floor(sum/n)} Hz additional offset`)
+        } 
+        output.innerHTML = stats.join("<br>")
       }
 
 
