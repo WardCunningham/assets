@@ -99,9 +99,14 @@
         if (done['rawlog']) report()
       }
 
+      let prev = null
       function sec(slot) {
-        m = slot.match(/(..)(..)(..)/)
-        return 3600*m[1]+60*m[2]+1*m[3]
+        let m = slot.match(/(..)(..)(..)/)
+        let now = 3600*m[1]+60*m[2]+1*m[3]
+        if (prev && now < prev) {
+          now += 24*60*60
+        }
+        return prev = now
       }
 
 
@@ -130,7 +135,7 @@
         if (n!=0) {
           stats.push(`${n} callsign matches`)
           stats.push(`${Math.floor(sum/n)} Hz additional offset`)
-        } 
+        }
         output.innerHTML = stats.join("<br>")
       }
 
@@ -237,8 +242,6 @@
             ${d.call}<br>
             ${d.freq} Hz<br>
             ${d.addr}
-          `
-
         }
 
         function animate() {
