@@ -22,7 +22,7 @@
 // P A R A M S
   
       function hashed(hash, assign) {
-        op=assign.split(/=/)
+        let op = assign.split(/=/)
         if (op[1]) hash[op[0]]=op[1]
         return hash
       }
@@ -37,9 +37,9 @@
 
 // D A T A
 
-      logged = {}
-      decodes = []
-      done = {}
+      let logged = {}
+      let decodes = []
+      let done = {}
 
       fetch(log)
         .then(res=>res.text())
@@ -81,19 +81,19 @@
           if (!line.length) continue
           let fields = line.replace(/  +.*$/,'').split(' ')
           // if (fields[0] != '73.157.190.193') continue
-          addr = fields[0]
-          slot = fields[1]
-          time = new Date(today+sec(slot)*1000)
-          freq = 1*fields[2]
-          elev = 200
+          let addr = fields[0]
+          let slot = fields[1]
+          let time = new Date(today+sec(slot)*1000)
+          let freq = 1*fields[2]
+          let elev = 200
           if(addr=='75.139.193.15') {
             freq += 1*(params.offset||0)
             elev -= 100
           }
           // if (time/15%2 != 0) continue
-          call = fields[fields.length-2]
-          idnt = fields.slice(3,-1).join(' ')
-          info = fields.slice(-1)
+          let call = fields[fields.length-2]
+          let idnt = fields.slice(3,-1).join(' ')
+          let info = fields.slice(-1)
           decodes.push({addr,slot,time,freq,elev,call,idnt,info})
         }
         console.log('decodes',decodes)
@@ -116,7 +116,7 @@
 // C A L I B R A T I O N
 
       function offsetter () {
-        matches = {}
+        let matches = {}
         for (let d of decodes) {
           let slots = matches[d.slot] = matches[d.slot] || {}
           let calls = slots[d.call] = slots[d.call] || {count:0}
@@ -139,6 +139,7 @@
           stats.push(`${n} callsign matches`)
           stats.push(`${Math.floor(sum/n)} Hz additional offset`)
         }
+        stats.push(`See <a href=http://ft8.ward.asia.wiki.org/decode-waterfall.html target=_blank>wiki</a> for details`)
         output.innerHTML = stats.join("<br>")
       }
 
@@ -221,9 +222,15 @@
           .append("text")
             .attr("dx", 3)
             .attr("dy", 15)
+            .on("mouseover", over)
+            .on("mouseout", out)
             .text(d=>`${d.info}`)
             .style("visibility","hidden")
 
+        let readout = svg.append("text")
+          .attr("class", "decode")
+          .attr("dy",-5)
+          .style("text-anchor","end")
 
 // A N I M A T E
 
@@ -235,17 +242,16 @@
 
         function out(d) {
           interval = setInterval(animate,1500);
+          readout
+            .text("")
         }
 
         function over(d) {
           clearInterval(interval)
           decorate(d.idnt)
-          output.innerHTML = `
-            ${d.idnt}<br>
-            ${d.info}<br>
-            ${d.freq} Hz<br>
-            ${d.addr}
-          `
+          readout
+            .text(d.idnt)
+            .attr("transform",`translate(${x(d.freq)},${y(d.time)}) rotate(-90)`)
         }
 
         function decorate(idnt) {
