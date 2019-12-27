@@ -222,6 +222,7 @@
             .attr("dx", 3)
             .attr("dy", 15)
             .text(d=>`${d.info}`)
+            .style("visibility","hidden")
 
 
 // A N I M A T E
@@ -238,12 +239,19 @@
 
         function over(d) {
           clearInterval(interval)
+          decorate(d.idnt)
           output.innerHTML = `
             ${d.idnt}<br>
             ${d.info}<br>
             ${d.freq} Hz<br>
             ${d.addr}
           `
+        }
+
+        function decorate(idnt) {
+          let tndi = idnt.split(' ').reverse().join(' ')
+          waterfall.selectAll("text")
+            .style("visibility", d => d.idnt==idnt||d.idnt==tndi ? "visible" : "hidden")
         }
 
         function animate() {
