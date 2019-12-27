@@ -5,6 +5,7 @@
   <body style="font-family:sans-serif;">
     <style>
       .grid {color:#ccc;}
+      .decode {font-size:9px;}
     </style>
     <table cellpadding=30><tr>
       <td>
@@ -78,7 +79,7 @@
         let today = Date.now()-Date.now()%86400000
         for (let line of lines) {
           if (!line.length) continue
-          let fields = line.split(' ')
+          let fields = line.replace(/  +.*$/,'').split(' ')
           // if (fields[0] != '73.157.190.193') continue
           addr = fields[0]
           slot = fields[1]
@@ -91,7 +92,9 @@
           }
           // if (time/15%2 != 0) continue
           call = fields[fields.length-2]
-          decodes.push({addr,slot,time,freq,elev,call})
+          idnt = fields.slice(3,-1).join(' ')
+          info = fields.slice(-1)
+          decodes.push({addr,slot,time,freq,elev,call,idnt,info})
         }
         console.log('decodes',decodes)
         offsetter()
@@ -201,13 +204,24 @@
           .selectAll("decode")
           .data(decodes)
           .enter()
+            .append("g")
+            .attr("class", "decode")
+            .attr("transform",d=>`translate(${x(d.freq)},${y(d.time)})`)
+
+        waterfall
           .append("rect")
-            .attr("x", function (d) { return x(d.freq); } )
-            .attr("y", function (d) { return y(d.time); } )
             .attr("width", xw)
             .attr("height", yh)
+            .on("mouseover", over)
+            .on("mouseout", out)
             .style("fill", color)
             .style("fill-opacity", 0.5)
+
+        waterfall
+          .append("text")
+            .attr("dx", 3)
+            .attr("dy", 15)
+            .text(d=>`${d.info}`)
 
 
 // A N I M A T E
@@ -218,37 +232,24 @@
         let t = 0
         let interval = null
 
-        waterfall
-          .on("mouseover", over)
-          .on("mouseout", out)
-
-        // readout = svg.append("g")
-        //   .append("text")
-        //     .attr("x",100)
-        //     .attr("y",100)
-        //     .text("Hello World")
-
         function out(d) {
           interval = setInterval(animate,1500);
         }
 
         function over(d) {
           clearInterval(interval)
-          // readout.select("text")
-          //   .attr("x", d.x)
-          //   .attr("y", d.y)
-          //   .text(d.call)
           output.innerHTML = `
-            ${d.call}<br>
+            ${d.idnt}<br>
+            ${d.info}<br>
             ${d.freq} Hz<br>
             ${d.addr}
+          `
         }
 
         function animate() {
           let p = pos[t++%pos.length]
           waterfall.transition().duration(1500)
-            .attr("x", function (d) { return x(d.freq) + d.elev*p.x/100; } )
-            .attr("y", function (d) { return y(d.time) + d.elev*p.y/100; } )
+            .attr("transform",d=>`translate(${x(d.freq) + d.elev*p.x/100},${y(d.time) + d.elev*p.y/100})`)
         }
 
         return
