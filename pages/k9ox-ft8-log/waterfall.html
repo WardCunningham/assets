@@ -13,6 +13,19 @@
         Signals from multiple radios are plotted by frequency and time and layered vertically.<br>
         Portland blue, Medford green, previously contacted stations show as brown.<br>
         Viewpoints sequence through six positions including looking straight down.
+      <td>
+        <table>
+          <tr><td><input type=radio name=quad value=" 1, 1" onclick="viewpoint(value)"></input>
+              <td><input type=radio name=quad value=" 0, 1" onclick="viewpoint(value)"></input>
+              <td><input type=radio name=quad value="-1, 1" onclick="viewpoint(value)"></input>
+          <tr><td><input type=radio name=quad value=" 1, 0" onclick="viewpoint(value)"></input>
+              <td><input type=radio name=quad value=" 0, 0" onclick="viewpoint(value)" checked></input>
+              <td><input type=radio name=quad value="-1, 0" onclick="viewpoint(value)"></input>
+          <tr><td><input type=radio name=quad value=" 1,-1" onclick="viewpoint(value)"></input>
+              <td><input type=radio name=quad value=" 0,-1" onclick="viewpoint(value)"></input>
+              <td><input type=radio name=quad value="-1,-1" onclick="viewpoint(value)"></input>
+        </table>
+        <center>viewpoint</center>
       <td id="output">
     </table>
     <div id="scene"></div>
@@ -40,6 +53,7 @@
       let logged = {}
       let decodes = []
       let done = {}
+      let viewpoint
 
       fetch(log)
         .then(res=>res.text())
@@ -232,38 +246,34 @@
           .attr("dy",-5)
           .style("text-anchor","end")
 
+
 // A N I M A T E
 
-        let pos = [
-          {x:-10,y:0}, {x:-10,y:10}, {x:0,y:10}, {x:10,y:10}, {x:10,y:0}, {x:0,y:0}, {x:0,y:0},
-          {x:10,y:0}, {x:10,y:10}, {x:0,y:10}, {x:-10,y:10}, {x:-10,y:0}, {x:0,y:0}, {x:0,y:0}]
-        let t = 0
-        let interval = null
+        let p = [0, 0]
+        let dp = d => `translate(${x(d.freq) + d.elev*p[0]/10},${y(d.time) + d.elev*p[1]/10})`
+
+        viewpoint = function animate(xy) {
+          p = xy.split(/,/).map(s=>1*s)
+          waterfall.transition().duration(500)
+            .attr("transform",dp)
+        }
 
         function out(d) {
-          interval = setInterval(animate,1500);
           readout
             .text("")
         }
 
         function over(d) {
-          clearInterval(interval)
           decorate(d.idnt)
           readout
             .text(d.idnt)
-            .attr("transform",`translate(${x(d.freq)},${y(d.time)}) rotate(-90)`)
+            .attr("transform",dp(d) + " rotate(-90)")
         }
 
         function decorate(idnt) {
           let tndi = idnt.split(' ').reverse().join(' ')
           waterfall.selectAll("text")
             .style("visibility", d => d.idnt==idnt||d.idnt==tndi ? "visible" : "hidden")
-        }
-
-        function animate() {
-          let p = pos[t++%pos.length]
-          waterfall.transition().duration(1500)
-            .attr("transform",d=>`translate(${x(d.freq) + d.elev*p.x/100},${y(d.time) + d.elev*p.y/100})`)
         }
 
         return
