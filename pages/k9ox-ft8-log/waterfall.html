@@ -231,6 +231,9 @@
             .on("mouseout", out)
             .style("fill", color)
             .style("fill-opacity", 0.5)
+          .filter(d => params.search && d.idnt.includes(params.search))
+            .attr("stroke","black")
+            .attr("stroke-width",0.5)
 
         waterfall
           .append("text")
