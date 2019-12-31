@@ -176,6 +176,8 @@
           .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+// A X I S
+
         // https://stackoverflow.com/questions/35953892/d3-scale-linear-vs-d3-scalelinear
         // https://stackoverflow.com/questions/46510876/what-is-the-alternative-of-orient-in-the-new-d3-api
 
@@ -205,6 +207,9 @@
             .tickSize(-width)
             .tickFormat("")
           )
+
+
+// R E N D E R
 
         function color(d) {
           if(d.addr != '73.157.190.193')
@@ -247,11 +252,6 @@
             .text(d=>`${d.info}`)
             .style("visibility","hidden")
 
-        let readout = svg.append("text")
-          .attr("class", "decode")
-          .attr("dy",-5)
-          .style("text-anchor","end")
-
 
 // A N I M A T E
 
@@ -263,6 +263,11 @@
           waterfall.transition().duration(500)
             .attr("transform",dp)
         }
+
+        let readout = svg.append("text")
+          .attr("class", "decode")
+          .attr("dy",-5)
+          .style("text-anchor","end")
 
         function out(d) {
           readout
