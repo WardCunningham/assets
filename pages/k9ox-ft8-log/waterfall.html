@@ -107,7 +107,7 @@
           // if (time/15%2 != 0) continue
           let call = fields[fields.length-2]
           let idnt = fields.slice(3,-1).join(' ')
-          let info = fields.slice(-1)
+          let info = fields.slice(-1)[0]
           decodes.push({addr,slot,time,freq,elev,call,idnt,info})
         }
         console.log('decodes',decodes)
@@ -231,7 +231,7 @@
             .on("mouseout", out)
             .style("fill", color)
             .style("fill-opacity", 0.5)
-          .filter(d => params.search && d.idnt.includes(params.search))
+          .filter(d => params.search && (d.idnt.includes(params.search) || d.info.includes(params.search)))
             .attr("stroke","black")
             .attr("stroke-width",0.5)
 
