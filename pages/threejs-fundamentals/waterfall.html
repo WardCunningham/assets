@@ -1,0 +1,185 @@
+<html>
+  <body>
+    <canvas id="c" width="1280px" height="800px"></canvas>
+    <script type="module">
+      import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r113/build/three.module.js';
+
+      // http://found.ward.bay.wiki.org/threejs-fundamentals.html
+      // https://github.com/WardCunningham/assets/blob/master/pages/k9ox-ft8-log/waterfall.html
+
+// P A R A M S
+  
+      function hashed(hash, assign) {
+        let op = assign.split(/=/)
+        if (op[1]) hash[op[0]]=op[1]
+        return hash
+      }
+
+      let query = window.location.href.split(/\?/)[1]||''
+      let args = query.split(/&/)
+      let params = args.reduce(hashed,{})
+      let log = params.log || 'http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi'
+      let copy = params.copy || 'http://ward.asia.wiki.org/plugin/wsjt/copy'
+      // also offset, width & height below
+
+
+// D A T A
+
+      let logged = {}
+      let decodes = []
+      let done = {}
+      let viewpoint
+
+      fetch(log)
+        .then(res=>res.text())
+        .then(text=>rawlog(text.split(/\r?\n/)))
+
+      fetch(copy)
+        .then(res=>res.text())
+        .then(text=>rawcopy(text.split(/\r?\n/)))
+
+      // http://ward.asia.wiki.org/plugin/wsjt/copy?last=500
+
+
+      function rawlog(lines) {
+        for (let line of lines) {
+          if (!line.match(/^</)) continue 
+          let field = /<(\w+):\d+>([^<]*)/g
+          let r = {}
+          let m
+          while (m = field.exec(line)) {
+            r[m[1]] = m[2].trim()
+          }
+
+          // r.qso_date
+          // r.time_on
+          // r.call
+          // r.gridsquare
+          // r.rst_sent
+          // r.rst_rcvd
+
+          logged[r.call] = true
+        }
+        console.log('logged', logged)
+        done['rawlog'] = true
+        if (done['rawcopy']) report()
+      }
+
+      function rawcopy(lines) {
+        let today = Date.now()-Date.now()%86400000
+        for (let line of lines) {
+          if (!line.length) continue
+          let fields = line.replace(/  +.*$/,'').split(' ')
+          // if (fields[0] != '73.157.190.193') continue
+          let addr = fields[0]
+          let slot = fields[1]
+          let time = new Date(today+sec(slot)*1000)
+          let freq = 1*fields[2]
+          let elev = 200
+          if(addr=='75.139.193.15') {
+            freq += 1*(params.offset||0)
+            elev -= 100
+          }
+          // if (time/15%2 != 0) continue
+          let call = fields[fields.length-2]
+          let idnt = fields.slice(3,-1).join(' ')
+          let info = fields.slice(-1)[0]
+          decodes.push({addr,slot,time,freq,elev,call,idnt,info})
+        }
+        console.log('decodes',decodes)
+        // offsetter()
+        done['rawcopy'] = true
+        if (done['rawlog']) report()
+      }
+
+      let prev = null
+      function sec(slot) {
+        let m = slot.match(/(..)(..)(..)/)
+        let now = 3600*m[1]+60*m[2]+1*m[3]
+        if (!prev) {
+          prev = now
+        }
+        else if (now < prev) {
+          now += 24*60*60
+        }
+        return now
+      }
+
+
+// R E N D E R I N G
+
+// https://threejs.org/docs/#api/en/core/Object3D.lookAt
+// https://threejsfundamentals.org/threejs/lessons/threejs-fundamentals.html
+
+      function report() {
+        const canvas = document.querySelector('#c');
+        const renderer = new THREE.WebGLRenderer({canvas});
+   
+        const fov = 75;
+        const aspect = 2.5;  // the canvas default
+        const near = 0.1;
+        const far = 150;
+        const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+        camera.position.z = 4;
+        camera.position.y = 3;
+        camera.lookAt ( 0, 0, 0 )
+        const scene = new THREE.Scene();
+        
+        {
+          const color = 0xFFFFFF;
+          const intensity = 1;
+          const light = new THREE.DirectionalLight(color, intensity);
+          light.position.set(-1, 2, 4);
+          scene.add(light);
+        }
+
+        const boxWidth = 1;
+        const boxHeight = .1;
+        const boxDepth = 1;
+        const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+
+        function makeInstance(geometry, color, x, y, z) {
+          const material = new THREE.MeshPhongMaterial({color});
+          const cube = new THREE.Mesh(geometry, material);
+          scene.add(cube);
+          cube.position.x = x;
+          cube.position.y = y;
+          cube.position.z = z;
+        }
+
+// addr: "73.157.190.193"
+// slot: "235230"
+// time: Sun Feb 23 2020 15:52:30 GMT-0800 (Pacific Standard Time) {}
+// freq: 1143
+// elev: 200
+// call: "N7NDR"
+// idnt: "<ZZ50Y> N7NDR"
+// info: "CN85"
+
+        let now = decodes[decodes.length-1].time.getTime()
+        for (let decode of decodes) {
+          let x = (1400-decode.freq)/20
+          let y = decode.elev/10 - 25 + Math.random()/4
+          let z = (decode.time.getTime()-now)/15000
+          let c = decode.addr!='73.157.190.193' ? 0x44aa88 : !  logged[decode.call] ? 0x8844aa : 0xaa8844
+          makeInstance(geometry, c, x, y, z)
+        }
+
+
+        // renderer.render(scene, camera);
+
+        function render(time) {
+          time *= 0.001;  // convert time to seconds
+          camera.position.x = Math.sin(time)/2
+          camera.lookAt ( 0, 0, 0 )
+          renderer.render(scene, camera);
+          requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);        
+
+      }
+
+    </script>
+  </body>
+</html>
