@@ -1,6 +1,6 @@
 <html>
   <body>
-    <canvas id="c" width="1280px" height="800px"></canvas>
+    <canvas id="c" width="1280px" height="800px" style="border: 1px solid gray;"></canvas>
     <script type="module">
       import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r113/build/three.module.js';
 
@@ -111,40 +111,60 @@
 // https://threejs.org/docs/#api/en/core/Object3D.lookAt
 // https://threejsfundamentals.org/threejs/lessons/threejs-fundamentals.html
 
+      const mat = {width: 31.5, length: 42, color: 0x808080}
+      const band = {min: 0, max: 3500, width: 3500, grid: 500}
+      const time = {min: 0, max: 2400, duration: 2400, grid: 60}
+
+      const freq_inch = (hz) => mat.width * hz / band.width
+      const time_inch = (sec) => mat.length * sec / time.duration
+
+      const focus = [0,0,10]
+
       function report() {
         const canvas = document.querySelector('#c');
         const renderer = new THREE.WebGLRenderer({canvas});
+        renderer.setClearColor (0xFFFFFF, 1);
    
-        const fov = 75;
+        const fov = 40;
         const aspect = 2.5;  // the canvas default
         const near = 0.1;
         const far = 150;
         const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-        camera.position.z = 4;
-        camera.position.y = 3;
-        camera.lookAt ( 0, 0, 0 )
+        camera.position.z = 30;
+        camera.position.y = 18;
+        camera.lookAt ( ...focus )
         const scene = new THREE.Scene();
         
         {
           const color = 0xFFFFFF;
           const intensity = 1;
           const light = new THREE.DirectionalLight(color, intensity);
-          light.position.set(-1, 2, 4);
+          light.position.set(0, 10, 4);
           scene.add(light);
         }
 
-        const boxWidth = 1;
-        const boxHeight = .1;
-        const boxDepth = 1;
-        const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+        {
+          const geometry = new THREE.BoxGeometry(mat.width, .5, mat.length);
+          const material = new THREE.MeshPhongMaterial({color:mat.color});
+          material.opacity=.5;
+          material.side = THREE.DoubleSide;
+          material.transparent = true;
+          material.depthWrite = false;
+          const table = new THREE.Mesh(geometry, material);
+          scene.add(table);
+          // table.position.x = x;
+          // table.position.y = -10;
+          // table.position.z = -100;
+        }
 
-        function makeInstance(geometry, color, x, y, z) {
+        function signal(color, x, y, z) {
+          const geometry = new THREE.BoxGeometry(freq_inch(50), .1, time_inch(15));
           const material = new THREE.MeshPhongMaterial({color});
           const cube = new THREE.Mesh(geometry, material);
           scene.add(cube);
-          cube.position.x = x;
-          cube.position.y = y;
-          cube.position.z = z;
+          cube.position.x = mat.width/2 - x;
+          cube.position.y = y + 1;
+          cube.position.z = z+mat.length/2;
         }
 
 // addr: "73.157.190.193"
@@ -158,11 +178,20 @@
 
         let now = decodes[decodes.length-1].time.getTime()
         for (let decode of decodes) {
-          let x = (1400-decode.freq)/20
-          let y = decode.elev/10 - 25 + Math.random()/4
-          let z = (decode.time.getTime()-now)/15000
-          let c = decode.addr!='73.157.190.193' ? 0x44aa88 : !  logged[decode.call] ? 0x8844aa : 0xaa8844
-          makeInstance(geometry, c, x, y, z)
+          let x = freq_inch(decode.freq)
+          let y = decode.elev/100 - 1 + Math.random()/2
+          let z = time_inch((decode.time.getTime()-now)/1000)
+          let c = color(decode)
+          signal(c, x, y, z)
+        }
+
+        function color(d) {
+          if(d.addr != '73.157.190.193')
+            return "#8f8"
+          else if(logged[d.call])
+            return "#f80"
+          else
+            return "#08f"
         }
 
 
@@ -170,8 +199,8 @@
 
         function render(time) {
           time *= 0.001;  // convert time to seconds
-          camera.position.x = Math.sin(time)/2
-          camera.lookAt ( 0, 0, 0 )
+          camera.position.x = Math.sin(time)*5
+          camera.lookAt ( ...focus )
           renderer.render(scene, camera);
           requestAnimationFrame(render);
         }
