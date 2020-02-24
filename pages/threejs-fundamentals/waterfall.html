@@ -1,6 +1,10 @@
 <html>
   <body>
-    <canvas id="c" width="1280px" height="800px" style="border: 1px solid gray;"></canvas>
+    <center>
+      <canvas id="c" width="1280px" height="800px" style="border: 1px solid gray;"></canvas><br>
+      <input type="range" id="zoom" name="zoom" min="3" max="80" value=40><label for="zoom">zoom</label>
+      <input type="range" id="high" name="high" min="0" max="30" value=15><label for="high">high</label>
+    </center>
     <script type="module">
       import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r113/build/three.module.js';
 
@@ -113,10 +117,11 @@
 
       const mat = {width: 31.5, length: 42, color: 0x808080}
       const band = {min: 0, max: 3500, width: 3500, grid: 500}
-      const time = {min: 0, max: 2400, duration: 2400, grid: 60}
+      const time = {min: 0, max: 1200, duration: 1200, grid: 60}
 
       const freq_inch = (hz) => mat.width * hz / band.width
       const time_inch = (sec) => mat.length * sec / time.duration
+      const freq_time = (hz, y, sec) => [mat.width/2-freq_inch(hz), y, mat.length/2-time_inch(sec)];
 
       const focus = [0,0,10]
 
@@ -125,13 +130,13 @@
         const renderer = new THREE.WebGLRenderer({canvas});
         renderer.setClearColor (0xFFFFFF, 1);
    
-        const fov = 40;
+        const fov = zoom.value;
         const aspect = 2.5;  // the canvas default
         const near = 0.1;
-        const far = 150;
+        const far = mat.length*2;
         const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
         camera.position.z = 30;
-        camera.position.y = 18;
+        camera.position.y = high.value;
         camera.lookAt ( ...focus )
         const scene = new THREE.Scene();
         
@@ -150,11 +155,23 @@
           material.side = THREE.DoubleSide;
           material.transparent = true;
           material.depthWrite = false;
-          const table = new THREE.Mesh(geometry, material);
-          scene.add(table);
-          // table.position.x = x;
-          // table.position.y = -10;
-          // table.position.z = -100;
+          scene.add(new THREE.Mesh(geometry, material));
+        }
+
+        {
+          // https://threejs.org/docs/index.html#manual/en/introduction/Drawing-lines
+          let material = new THREE.LineBasicMaterial( { color: 0xffff80 } );
+          function gridline (p1, p2) {
+            let points = [ new THREE.Vector3(...p1), new THREE.Vector3(...p2)]
+            let geometry = new THREE.BufferGeometry().setFromPoints(points);
+            scene.add(new THREE.Line( geometry, material ))
+          }
+          for (let t=time.min; t<=time.max; t+=time.grid) {
+            gridline (freq_time(band.min, 0, t), freq_time(band.max, 0, t))
+          }
+          for (let f=band.min; f<=band.max; f+=band.grid) {
+            gridline (freq_time(f, 0, time.min), freq_time(f, 0, time.max))
+          }
         }
 
         function signal(color, x, y, z) {
@@ -164,7 +181,7 @@
           scene.add(cube);
           cube.position.x = mat.width/2 - x;
           cube.position.y = y + 1;
-          cube.position.z = z+mat.length/2;
+          cube.position.z = mat.length/2 - z;
         }
 
 // addr: "73.157.190.193"
@@ -178,11 +195,15 @@
 
         let now = decodes[decodes.length-1].time.getTime()
         for (let decode of decodes) {
-          let x = freq_inch(decode.freq)
-          let y = decode.elev/100 - 1 + Math.random()/2
-          let z = time_inch((decode.time.getTime()-now)/1000)
-          let c = color(decode)
-          signal(c, x, y, z)
+          let when = (now-decode.time.getTime())/1000
+          let where = decode.freq
+          if (when >= time.min && when <= time.max && where >= band.min && where <= band.max) {
+            let x = freq_inch(where)
+            let y = decode.elev/100 - 1 + Math.random()/2
+            let z = time_inch(when)
+            let c = color(decode)
+            signal(c, x, y, z)
+          }
         }
 
         function color(d) {
@@ -200,6 +221,9 @@
         function render(time) {
           time *= 0.001;  // convert time to seconds
           camera.position.x = Math.sin(time)*5
+          camera.fov = zoom.value
+          camera.position.y = high.value;
+          camera.updateProjectionMatrix();
           camera.lookAt ( ...focus )
           renderer.render(scene, camera);
           requestAnimationFrame(render);
