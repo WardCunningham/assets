@@ -90,6 +90,7 @@
           let info = fields.slice(-1)[0]
           decodes.push({addr,slot,time,freq,elev,call,idnt,info})
         }
+        decodes.sort((a,b) => a.time - b.time )
         console.log('decodes',decodes)
         // offsetter()
         done['rawcopy'] = true
@@ -182,6 +183,7 @@
           cube.position.x = mat.width/2 - x;
           cube.position.y = y + 1;
           cube.position.z = mat.length/2 - z;
+          return cube
         }
 
 // addr: "73.157.190.193"
@@ -202,7 +204,39 @@
             let y = decode.elev/100 - 1 + Math.random()/2
             let z = time_inch(when)
             let c = color(decode)
-            signal(c, x, y, z)
+            let cube = signal(c, x, y, z)
+            decode.position = cube.position
+          }
+        }
+
+        function connect (a, b) {
+          // https://threejs.org/docs/#api/en/extras/curves/CubicBezierCurve3
+          let mid = [(a.x+b.x)/2, 6, (a.z+b.z)/2]
+          var curve = new THREE.CubicBezierCurve3(
+            a,
+            new THREE.Vector3( a.x, 3, a.z ),
+            new THREE.Vector3( ...mid ),
+            new THREE.Vector3( b.x, 3, b.z ),
+            b
+          );
+          var points = curve.getPoints( 15 );
+          var geometry = new THREE.BufferGeometry().setFromPoints( points );
+          var material = new THREE.LineBasicMaterial( { color : 0xFFFF80 } );
+          scene.add(new THREE.Line( geometry, material ))
+        }
+
+        {
+          let prev = {}
+          for (let i = 0; i < decodes.length; i++) {
+            let decode = decodes[i]
+            if (decode.position && !decode.idnt.match(/^(CQ|<)/)) {
+              let remote = prev[decode.idnt.split(' ').reverse().join(' ')]
+              if (remote) {
+                console.log(decode.idnt, decode.info)
+                connect(decode.position, remote.position)
+              }
+              prev[decode.idnt] = decode
+            }
           }
         }
 
