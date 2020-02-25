@@ -1,9 +1,18 @@
 <html>
   <body>
     <center>
-      <canvas id="c" width="1280px" height="800px" style="border: 1px solid gray;"></canvas><br>
-      <input type="range" id="zoom" name="zoom" min="3" max="80" value=40><label for="zoom">zoom</label>
-      <input type="range" id="high" name="high" min="0" max="30" value=15><label for="high">high</label>
+      <canvas id="c" width="1280px" height="800px" style="border: 1px solid gray;"></canvas>
+      <p>
+        <input type="range" id="zoom" name="zoom" min="3" max="80" value=40><label for="zoom">zoom</label>
+        <input type="range" id="high" name="high" min="0" max="30" value=15><label for="high">high</label>
+      </p><p>
+        <input type="radio" id="1jan" name="copy" value="1jan-3pm-7938.txt"><label for="1jan">1jan</label>
+        <input type="radio" id="3pm" name="copy" value="3pm.txt"><label for="3pm">3pm</label>
+        <input type="radio" id="4pm" name="copy" value="4pm.txt"><label for="4pm">4pm</label>
+        <input type="radio" id="7am" name="copy" value="7am.txt"><label for="7am">7am</label>
+        <input type="radio" id="P49X" name="copy" value="P49X.txt"><label for="P49X">p49x</label>
+      </p>
+
     </center>
     <script type="module">
       import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r113/build/three.module.js';
@@ -24,7 +33,15 @@
       let params = args.reduce(hashed,{})
       let log = params.log || 'http://found.ward.bay.wiki.org/assets/pages/k9ox-ft8-log/wsjtx_log.adi'
       let copy = params.copy || 'http://ward.asia.wiki.org/plugin/wsjt/copy'
-      // also offset, width & height below
+
+      document.getElementsByName('copy')
+        .forEach((i) => i
+          .addEventListener('change', (e) => {
+            params.copy = `http://ft8.ward.asia.wiki.org/assets/pages/decode-waterfall/${e.target.value}`
+            let args = Object.keys(params).map(key=>`${key}=${params[key]}`).join("&")
+            let url = `${location.protocol}//${location.pathname}?${args}`
+            location.href = url
+          }))
 
 
 // D A T A
@@ -219,7 +236,7 @@
             new THREE.Vector3( b.x, 3, b.z ),
             b
           );
-          var points = curve.getPoints( 15 );
+          var points = curve.getPoints( 30 );
           var geometry = new THREE.BufferGeometry().setFromPoints( points );
           var material = new THREE.LineBasicMaterial( { color : 0xFFFF80 } );
           scene.add(new THREE.Line( geometry, material ))
