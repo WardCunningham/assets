@@ -105,7 +105,7 @@
           let elev = 200
           if(addr=='75.139.193.15') {
             freq += 1*(params.offset||0)
-            elev -= 100
+            elev -= 50
           }
           // if (time/15%2 != 0) continue
           let call = fields[fields.length-2]
@@ -115,7 +115,7 @@
         }
         decodes.sort((a,b) => a.time - b.time )
         console.log('decodes',decodes)
-        // offsetter()
+        offsetter()
         done['rawcopy'] = true
         if (done['rawlog']) report()
       }
@@ -131,6 +131,38 @@
           now += 24*60*60
         }
         return now
+      }
+
+
+// C A L I B R A T I O N
+
+      function offsetter () {
+        let matches = {}
+        for (let d of decodes) {
+          let slots = matches[d.slot] = matches[d.slot] || {}
+          let calls = slots[d.call] = slots[d.call] || {count:0}
+          calls.count += 1
+          calls[d.addr=='73.157.190.193' ? 'me' : 'him'] = d.freq
+        }
+        let sum = 0
+        let n = 0
+        for (let k of Object.keys(matches).sort()) {
+          let slots = matches[k]
+          for (let j of Object.keys(slots).sort()) {
+            let call = slots[j]
+            if (call.count == 2 && call.him && call.me) {
+              sum += (call.me - call.him)
+              n++
+            }
+          }
+        }
+        let offset = Math.floor(sum/n)
+        console.log('additional offset', offset)
+        for (let d of decodes) {
+          if(d.addr=='75.139.193.15') {
+            d.freq += offset
+          }
+        }
       }
 
 
