@@ -234,11 +234,12 @@
           const geometry = new THREE.BoxGeometry(freq_inch(50), .1, time_inch(15));
           const material = new THREE.MeshPhongMaterial({color});
           const cube = new THREE.Mesh(geometry, material);
+          let pos = {x: mat.width/2-x, y: y+1, z: mat.length/2-z}
+          cube.position.x = pos.x
+          cube.position.y = pos.y
+          cube.position.z = pos.z
           scene.add(cube);
-          cube.position.x = mat.width/2 - x;
-          cube.position.y = y + 1;
-          cube.position.z = mat.length/2 - z;
-          return cube
+          return pos
         }
 
 // addr: "73.157.190.193"
@@ -259,20 +260,20 @@
             let y = decode.elev/100 - 1 + Math.random()/2
             let z = time_inch(when)
             let c = color(decode)
-            let cube = signal(c, x, y, z)
-            decode.position = cube.position
+            decode.pos = signal(c, x, y, z)
           }
         }
 
         function connect (a, b) {
           // https://threejs.org/docs/#api/en/extras/curves/CubicBezierCurve3
-          let mid = [(a.x+b.x)/2, 6, (a.z+b.z)/2]
+          let dst = Math.sqrt(Math.abs(a.x-b.x)**2 + Math.abs(a.z-b.z)**2)
+          let avg = (a.y + b.y) / 2
+          let mid = avg+dst/3
           var curve = new THREE.CubicBezierCurve3(
-            a,
-            new THREE.Vector3( a.x, 3, a.z ),
-            new THREE.Vector3( ...mid ),
-            new THREE.Vector3( b.x, 3, b.z ),
-            b
+            new THREE.Vector3( a.x, a.y, a.z ),
+            new THREE.Vector3( a.x, mid, a.z ),
+            new THREE.Vector3( b.x, mid, b.z ),
+            new THREE.Vector3( b.x, b.y, b.z)
           );
           var points = curve.getPoints( 30 );
           var geometry = new THREE.BufferGeometry().setFromPoints( points );
@@ -282,15 +283,16 @@
 
         {
           let prev = {}
-          for (let i = 0; i < decodes.length; i++) {
-            let decode = decodes[i]
-            if (decode.position && !decode.idnt.match(/^(CQ|<)/)) {
-              let remote = prev[decode.idnt.split(' ').reverse().join(' ')]
-              if (remote) {
-                console.log(decode.idnt, decode.info)
-                connect(decode.position, remote.position)
+          for (let d of decodes) {
+            if (d.pos && !d.idnt.match(/^(CQ|<)/)) {
+              let other = d.idnt.split(' ').reverse().join(' ')
+              // console.log(d.idnt, other)
+              let r = prev[other]
+              if (r) {
+                console.log(d.idnt, d.info)
+                connect(d.pos, r)
               }
-              prev[decode.idnt] = decode
+              prev[d.idnt] = d.pos
             }
           }
         }
