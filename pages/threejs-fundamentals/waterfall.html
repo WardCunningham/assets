@@ -183,7 +183,7 @@
 
       function report() {
         const canvas = document.querySelector('#c');
-        const renderer = new THREE.WebGLRenderer({canvas});
+        const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
         renderer.setClearColor (0xFFFFFF, 1);
    
         const fov = zoom.value;
