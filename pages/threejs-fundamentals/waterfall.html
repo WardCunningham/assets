@@ -39,7 +39,7 @@
           .addEventListener('change', (e) => {
             params.copy = `http://ft8.ward.asia.wiki.org/assets/pages/decode-waterfall/${e.target.value}`
             let args = Object.keys(params).map(key=>`${key}=${params[key]}`).join("&")
-            let url = `${location.protocol}//${location.pathname}?${args}`
+            let url = `${location.protocol}//${location.hostname}${location.pathname}?${args}`
             location.href = url
           }))
 
