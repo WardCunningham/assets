@@ -6,6 +6,7 @@
         <input type="range" id="zoom" name="zoom" min="3" max="80" value=40><label for="zoom">zoom</label>
         <input type="range" id="high" name="high" min="0" max="30" value=15><label for="high">high</label>
       </p><p>
+        <input type="radio" id="live" name="copy" value="live"><label for="live">live</label>
         <input type="radio" id="1jan" name="copy" value="1jan-3pm-7938.txt"><label for="1jan">1jan</label>
         <input type="radio" id="3pm" name="copy" value="3pm.txt"><label for="3pm">3pm</label>
         <input type="radio" id="4pm" name="copy" value="4pm.txt"><label for="4pm">4pm</label>
@@ -19,6 +20,7 @@
 
       // http://found.ward.bay.wiki.org/threejs-fundamentals.html
       // https://github.com/WardCunningham/assets/blob/master/pages/k9ox-ft8-log/waterfall.html
+
 
 // P A R A M S
   
@@ -37,7 +39,11 @@
       document.getElementsByName('copy')
         .forEach((i) => i
           .addEventListener('change', (e) => {
-            params.copy = `http://ft8.ward.asia.wiki.org/assets/pages/decode-waterfall/${e.target.value}`
+            if (e.target.value=='live') {
+              delete params.copy
+            } else {
+              params.copy = `http://ft8.ward.asia.wiki.org/assets/pages/decode-waterfall/${e.target.value}`
+            }
             let args = Object.keys(params).map(key=>`${key}=${params[key]}`).join("&")
             let url = `${location.protocol}//${location.hostname}${location.pathname}?${args}`
             location.href = url
