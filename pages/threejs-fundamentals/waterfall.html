@@ -12,8 +12,10 @@
         <input type="radio" id="4pm" name="copy" value="4pm.txt"><label for="4pm">4pm</label>
         <input type="radio" id="7am" name="copy" value="7am.txt"><label for="7am">7am</label>
         <input type="radio" id="P49X" name="copy" value="P49X.txt"><label for="P49X">p49x</label>
+      </p><p>
+        <input type="radio" id="exchange" name="decorate" value="exchange"><label for="exchange">exchange</label>
+        <input type="radio" id="transmit" name="decorate" value="transmit"><label for="transmit">transmit</label>
       </p>
-
     </center>
     <script type="module">
       import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r113/build/three.module.js';
@@ -195,6 +197,7 @@
         camera.position.y = high.value;
         camera.lookAt ( ...focus )
         const scene = new THREE.Scene();
+        scene.background = new THREE.Color( 0xcccccc );
         
         {
           const color = 0xFFFFFF;
@@ -264,7 +267,7 @@
           }
         }
 
-        function connect (a, b) {
+        function connect (a, b, color) {
           // https://threejs.org/docs/#api/en/extras/curves/CubicBezierCurve3
           let dst = Math.sqrt(Math.abs(a.x-b.x)**2 + Math.abs(a.z-b.z)**2)
           let avg = (a.y + b.y) / 2
@@ -277,11 +280,11 @@
           );
           var points = curve.getPoints( 30 );
           var geometry = new THREE.BufferGeometry().setFromPoints( points );
-          var material = new THREE.LineBasicMaterial( { color : 0xFFFF80 } );
+          var material = new THREE.LineBasicMaterial( { color } );
           scene.add(new THREE.Line( geometry, material ))
         }
 
-        {
+        function exchange () {
           let prev = {}
           for (let d of decodes) {
             if (d.pos && !d.idnt.match(/^(CQ|<)/)) {
@@ -290,12 +293,31 @@
               let r = prev[other]
               if (r) {
                 console.log(d.idnt, d.info)
-                connect(d.pos, r)
+                connect(d.pos, r, 0xFFFF80)
               }
               prev[d.idnt] = d.pos
             }
           }
         }
+
+        function transmit () {
+          let prev = {}
+          for (let d of decodes) {
+            let us = d.idnt.split(' ')[1]
+            let r = prev[us]
+            if (r && d.pos) {
+              console.log('transmit', us, Math.round(d.pos.x-r.x), Math.round(d.pos.y-r.y))
+              if (Math.abs(d.pos.x-r.x)< 0.3)
+                1
+                // connect(d.pos, r, 0x80c080)
+              else
+                connect(d.pos, r, 0xFF80FF)
+            }
+            prev[us] = d.pos
+          }
+        }
+
+        transmit()
 
         function color(d) {
           if(d.addr != '73.157.190.193')
