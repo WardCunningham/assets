@@ -54,6 +54,7 @@
     function item (obj) {
       let type = obj.type || 'paragraph'
       let text = obj.text || ''
+      const trouble = () => console.log(type,'trouble',`${site}/${slug}.html`)
       const href = (m) => {
         var title = m.slice(2,-2)
         merge(appendix, title)
@@ -61,12 +62,25 @@
       }
       switch(type) {
         case 'html':
-          text = text.replace(/<.*?>/g,'')
+          if (!/<img/) {
+            trouble()
+            text = text.replace(/<.*?>/g,'')
+          } else {
+            return text
+          }
           break
         case 'markdown':
+          text = text.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
+          text = text.replace(/\*(.+)\*/g,"<b>$1</b>")
           text = text.replace(/_(.+)_/g,"<i>$1</i>")
+          if (text.match(/^[*+-]/) || ((text.match(/[*]/g)||[]).length%2)) {
+            trouble()
+          }
           break
         case 'graphviz':
+          if (!text.match(/^DOT FROM /)) {
+            trouble()
+          }
           return `<img src="http://path.ward.asia.wiki.org/assets/page/production-tools/images/${slug}.png">`
           break
       }
