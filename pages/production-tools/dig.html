@@ -14,8 +14,10 @@
 <script>
 
   let site = 'https://dig.wiki.innovateoregon.org'
-  let chapters = ["Welcome Visitors"]
+  let welcome = ["Welcome Visitors"]
+  let chapters = ["DIG Index"]
   let appendix = []
+
   let pageinfo = {}
 
   function merge (array, element) {
@@ -60,13 +62,20 @@
         merge(appendix, title)
         return link(title)
       }
+      const xref = (m) => {
+        let parts = m.split(' ')
+        let url = parts.shift().slice(1)
+        let word = parts.join(' ').slice(0,-1)
+        console.log({url,word,m})
+        return `<a href="${url}">${word}</a>`
+      }
       switch(type) {
         case 'html':
           if (!/<img/) {
             trouble()
             text = text.replace(/<.*?>/g,'')
           } else {
-            return text
+            return text + '</i></center>'
           }
           break
         case 'markdown':
@@ -87,7 +96,7 @@
       if (m = /^\[\[(.*?)\]\]$/.exec(text)) {
         merge(chapters, m[1])
       }
-      return `<p>${text.replace(/\[\[(.+?)\]\]/g,href)}</p>`
+      return `<p>${text.replace(/\[\[(.+?)\]\]/g,href).replace(/\[(https?:\/\/.+?) (.+?)\]/g,xref)}</p>`
     }
 
     return page.story.map(item).join("\n")
@@ -107,19 +116,24 @@
         emitted[chapter.title] = true
         body.push(title(chapter) + story(chapter))
         if (each == chapters[0]) {
-          body.push('<p><a href="#appendix">Appendix</a></p>')
-          body.push('<p><a href="#index">Index</a></p>')
-          body.push('<p><a href="#omitted">Omitted</a></p>')
+          body.push('<p>Quick Links While Debugging</p>')
+          body.push('<p><a href="#appendix">Garden (appendix)</a></p>')
+          body.push('<p><a href="#index">Index (all pages so far)</a></p>')
+          body.push('<p><a href="#omitted">Omitted (where did these go?)</a></p>')
         }
       }
     }
 
+    emit(welcome)
     emit(chapters)
-    body.push('<a name=appendix><h2>Appendix</h2></a>')
+
+    body.push('<a name=appendix><h2>Garden (appendix)</h2></a>')
     emit(appendix)
+
     body.push('<a name=index><h2>Index</h2></a>')
     appendix.sort()
     body.push(appendix.map(link).join("<br>\n"))
+
     body.push('<a name=omitted><h2>Omitted</h2></a>')
     let omitted = Object.values(pageinfo).map(each => each.title).filter(each => !appendix.includes(each))
     emit(omitted)
