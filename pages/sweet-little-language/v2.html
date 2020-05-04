@@ -1,0 +1,45 @@
+<html>
+  <body>
+    <h1>Sweet Little Interpreter</h1>
+    <div class="program">
+      <pre id="program" contenteditable="true">
+        Hello World
+      </pre>
+    </div>
+    <div class="buttons">
+      <button onclick="run()">Run</button>
+    </div>
+    <div class="output">
+      <pre id="trace"></pre>
+      <pre id="output"></pre>
+    </div>
+    <script>
+
+      // Save program in local storage between reloads
+
+      let version = location.pathname.split('/').pop()
+      if (localStorage[version]) program.innerText = localStorage[version]
+      program.addEventListener('focusout', event => { localStorage[version] = program.innerText })
+
+      // Parse and execute the program, display output
+
+      function run () {
+        execute(parse(program.innerText))
+      }
+
+      function parse (text) {
+        return text.split(/\n+/).map(line => line.split(/\s+/))
+      }
+
+      function execute (code) {
+        for (let line of code) {
+          for (let word of line) {
+            output.innerText += word + ' '
+          }
+          output.innerText += "\n"
+        }
+      }
+      
+    </script>
+  </body>
+</html>
