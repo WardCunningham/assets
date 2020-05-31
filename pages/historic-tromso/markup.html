@@ -1,0 +1,30 @@
+<pre id=markup style="width:390px;background-color:#eee;white-space:pre-wrap;">working</pre>
+
+<script>
+  fetch('http://found.ward.bay.wiki.org/historic-tromso.json')
+    .then(req => req.json())
+    .then(page => transform(page.story.filter(item => item.id == '93bbb55ab7fc3759')[0].text))
+
+  function transform(text) {
+
+    let lines = text.split(/\n/).map(line => line.split(/[, ]+/))
+    const sub = (a,b) => [a[0]-b[0], a[1]-b[1]]
+
+    // deltas from lines 3-4 and 5-6
+    let dsw = sub(lines[3],lines[4])
+    let dne = sub(lines[5],lines[6])
+    console.log({dsw,dne})
+
+    // apply deltas to fields of OVERLAY on line 2
+    let ov = lines[2]
+    let sw = sub([ov[2],ov[3]],dsw)
+    let ne = sub([ov[4],ov[5]],dne)
+    console.log({sw,ne})
+
+    // reassemble OVERVIEW line from parts
+    lines[2] = [ov[0], ov[1], sw[0]+',', sw[1], ne[0]+',', ne[1]]
+
+    let fixed = [lines[0],lines[1],lines[2]].map(line => line.join(' '))
+    markup.innerText = fixed.join("\n")
+  }
+</script>
