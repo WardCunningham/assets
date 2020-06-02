@@ -1,5 +1,5 @@
 // Fetch each of a list of urls and display each side by side in a table
-// Usage: deno --allow-net script.JSON
+// Usage: deno run --allow-net script.js
 
 import {doit} from 'http://ward.asia.wiki.org/assets/pages/doit-deno/doit.mjs'
 
