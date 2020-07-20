@@ -1,0 +1,34 @@
+digraph {
+  rankdir=LR
+  node [shape=box style=filled fillcolor=bisque]
+  "Outpost\nThinking"
+
+  node [fillcolor=white]  
+  "JSON\nSchema" -> "Federating\nForeign\nServers" -> "Federation\nFriendly\nOutposts" -> "Outpost\nThinking"
+
+  "Javascript\nModules" -> "Node's\nMistakes" -> "Outpost\nThinking"
+
+
+
+
+  node [shape=box style=filled fillcolor=bisque]
+  "Outpost\nThinking"
+  "Meta\nSites\nand\nPages"
+  "Modular\nClient"
+  "Serving\nExecutables"
+
+  node [fillcolor=white]  
+
+  "Outpost\nThinking" -> "Meta\nSites\nand\nPages" -> "Federation\nScraper"
+
+  "Outpost\nThinking" -> "Modular\nClient" -> "Abstraction\nin\nTurtle\nGeometry" -> "Turtle\nSpirals"
+
+  "Meta\nSites\nand\nPages" -> "Content\nTransformation"
+  "Making\nGrowing\nRegions\nWiki" -> "Content\nTransformation" -> "DIG\nHandbook"
+  "Making\nGrowing\nRegions\nWiki" -> "Production\nTools" -> "DIG\nHandbook"
+
+  "Region\nScraping\nand\nIndexing" -> "Federation\nScraper"
+
+  "Outpost\nThinking" -> "Serving\nExecutables" -> "Sudoku\nHelper"
+  "Sudokant" -> "Sudoku\nHelper"
+}

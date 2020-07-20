@@ -1,0 +1,256 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link id='favicon' href='/favicon.png' rel='icon' type='image/png'>
+  </head>
+  <body onresize="resize()">
+    <style>
+
+      body, textarea {
+        font-family: "Helvetica Neue", "Arial", sans-serif;
+      }
+
+      td, th {
+        border: 1px solid black;
+        padding: 6px;
+        width: 25%;
+        font-size: smaller;
+      }
+
+      table {
+        border-collapse: collapse;
+        table-layout: fixed ;
+        width: 100% ;
+      }
+
+      td > div {
+        max-height: 200px;
+        overflow-y: scroll;
+        overflow-x: hidden;
+      }
+
+      li.dot::before { /* https://www.w3.org/Style/Examples/007/color-bullets.en.html*/
+        content: "●"; color: red;
+        display: inline-block; width: 1.5em;
+        margin-left: -1.5em;
+      }
+
+      svg {
+        width:100%;
+        height:100%;
+      }
+
+      dialog {
+        width:350px;
+      }
+
+      label {
+        color: gray;
+      }
+
+      input, textarea {
+        width:100%;
+        padding: 6px;
+      }
+
+      span.todo {
+        color:red;
+      }
+
+    </style>
+
+    <table id="metadata">
+      <tr><th>team<th>diagram<th>thing<th>description
+      <tr>
+        <td><div data="team">
+        <td><div data="diagram">
+        <td><div data="thing">
+        <td><div data="description">
+    </table>
+
+    <svg>
+      <image id="draw"  x="0" y="0" height="100%" width="100%" href="http://simnet.ward.asia.wiki.org/assets/pages/base-model/image.jpg"/>
+      <circle id="dot" cx=300 cy=300 r=5 style="fill: red;", visibility=hidden>
+    </svg>
+
+    <img id=test src="http://simnet.ward.asia.wiki.org/assets/pages/base-model/image.jpg" height=5px>
+
+    <!--
+      https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
+      https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output
+    -->
+
+    <dialog id="rename">
+      <form oninput="console.log ">
+        <p><label>thing<br>
+          <input type="text" id="tfield" name="thing" >
+        </label></p>
+        <p><label>description<br>
+          <textarea id="dfield" name="description" rows=8></textarea>
+        </label></p>
+        <!-- <p><button>save</button></p> -->
+      </form>
+    </dialog>
+
+    <script>
+
+      let index = {}
+      let specific = {}
+      let updates = {}
+      let selection = {team:null, diagram:null, thing:null}
+
+      let db = location.href.replace('/index.html','')
+      if (db.startsWith('file')) db = 'http://simnet.ward.asia.wiki.org/assets/pages/diagrams-as-base-model'
+      index = fetch(`${db}/index.json`).then(res => res.json()).then(json => {index = json; refresh('team')})
+
+      ibox = {width: 0, height: 0}
+      sbox = {x: 0, y:0, width: 0, height:0}
+
+      function screen2image (xy) {
+        let x = (xy[0] - sbox.x) * ibox.width / sbox.width
+        let y = (xy[1] - sbox.y) * ibox.height / sbox.height
+        return [x,y]
+      }
+
+      function image2screen (xy) {
+        let x = xy[0] * sbox.width / ibox.width + sbox.x
+        let y = xy[1] * sbox.height / ibox.height + sbox.y
+        return [x,y]
+      }
+
+      function resize () {
+        let bb = draw.getBoundingClientRect()
+        sbox = {x:bb.x, y:bb.y, height:bb.height, width:bb.width}
+        console.log('resize',sbox)
+        if (selection.team && selection.diagram && selection.thing) {
+          let thing = specific.things[selection.thing]
+          if (thing.dot) {
+            let screen = image2screen(thing.dot)
+            dot.setAttribute('cx',screen[0])
+            dot.setAttribute('cy',screen[1])
+          }
+        }
+      }
+
+      function showdot(screen) {
+        dot.setAttribute('cx',screen[0])
+        dot.setAttribute('cy',screen[1])
+        // dot.setAttribute('visibility','hidden')
+        dot.setAttribute('visibility','visible')
+      }
+
+
+      function mkspecific(things) {
+        let meta = {things:{}}
+        for (let thing of things) {
+          meta.things[thing] = {type:'any'}
+        }
+        return meta
+      }
+
+      function refresh(panel) {
+        const td = panel => document.querySelector(`div[data=${panel}]`)
+        const li = list => (list||[]).map(t => `<li class="${t==selection[panel] ? 'dot' : ''}">${t}`).join('')
+        // console.log(td(panel))
+        let selected = index.data
+        switch (panel) {
+          case 'team':
+            td(panel).innerHTML = li(Object.keys(selected))
+            td('diagram').innerHTML = ''
+            td('thing').innerHTML = ''
+            td('description').innerHTML = ''
+            break
+          case 'diagram':
+            selected = index.data[selection.team]
+            td(panel).innerHTML = li(Object.keys(selected))
+            td('thing').innerHTML = ''
+            td('description').innerHTML = ''
+            break
+          case 'thing':
+            selected = index.data[selection.team][selection.diagram].things
+            td(panel).innerHTML = li(selected)
+            td('description').innerHTML = ''
+            break
+          case 'description':
+            selected = specific.things[selection.thing]
+            console.log({selected})
+            if (selected.dot) {
+              let screen = image2screen(selected.dot)
+              showdot(screen)
+              if (selected.description) {
+                td(panel).innerHTML = selected.description
+              } else {
+                td(panel).innerHTML = `<span class=todo>Click the dot to DESCRIBE this thing.</span>`
+              }
+            } else {
+              td(panel).innerHTML = `<span class=todo>Click the diagram to LOCATE this thing.</span>`
+            }
+            break
+          default:
+            console.error('cant refresh', panel)
+        }
+      }
+
+      metadata.onclick = async (e) => {
+        let panel = e.path[1].getAttribute('data')
+        let item = e.target.innerText.trim()
+        selection[panel] = item
+        refresh(panel)
+        switch (panel) {
+          case 'team':
+            refresh('diagram')
+            break
+          case 'diagram':
+            let meta = index.data[selection.team][item]
+            let ext = meta.extension || 'svg'
+            let href=`${db}/data/${selection.team}/${item}.${ext}`
+            draw.setAttribute('href', href)
+            test.setAttribute('src', href)
+            dot.setAttribute('visibility','hidden')
+            specific = await fetch(`${db}/data/${selection.team}/${item}.json`)
+              .then(res => {return res.ok? res.json() : mkspecific(meta.things || [])})
+            refresh('thing')
+            break
+          case 'thing':
+            refresh('description')
+            break
+          default:
+            console.error('cant dispatch', e.path[1])
+        }
+      }
+
+    // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent
+    // https://stackoverflow.com/questions/29261304/how-to-get-the-click-coordinates-relative-to-svg-element-holding-the-onclick-lis
+
+      draw.onclick = (e) => {
+        let x = e.offsetX
+        let y = e.offsetY
+        dot.setAttribute('cx',x)
+        dot.setAttribute('cy',y)
+        dot.setAttribute('visibility','visible')
+        console.log('p1', [x,y], e)
+        let bb = draw.getBoundingClientRect()
+        sbox = {x:bb.x, y:bb.y, height:bb.height, width:bb.width}
+        ibox = {width:test.naturalWidth, height:test.naturalHeight}
+
+        console.log({sbox, ibox})
+
+        if (selection.team && selection.diagram && selection.thing) {
+          let thing = specific.things[selection.thing]
+          thing.dot = screen2image([x, y])
+          console.log({thing})
+          refresh('description')
+        }
+      }
+
+      dot.onclick = (e) => {
+        let thing = specific.things[selection.thing]
+        tfield.value = selection.thing
+        // tfield.on('change',e => alert('cant rename yet'))
+        dfield.value = thing.description || ''
+        // dfield.on('change',e => console.log({e}))
+        rename.showModal()
+      }
+    </script>
+  </body>
+</html>

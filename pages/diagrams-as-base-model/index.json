@@ -1,0 +1,49 @@
+{
+  "data": {
+    "seran-outpost": {
+      "Outpost Thinking": {
+        "things": [
+        ],
+        "types": [
+          "page"
+        ],
+        "source": "http://ward.asia.wiki.org/outpost-thinking.html"
+      },
+      "One Wiki Hosting Guide": {
+        "things": [
+          "Alert",
+          "Application",
+          "Author",
+          "Backup",
+          "Browser",
+          "Build",
+          "Certificates",
+          "Compose",
+          "Core",
+          "Dns",
+          "Domain",
+          "Federation",
+          "Identity",
+          "Login",
+          "Modules",
+          "Outpost",
+          "Plugins",
+          "Proxy",
+          "Reload",
+          "Server",
+          "Source",
+          "Wiki"
+        ],
+        "types": [
+          "any"
+        ],
+        "source": "http://host.fed.wiki/view/one-wiki-hosting-guide/view/block-diagram"
+      }
+    }
+  },
+  "metadata": {
+    "types": [
+      "any"
+    ]
+  }
+}
