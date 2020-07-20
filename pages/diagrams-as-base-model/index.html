@@ -80,13 +80,25 @@
       https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output
     -->
 
-    <dialog id="rename">
-      <form oninput="console.log ">
+    <dialog id="describe">
+      <form oninput="console.log">
         <p><label>thing<br>
           <input type="text" id="tfield" name="thing" >
         </label></p>
         <p><label>description<br>
           <textarea id="dfield" name="description" rows=8></textarea>
+        </label></p>
+        <!-- <p><button>save</button></p> -->
+      </form>
+    </dialog>
+
+    <dialog id="finder">
+      <form >
+        <p><label id=flab>find diagrams<br>
+          <input type="text" id="ffield" name="find" >
+        </label></p>
+        <p><label>search results<br>
+          <textarea id="sfield" rows=8></textarea>
         </label></p>
         <!-- <p><button>save</button></p> -->
       </form>
@@ -139,6 +151,15 @@
         dot.setAttribute('visibility','visible')
       }
 
+      function download(obj, name){
+        var data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(obj));
+        var anchor = document.createElement('a');
+        anchor.setAttribute("href",     data);
+        anchor.setAttribute("download", name + ".json");
+        document.body.appendChild(anchor); // required for firefox
+        anchor.click();
+        anchor.remove();
+      }
 
       function mkspecific(things) {
         let meta = {things:{}}
@@ -183,6 +204,7 @@
                 td(panel).innerHTML = `<span class=todo>Click the dot to DESCRIBE this thing.</span>`
               }
             } else {
+              dot.setAttribute('visibility','hidden')
               td(panel).innerHTML = `<span class=todo>Click the diagram to LOCATE this thing.</span>`
             }
             break
@@ -192,6 +214,7 @@
       }
 
       metadata.onclick = async (e) => {
+        if(e.target.tagName == 'TH') return search(e.target.innerText)
         let panel = e.path[1].getAttribute('data')
         let item = e.target.innerText.trim()
         selection[panel] = item
@@ -217,6 +240,12 @@
           default:
             console.error('cant dispatch', e.path[1])
         }
+      }
+
+      function search(panel) {
+        console.log({panel})
+        ffield.placeholder = `${panel} ${panel == 'description' ? 'words' : 'name'}`
+        finder.showModal()
       }
 
     // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent
@@ -245,11 +274,11 @@
 
       dot.onclick = (e) => {
         let thing = specific.things[selection.thing]
-        tfield.value = selection.thing
-        // tfield.on('change',e => alert('cant rename yet'))
-        dfield.value = thing.description || ''
+        tfield.value = selection.thing || 'unknown'
+        // tfield.on('change',e => alert('cant describe yet'))
+        dfield.value = thing ? thing.description || '' : 'to be described'
         // dfield.on('change',e => console.log({e}))
-        rename.showModal()
+        describe.showModal()
       }
     </script>
   </body>
