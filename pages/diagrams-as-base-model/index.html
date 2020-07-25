@@ -35,6 +35,10 @@
         margin-left: -1.5em;
       }
 
+      li {
+        cursor:pointer;
+      }
+
       svg {
         width:100%;
         height:100%;
@@ -53,8 +57,22 @@
         padding: 6px;
       }
 
+      div.buttons {
+        float:right;
+      }
+
       span.todo {
         color:red;
+      }
+
+      span.download {
+        color:red;
+        cursor:pointer;
+      }
+
+      span.erase {
+        cursor:pointer;
+        font-size:x-small;
       }
 
     </style>
@@ -69,11 +87,13 @@
     </table>
 
     <svg>
-      <image id="draw"  x="0" y="0" height="100%" width="100%" href="http://simnet.ward.asia.wiki.org/assets/pages/base-model/image.jpg"/>
-      <circle id="dot" cx=300 cy=300 r=5 style="fill: red;", visibility=hidden>
+      <image id="draw"  x="10" y="10" height="70%" width="90%" href="https://source.datanerd.us/pages/architecture/otm/data/Architecture/SIGSALY Key Store.png"/>
+      <circle id="dot" cx=300 cy=300 r=5 style="fill: red;", visibility=hidden />
+      <rect id="irect" x=100 y=100 width=200 height=200 fill=none stroke=green stroke-dasharray="10"/>
+      <rect id="srect" x=110 y=110 width=200 height=200 fill=none stroke=red stroke-dasharray="5"/>
     </svg>
 
-    <img id=test src="http://simnet.ward.asia.wiki.org/assets/pages/base-model/image.jpg" height=5px>
+    <img id=test src="https://source.datanerd.us/pages/architecture/otm/data/Architecture/SIGSALY Key Store.png" height=5px>
 
     <!--
       https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
@@ -81,21 +101,24 @@
     -->
 
     <dialog id="describe">
-      <form oninput="console.log">
+      <form method="dialog">
         <p><label>thing<br>
-          <input type="text" id="tfield" name="thing" >
+          <input type="text" id="tfield" name="thing" autocomplete=off >
         </label></p>
         <p><label>description<br>
           <textarea id="dfield" name="description" rows=8></textarea>
         </label></p>
-        <!-- <p><button>save</button></p> -->
+        <div class="buttons">
+          <button value="cancel">cancel</button>
+          <button value="save">save</button>
+        </div>
       </form>
     </dialog>
 
     <dialog id="finder">
-      <form >
+      <form method="dialog">
         <p><label id=flab>find diagrams<br>
-          <input type="text" id="ffield" name="find" >
+          <input type="text" id="ffield" name="find" autocomplete=off >
         </label></p>
         <p><label>search results<br>
           <textarea id="sfield" rows=8></textarea>
@@ -106,19 +129,39 @@
 
     <script>
 
-      let index = {}
-      let specific = {}
-      let updates = {}
+      let index = {}      // index.json
+      let specific = {}   // team/diagram.json
+      let updates = {}    // "[team,diagram]" => revised team/diagram.json
+
       let selection = {team:null, diagram:null, thing:null}
+      let welcome = draw.getAttribute('href')
 
       let db = location.href.replace('/index.html','')
-      if (db.startsWith('file')) db = 'http://simnet.ward.asia.wiki.org/assets/pages/diagrams-as-base-model'
+      if (db.startsWith('file')) db = 'https://source.datanerd.us/pages/architecture/otm/'
       index = fetch(`${db}/index.json`).then(res => res.json()).then(json => {index = json; refresh('team')})
 
       ibox = {width: 0, height: 0}
       sbox = {x: 0, y:0, width: 0, height:0}
 
+      function boxes () {
+        let bb = draw.getBoundingClientRect()
+        sbox = {x:bb.x, y:bb.y, height:bb.height, width:bb.width}
+        ibox = {width:test.naturalWidth, height:test.naturalHeight}
+        srect.setAttribute('x',sbox.x)
+        srect.setAttribute('y',sbox.y)
+        srect.setAttribute('width',sbox.width)
+        srect.setAttribute('height',sbox.height)
+        let nw = image2screen([0,0])
+        let se = image2screen([ibox.width, ibox.height])
+        irect.setAttribute('x',nw[0])
+        irect.setAttribute('y',nw[1])
+        irect.setAttribute('width',se[0])
+        irect.setAttribute('height',se[1])
+        console.log({sbox, ibox})
+      }
+
       function screen2image (xy) {
+        boxes()
         let x = (xy[0] - sbox.x) * ibox.width / sbox.width
         let y = (xy[1] - sbox.y) * ibox.height / sbox.height
         return [x,y]
@@ -131,12 +174,10 @@
       }
 
       function resize () {
-        let bb = draw.getBoundingClientRect()
-        sbox = {x:bb.x, y:bb.y, height:bb.height, width:bb.width}
-        console.log('resize',sbox)
         if (selection.team && selection.diagram && selection.thing) {
           let thing = specific.things[selection.thing]
           if (thing.dot) {
+            boxes()
             let screen = image2screen(thing.dot)
             dot.setAttribute('cx',screen[0])
             dot.setAttribute('cy',screen[1])
@@ -151,14 +192,61 @@
         dot.setAttribute('visibility','visible')
       }
 
-      function download(obj, name){
-        var data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(obj));
-        var anchor = document.createElement('a');
-        anchor.setAttribute("href",     data);
-        anchor.setAttribute("download", name + ".json");
-        document.body.appendChild(anchor); // required for firefox
-        anchor.click();
-        anchor.remove();
+      async function specifically(team, diagram) {
+        let key = JSON.stringify([team,diagram])
+        if (updates[key]) return updates[key]
+        if (window.localStorage.getItem(key)) return JSON.parse(window.localStorage.getItem(key))
+        let meta = index.data[selection.team][selection.diagram]
+        return await fetch(`${db}/data/${team}/${diagram}.json`)
+          .then(res => {return res.ok? res.json() : mkspecific(meta.things || [])})
+      }
+
+      function specified(team, diagram) {
+        let key = JSON.stringify([team,diagram])
+        let val = JSON.stringify(specific)
+        window.localStorage.setItem(key,val)
+        updates[key] = JSON.parse(val)
+      }
+
+      const clean = text => text.replace('⇩','').replace('🅇','').replace(/<span.*/,'').trim()
+
+      function modified(team, list) {
+        return list.map(diagram => {
+          let key = JSON.stringify([team,diagram])
+          if (updates[key]) {
+            return `${diagram} <span class=download onclick="download('${diagram}')">⇩</span>`
+          } else if (window.localStorage.getItem(key)) {
+            return `${diagram} <span class=erase style="font-size:small" onclick="erase('${diagram}')">🅇</span>`
+          } else {
+            return diagram
+          }
+        })
+      }
+
+      function download(diagram){
+        let key = JSON.stringify([selection.team, diagram])
+        let string = JSON.stringify(updates[key],null,2)
+        let file = `${diagram}.json`
+        emit(string,file)
+        delete updates[key]
+        refreshall()
+        // event.stopPropagation()
+
+        function emit(string, file) {
+          var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+          var anchor = document.createElement('a');
+          anchor.setAttribute("href",     data);
+          anchor.setAttribute("download", file);
+          document.body.appendChild(anchor); // required for firefox
+          anchor.click();
+          anchor.remove();
+        }
+      }
+
+      function erase(diagram) {
+        let key = JSON.stringify([selection.team, diagram])
+        window.localStorage.removeItem(key)
+        refreshall()
       }
 
       function mkspecific(things) {
@@ -169,10 +257,16 @@
         return meta
       }
 
+      function refreshall() {
+        refresh('team')
+        refresh('diagram')
+        refresh('thing')
+        refresh('description')
+      }
+
       function refresh(panel) {
         const td = panel => document.querySelector(`div[data=${panel}]`)
-        const li = list => (list||[]).map(t => `<li class="${t==selection[panel] ? 'dot' : ''}">${t}`).join('')
-        // console.log(td(panel))
+        const li = list => (list||[]).map(t => `<li class="${clean(t)==selection[panel] ? 'dot' : ''}">${t}`).join('')
         let selected = index.data
         switch (panel) {
           case 'team':
@@ -183,7 +277,7 @@
             break
           case 'diagram':
             selected = index.data[selection.team]
-            td(panel).innerHTML = li(Object.keys(selected))
+            td(panel).innerHTML = li(modified(selection.team, Object.keys(selected)))
             td('thing').innerHTML = ''
             td('description').innerHTML = ''
             break
@@ -194,12 +288,11 @@
             break
           case 'description':
             selected = specific.things[selection.thing]
-            console.log({selected})
-            if (selected.dot) {
+            if (selected && selected.dot) {
               let screen = image2screen(selected.dot)
               showdot(screen)
               if (selected.description) {
-                td(panel).innerHTML = selected.description
+                td(panel).innerHTML = markup(selected.description)
               } else {
                 td(panel).innerHTML = `<span class=todo>Click the dot to DESCRIBE this thing.</span>`
               }
@@ -213,28 +306,44 @@
         }
       }
 
+      function markup(text) {
+        return text
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/(https:\/\/source.datanerd.us.*?)(\s|$)/g, '<a href="$1" target="_blank">GHE</a>$2')
+          .replace(/(https:\/\/el-dorado.datanerd.us.*?)(\s|$)/g, '<a href="$1" target="_blank">El Dorado</a>$2')
+          .replace(/(https:\/\/(staging-)?one.newrelic.com.*?)(\s|$)/g, '<a href="$1" target="_blank">NR1</a>$2')
+          .replace(/(https:\/\/nerdlife.datanerd.us*?)(\s|$)/g, '<a href="$1" target="_blank">NerdLife</a>$2')
+          .replace(/(https:\/\/pages.datanerd.us.*?)(\s|$)/g, '<a href="$1" target="_blank">pages</a>$2')
+          .replace(/\n/g, '<br>')
+      }
+
       metadata.onclick = async (e) => {
+        if(e.target.tagName == 'SPAN') return // download button
         if(e.target.tagName == 'TH') return search(e.target.innerText)
-        let panel = e.path[1].getAttribute('data')
-        let item = e.target.innerText.trim()
+        let panel = e.target.parentElement.getAttribute('data')
+        let item = clean(e.target.innerText)
         selection[panel] = item
         refresh(panel)
         switch (panel) {
           case 'team':
+            selection.diagram = selection.thing = null
+            draw.setAttribute('href',welcome)
             refresh('diagram')
             break
           case 'diagram':
+            selection.thing = null
             let meta = index.data[selection.team][item]
             let ext = meta.extension || 'svg'
             let href=`${db}/data/${selection.team}/${item}.${ext}`
             draw.setAttribute('href', href)
             test.setAttribute('src', href)
             dot.setAttribute('visibility','hidden')
-            specific = await fetch(`${db}/data/${selection.team}/${item}.json`)
-              .then(res => {return res.ok? res.json() : mkspecific(meta.things || [])})
+            specific = await specifically(selection.team, item)
             refresh('thing')
             break
           case 'thing':
+            boxes()
             refresh('description')
             break
           default:
@@ -243,10 +352,34 @@
       }
 
       function search(panel) {
-        console.log({panel})
+        ffield.data = panel
         ffield.placeholder = `${panel} ${panel == 'description' ? 'words' : 'name'}`
+        ffield.value = ''
+        sfield.innerHTML = ''
         finder.showModal()
       }
+
+      ffield.addEventListener('keyup', e=> {
+        let panel = ffield.data
+        let want = e.target.value.toLowerCase()
+        let found = []
+        for (let team of Object.keys(index.data)) {
+          if (panel == 'team') {
+            if (team.toLowerCase().includes(want)) found.push({team, key:team})
+          } else {
+            for (let diagram of Object.keys(index.data[team])) {
+              if (panel == 'diagram') {
+                if (diagram.toLowerCase().includes(want)) found.push({team, diagram, key:`${diagram} (${team})`})
+              } else {
+                for (let thing of index.data[team][diagram].things) {
+                  if (thing.toLowerCase().includes(want)) found.push({team, diagram, thing, key:`${thing} (${diagram})`})
+                }
+              }
+            }
+          }
+        }
+        sfield.innerHTML = found.map(s => s.key).join("\n")
+      })
 
     // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent
     // https://stackoverflow.com/questions/29261304/how-to-get-the-click-coordinates-relative-to-svg-element-holding-the-onclick-lis
@@ -257,29 +390,44 @@
         dot.setAttribute('cx',x)
         dot.setAttribute('cy',y)
         dot.setAttribute('visibility','visible')
-        console.log('p1', [x,y], e)
-        let bb = draw.getBoundingClientRect()
-        sbox = {x:bb.x, y:bb.y, height:bb.height, width:bb.width}
-        ibox = {width:test.naturalWidth, height:test.naturalHeight}
-
-        console.log({sbox, ibox})
-
+        boxes()
         if (selection.team && selection.diagram && selection.thing) {
           let thing = specific.things[selection.thing]
           thing.dot = screen2image([x, y])
-          console.log({thing})
-          refresh('description')
+          specified(selection.team, selection.diagram)
+          refreshall()
         }
       }
 
       dot.onclick = (e) => {
         let thing = specific.things[selection.thing]
-        tfield.value = selection.thing || 'unknown'
-        // tfield.on('change',e => alert('cant describe yet'))
-        dfield.value = thing ? thing.description || '' : 'to be described'
-        // dfield.on('change',e => console.log({e}))
+        tfield.value = selection.thing || ''
+        dfield.value = thing ? thing.description || '' : ''
+        dfield.placeholder = 'describe this thing'
+        if (!selection.thing) {
+          tfield.placeholder = 'name new thing'
+          dfield.placeholder = 'describe new thing'
+        }
         describe.showModal()
       }
+
+      describe.addEventListener('close',e => {
+        let button = e.target.returnValue
+        if (button == 'save') {
+          let thing = specific.things[selection.thing]
+          if (!thing) {
+            selection.thing = tfield.value
+            let xy = [dot.getAttribute('cx'), dot.getAttribute('cy')]
+            specific.things[selection.thing] = thing = {type: "any", dot:screen2image(xy)}
+            index.data[selection.team][selection.diagram].things.push(selection.thing)
+          }
+          thing.description = dfield.value
+          specified(selection.team, selection.diagram)
+          refreshall()
+        }
+
+      })
+
     </script>
   </body>
 </html>
