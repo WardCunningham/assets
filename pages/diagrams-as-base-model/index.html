@@ -298,7 +298,9 @@
               }
             } else {
               dot.setAttribute('visibility','hidden')
-              td(panel).innerHTML = `<span class=todo>Click the diagram to LOCATE this thing.</span>`
+              if (selected) {
+                td(panel).innerHTML = `<span class=todo>Click the diagram to LOCATE this thing.</span>`
+              }
             }
             break
           default:
