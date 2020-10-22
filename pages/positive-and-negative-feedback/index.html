@@ -1,0 +1,24 @@
+<svg width=100% viewBox="0 0 400 400">
+  <circle id=dot r=15></circle>
+  <circle r=5 cx=200 cy=200></circle>
+</svg>
+
+<style>
+  circle {
+    fill: bisque;
+    stroke: black;
+    stroke-width: 1;
+  }
+</style>
+
+<script>
+  let x = 100
+  let y = 100
+  let g = 0.02
+  setInterval(()=>{
+    y += x * g
+    x -= y * g
+    dot.setAttribute('cx',x+200)
+    dot.setAttribute('cy',y+200)
+  },15)
+</script>
