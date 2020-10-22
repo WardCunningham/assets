@@ -1,0 +1,88 @@
+<canvas width=380 height=380></canvas><br>
+<script type="module">
+import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r119/build/three.module.js';
+import * as oc from 'https://threejsfundamentals.org/threejs/resources/threejs/r119/examples/jsm/controls/OrbitControls.js';
+
+function main() {
+  const canvas = document.querySelector('canvas');
+  const antialias = true
+  const renderer = new THREE.WebGLRenderer({canvas,antialias});
+  const background = 0xeeeeee
+  renderer.setClearColor(0x333333);
+
+  const fov = 60;
+  const aspect = 1;
+  const near = 0.1;
+  const far = 100;
+  const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+  camera.position.z = 4;
+
+  const scene = new THREE.Scene();
+  // scene.fog = new THREE.FogExp2(background, .3)
+
+  {
+    const color = 0xFFFFFF;
+    const intensity = 1;
+    const light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(-1, 2, 4);
+    scene.add(light);
+  }
+
+  function ball(color) {
+    const radius = 1
+    const detail = 0
+    const geometry = new THREE.IcosahedronBufferGeometry(radius,detail);
+    const material = new THREE.MeshPhongMaterial({color});
+    return new THREE.Mesh(geometry, material);
+  }
+
+  function string(color,points) {
+    let material = new THREE.LineBasicMaterial( {color} )
+    let geometry = new THREE.BufferGeometry().setFromPoints(points)
+    return new THREE.Line( geometry, material )
+  }
+
+  function smaller(mesh) {
+    mesh.scale.set(.45, .45, .45)
+    mesh.position.x = 2    
+  }
+
+  let a = ball('yellow')
+  let b = ball('green'); smaller(b)
+  let c = ball('white'); smaller(c)
+  let d = ball('orange'); smaller(d)
+
+  let points = []
+  let line = string('orange',points)
+
+  scene.add(line)
+  scene.add(a)
+  a.add(b)
+  b.add(c)
+  c.add(d)
+
+
+  let orbit = new oc.OrbitControls(camera, renderer.domElement);
+
+  function render(time) {
+    time *= 0.001
+    a.rotation.z = time
+    b.rotation.z = time*2
+    c.rotation.z = time*3
+
+    let pos = new THREE.Vector3()
+    d.localToWorld(pos)
+    if (points.length > 100) points.shift()
+    points.push(pos)
+    line.geometry.setFromPoints(points)
+
+    orbit.update()
+    renderer.render(scene, camera);
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+
+}
+
+main();
+</script>
