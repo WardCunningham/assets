@@ -70,10 +70,8 @@ function main() {
     b.rotation.z = time*2
     c.rotation.z = time*3
 
-    let pos = new THREE.Vector3()
-    d.localToWorld(pos)
     if (points.length > 100) points.shift()
-    points.push(pos)
+    points.push(d.localToWorld(new THREE.Vector3()))
     line.geometry.setFromPoints(points)
 
     orbit.update()

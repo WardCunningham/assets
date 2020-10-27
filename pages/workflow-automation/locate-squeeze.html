@@ -1,0 +1,116 @@
+<html>
+  <body>
+    <style>
+      #zone {
+        width: 400px;
+        background-color: #eee;
+        text-align: center;
+        padding: 16px;
+      }
+      img {
+        width: 100%;
+      }
+      .warn {
+        color: red;
+      }
+    </style>
+    <div id="zone" ondrop="drop(event)" ondragover="over(event);">
+        <p>drop to<br>locate &<br>squeeze</p>
+    </div>
+    <script>
+
+// https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/File_drag_and_drop
+// https://github.com/fedwiki/wiki-client/blob/master/lib/factory.coffee
+
+      function over(event) {
+        event.preventDefault();
+      }
+      
+      function drop(event) {
+        event.preventDefault();
+        console.log(event)
+
+        if (event.dataTransfer.items && false) {
+          // Use DataTransferItemList interface to access the file(s)
+          for (var i = 0; i < event.dataTransfer.items.length; i++) {
+            // If dropped items aren't files, reject them
+            if (event.dataTransfer.items[i].kind === 'file') {
+              var file = event.dataTransfer.items[i].getAsFile();
+              upload(file);
+            }
+          }
+        } else {
+          // Use DataTransfer interface to access the file(s)
+          for (var i = 0; i < event.dataTransfer.files.length; i++) {
+            upload(event.dataTransfer.files[i]);
+          }
+        }
+
+        function upload(file) {
+          zone.innerHTML += `<p>${file.name}</p>`
+          let [majorType, minorType] = file.type.split("/")
+          if (majorType != "image") {
+            zone.innerHTML += `<p class=warn>can't handle type "${majorType}", expected "image"</p>`
+            return
+          }
+          let reader = new FileReader()
+          reader.onload = (loadEvent) => {
+            console.log('onload',loadEvent)
+            zone.innerHTML += `<p><img src="${loadEvent.target.result}"></p>`
+            resizeImage(loadEvent.target.result)
+              .then ((resizedImageURL) =>
+                zone.innerHTML += `<p><img src="${resizedImageURL}"></p>`)
+          }
+          reader.readAsDataURL(file)
+        }
+
+        function resizeImage (dataURL) {
+          const src = new Image;
+          let cW = undefined;
+          let cH = undefined;
+          // target size
+          const tW = 1024;
+          const tH = 768;
+          // image quality
+          const imageQuality = 0.5;
+
+          const smallEnough = img => (img.width <= tW) || (img.height <= tH);
+
+          return new Promise(function(resolve) {
+            src.src = dataURL;
+            return src.onload = () => resolve();}).then(function() {
+            cW = src.naturalWidth;
+            return cH = src.naturalHeight;}).then(function() {
+            // determine size for first squeeze
+            if (smallEnough(src)) { return; }
+
+            const oversize = Math.max(1, Math.min(cW/tW, cH/tH));
+            const iterations = Math.floor(Math.log2(oversize));
+            const prescale = oversize / Math.pow(2, iterations);
+
+            cW = Math.round(cW / prescale);
+            return cH = Math.round(cH / prescale);}).then(() => new Promise(function(resolve) {
+            const tmp = new Image;
+            tmp.src = src.src;
+            return tmp.onload = function() {
+              if (smallEnough(tmp)) {
+                return resolve(dataURL);
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = cW;
+              canvas.height = cH;
+              const context = canvas.getContext('2d');
+              context.drawImage(tmp, 0, 0, cW, cH);
+              dataURL = canvas.toDataURL('image/jpeg', imageQuality);
+              cW /= 2;
+              cH /= 2;
+              return tmp.src = dataURL;
+            };
+          })).then(() => dataURL);
+        };
+
+      }
+      
+    </script>
+  </body>
+</html>
