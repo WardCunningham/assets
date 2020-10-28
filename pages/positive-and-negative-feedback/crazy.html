@@ -3,6 +3,12 @@
 import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r119/build/three.module.js';
 import * as oc from 'https://threejsfundamentals.org/threejs/resources/threejs/r119/examples/jsm/controls/OrbitControls.js';
 
+function string(color,points) {
+  let material = new THREE.LineBasicMaterial( {color} )
+  let geometry = new THREE.BufferGeometry().setFromPoints(points)
+  return new THREE.Line( geometry, material )
+}
+
 function main() {
   const canvas = document.querySelector('#c');
   const antialias = true
@@ -36,6 +42,10 @@ function main() {
   const dot = new THREE.Mesh(geometry, material);
   scene.add(dot);
 
+  let points = []
+  let line = string('black',points)
+  scene.add(line)
+
   let p = [1, .04, .04]
   let v = [0, .01, .01]
   let a = [0, 0, 0]
@@ -67,6 +77,11 @@ function main() {
     dot.position.x = p[0]
     dot.position.y = p[1]
     dot.position.z = p[2]
+
+    if (points.length > 200) points.shift()
+    points.push(dot.localToWorld(new THREE.Vector3()))
+    line.geometry.setFromPoints(points)
+
 
     orbit.update()
     renderer.render(scene, camera);
