@@ -1,0 +1,77 @@
+<input id=search type=text size=50
+  placeholder="Enter Title Search then Return"
+  autocomplete="off"
+  onInput='get()'
+  onKeyPress='got()'>
+<p id=searchresult onClick=doit()></p>
+<script>
+
+const pageKey = window.frameElement.name;
+const itemId = () => Math.abs(Math.random()*1e20|0).toString(16)
+const split = (camelcase) => camelcase.replace(/([a-z])([A-Z])/g,"$1 $2")
+
+var names
+fetch('http://wiki.c2.com/names.txt')
+  .then(res => res.text())
+  .then(txt => names = txt.split(/\r?\n/))
+
+var found = []
+
+function get() {
+  var want = search.value
+  if (want.length > 1) {
+    found = names.filter(function (e) { return e.includes(want) })
+    if (found.length) {
+      return window.searchresult.innerHTML = found.slice(0,500).map(link => `<span>${split(link)}</span>`).join('<br>')
+    }
+  }
+  window.searchresult.innerHTML = ''
+}
+
+function got(e) {
+  if (!e) e = window.event;
+  if ((e.keyCode || e.which) == '13') {
+    show(page(`Search for ${search.value}`, found))
+    search.value = ''
+    window.searchresult.innerHTML = ''
+  }
+}
+
+function page(title, list) {
+  let text = list.map(link => `[[${split(link)}]]`).join("<br>\n")
+  let story = [
+    {type:'paragraph',text:`Search found ${found.length} pages.`, id:itemId()},
+    {type:'html', text, id:itemId() }
+  ]
+  let page = { title, story }
+  let item = JSON.parse(JSON.stringify(page))
+  let site = 'wiki.sfw.c2.com'
+  let date = Date.now()
+  page.journal = [
+    {type:'create', item, date},
+    {type:'fork', site, date}
+  ]
+  return page
+}
+
+function show(page) {
+  window.parent.postMessage({
+    action:"showResult",
+    page,
+    pageKey,
+    keepLineup: window.event.shiftKey
+  });  
+}
+
+function doit(event) {
+  let title = window.event.target.innerText
+  window.parent.postMessage({
+    action:"doInternalLink",
+    title,
+    pageKey,
+    keepLineup: window.event.shiftKey
+  });
+}
+
+
+</script>
