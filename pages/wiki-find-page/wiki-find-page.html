@@ -20,7 +20,10 @@ var found = []
 function get() {
   var want = search.value
   if (want.length > 1) {
-    found = names.filter(function (e) { return e.includes(want) })
+    found = names
+    for (word of want.toLowerCase().split(/ +/)) {
+      found = found.filter((link) => link.toLowerCase().includes(word))
+    }
     if (found.length) {
       return window.searchresult.innerHTML = found.slice(0,500).map(link => `<span>${split(link)}</span>`).join('<br>')
     }
