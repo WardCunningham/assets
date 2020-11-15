@@ -1,0 +1,101 @@
+<div id=show>Waiting</div>
+
+<script>
+
+// call: "N0PUI"
+// color: 0
+// distance: null
+// drift: 0
+// dt: 0.2
+// frequency: 1280
+// locator: "EN34"
+// mode: "FT8"
+// msg: "E72X N0PUI EN34"
+// power: 0
+// snr: -17
+// time: "2020-11-14T04:43:45Z"
+// tunedfrequency: 3573000
+// valid: true
+
+
+// L I S T E N
+
+const socket = new WebSocket('ws://localhost:4649/Spark')
+
+socket.addEventListener('open', function (event) {
+  socket.send('{"cmd":"subscribeToSpots","Enable":true}')
+})
+
+socket.addEventListener('message', (event) => {
+    let msg = JSON.parse(event.data)
+    tally(msg.spots)
+})
+
+
+// R E C O R D
+
+let log = {}
+let t0 = Date.now()
+
+function tally(spots) {
+  let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
+  let chan = log[band] = log[band] || {}
+  for (let spot of spots) {
+    let call = spot.call
+    if (!call || !call.match(/\d\w/)) continue
+    let op = chan[call] = chan[call] || {snr:[], avg:-30}
+    op.snr.push(spot.snr)
+    op.avg = avg(op.snr)
+    if(spot.distance) op.dst = Math.round(spot.distance)
+  }
+  let report = []
+  for (let b in log) {
+    let c = log[b]
+    let k = Object.keys(c)
+    k.sort((a,b)=>c[b].avg-c[a].avg)
+    report.push(`<h3 onclick="link(event)">${b}</h3>`)
+    for (let call of k) {
+      report.push(`${call}  (${c[call].avg} : ${c[call].dst||'?'}) ⇒  ${c[call].snr.join(' ')}<br>`)
+    }
+  }
+  show.innerHTML = report.join('')
+}
+
+function avg(list) {
+  let sum = list.reduce((s,e)=>s+e, 0)
+  return Math.round(100*sum/list.length)/100
+}
+
+
+// E X P O R T
+
+const id = () => Math.trunc(Math.random()*1000000000000).toString()
+const deepcopy = (obj) => JSON.parse(JSON.stringify(obj))
+const paragraph = (text) => ({type: "paragraph", text, id:id()})
+const data = (text, data) => ({type: "data", text, data, id:id()})
+
+function link(event) {
+  let band = event.target.innerText
+  if (!window || !window.frameElement) {
+    console.log('export unavailable for band', band)
+    return
+  }
+  let interval = ((Date.now() - t0) / 60000).toFixed(2)
+  window.parent.postMessage({
+    action: "showResult",
+    pageKey: window.frameElement.name,
+    keepLineup: event.shiftKey,
+    page: {
+      title: `Signals on ${band} MHz`,
+      story: [
+        paragraph(`These stations were recorded over an interval of ${interval} minutes. See [[Spark Decodes]]`),
+        data("Stations Strength and Distance",log[band]),
+        paragraph(`Stations in this dataset: ${Object.keys(log[band]).join(", ")}`),
+        paragraph('See [[About Scatter Plugin]]')
+      ]
+    }
+  })
+
+}
+
+</script>

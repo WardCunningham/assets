@@ -1,0 +1,54 @@
+<p id=show>Waiting<p>
+
+<script>
+
+// call: "N0PUI"
+// color: 0
+// distance: null
+// drift: 0
+// dt: 0.2
+// frequency: 1280
+// locator: "EN34"
+// mode: "FT8"
+// msg: "E72X N0PUI EN34"
+// power: 0
+// snr: -17
+// time: "2020-11-14T04:43:45Z"
+// tunedfrequency: 3573000
+// valid: true
+
+
+// sent: {"cmd":"subscribeToSpots","Enable":true
+
+const socket = new WebSocket('ws://localhost:4649/Spark')
+
+socket.addEventListener('open', function (event) {
+  socket.send('{"cmd":"subscribeToSpots","Enable":true}')
+})
+
+socket.addEventListener('message', (event) => {
+    let msg = JSON.parse(event.data)
+    tally(msg.spots)
+})
+
+let log = []
+let t0 = Date.now()
+
+function tally(spots) {
+  if(Date.now()-t0 > 5000) log.push('')
+  t0 = Date.now()
+
+  let report = spots.map(spot => prefix(spot.call)).sort().join(' ')
+  let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
+  log.push(`${band} ⇒ ${report}`)
+  show.innerHTML = log.join('<br>')
+}
+
+function prefix(call) {
+  let m = call.match(/\d*\w+\d/)
+  if (m) return m[0]
+  return call
+}
+
+
+</script>
