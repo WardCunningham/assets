@@ -36,6 +36,7 @@ socket.addEventListener('message', (event) => {
 // R E C O R D
 
 let data = []
+let last = {}
 
 function tally(spots) {
   let type = 'scatter'
@@ -47,9 +48,14 @@ function tally(spots) {
     trace = {name:band, type, x:[time], y:[count]}
     data.push(trace)
   } else {
+    if (Date.now() > last[band]+65000) {
+      trace.x.push(null)
+      trace.y.push(null)
+    }
     trace.x.push(time)
     trace.y.push(count)    
   }
+  last[band] = Date.now()
   // result.innerHTML = JSON.stringify(data, null, 2)
   result.innerHTML = `Updated ${time}`
   plot()
