@@ -36,26 +36,31 @@ socket.addEventListener('message', (event) => {
 // R E C O R D
 
 let data = []
-let last = {}
+let prev = {}
+let when = {}
 
 function tally(spots) {
   let type = 'scatter'
   let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
   let time = new Date()
   let count = spots.length
+  let avg = count
   let trace = data.find(trace => trace.name == band)
   if (trace == null) {
     trace = {name:band, type, x:[time], y:[count]}
     data.push(trace)
   } else {
-    if (Date.now() > last[band]+65000) {
+    if (Date.now() > when[band]+65000) {
       trace.x.push(null)
       trace.y.push(null)
+    } else {
+      avg = count + (prev[band]||0) / 2
     }
+    prev[band] = count
     trace.x.push(time)
-    trace.y.push(count)    
+    trace.y.push(avg)
   }
-  last[band] = Date.now()
+  when[band] = Date.now()
   // result.innerHTML = JSON.stringify(data, null, 2)
   result.innerHTML = `Updated ${time}`
   plot()
