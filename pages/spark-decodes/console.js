@@ -16,21 +16,14 @@
 // tunedfrequency: 3573000
 // valid: true
 
-import { delay } from 'https://deno.land/x/delay@v0.2.0/mod.ts';
-
 const socket = new WebSocket('ws://localhost:4649/Spark')
+const handle = (event) => console.log(`handle ${event.type} at ${new Date().toLocaleTimeString()}`)
 
 socket.addEventListener('open', (event) => {
-  console.log('open', event)
+  handle(event)
   socket.send('{"cmd":"subscribeToSpots","Enable":true}')
 })
 
-socket.addEventListener('message', (event) => {
-  let msg = JSON.parse(event.data)
-  console.table(msg.spots)
-})
-
-while(true) {
-  await delay(15000)
-  console.log('')
-}
+socket.addEventListener('message', handle)
+socket.addEventListener('error', handle)
+socket.addEventListener('close', handle)

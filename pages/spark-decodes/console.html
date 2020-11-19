@@ -43,4 +43,7 @@ socket.addEventListener('message', (event) => {
     console.table(msg.spots)
 })
 
+socket.addEventListener("error", (event) => console.log('ws error', event))
+socket.addEventListener("close", (event) => console.log('ws close', event))
+
 </script>
