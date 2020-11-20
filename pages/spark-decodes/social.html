@@ -1,0 +1,141 @@
+<head>
+    <meta charset="UTF-8">
+    <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
+    <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+</head>
+<body>
+  <div id="result">working</div><br>
+  <div id="chart"></div>
+
+<script>
+
+
+// P A R A M E T E R S
+
+function hashed(hash, arg) {
+    let op = arg.split(/=/)
+    if (op[1]) hash[op[0]] = op[1]
+    return hash
+}
+
+let query = window.location.href.split(/\?/)[1]||''
+let params = query.split(/&/).reduce(hashed,{})
+
+
+// L I S T E N
+
+const socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
+
+socket.addEventListener('open', (event) => {
+  socket.send('{"cmd":"subscribeToSpots","Enable":true}')
+})
+
+socket.addEventListener('message', (event) => {
+    let msg = JSON.parse(event.data)
+    tally(msg.spots)
+})
+
+
+// R E C O R D
+
+
+let log = {}
+
+var live = null   // if displaying band
+var more = null   // if new data to display
+
+function tally(spots) {
+  let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
+  let max = params['max']||80
+  while (log[band] && log[band].length > max) log[band].shift()
+  if(!Object.leys(log).length) result.innerHTML += '.'
+
+  for (let spot of spots) {
+    let m = spot.msg.match(/^(\d?[A-Z]+\d[A-Z]+) (\d?[A-Z]+\d[A-Z]+) R/)
+    if (m) {
+      let chan = log[band] = log[band] || []
+      let when = Date.now()
+      let from = m[2]
+      let to = m[1]
+      chan.push({when,from,to})
+      if (live && live == band) more = true
+    }
+  }
+  if (more) display(live)
+  result.innerHTML = Object.keys(log).map(choice).join('<br>')
+}
+
+
+// R E N D E R
+
+function choice(band) {
+  let chan = log[band]
+  let when = new Date(chan[0].when).toLocaleTimeString()
+  return `<span onclick="link('${band}')">${band} ⇒ ${chan.length} R's since ${when} ${band==live ? '✔︎' : ''}</span>`
+}
+
+function link(band) {
+  result.innerHTML = Object.keys(log).map(choice).join('<br>')
+  let chan = log[band]
+  let when = new Date(chan[0].when).toLocaleString()
+  let rels = chan.map(r => `"${r.from}" -> "${r.to}"`).join("\n")
+  let dot = `strict digraph {\nlayout=neato\nnode [style=filled fillcolor=bisque]\n${rels}}`
+  if (window.frameElement) {
+    open(band)
+  } else {
+    display(band)
+  }
+}
+
+function dot(band) {
+  let chan = log[band]
+  let rels = chan.map(r => `"${r.from}" -> "${r.to}"`).join("\n")
+  return`strict digraph {\nlayout=neato\nnode [style=filled fillcolor=bisque]\n${rels}}`
+}
+
+function display(band) {
+  live = band
+  more = null
+  dott = dot(band)
+  hpccWasm.graphviz.layout(dott, "svg", "dot").then(svg => {
+    chart.innerHTML = svg;
+  })
+}
+
+
+// E X P O R T
+
+const id = () => Math.trunc(Math.random()*1000000000000).toString()
+const deepcopy = (obj) => JSON.parse(JSON.stringify(obj))
+const paragraph = (text) => ({type: "paragraph", text, id:id()})
+const graphviz = (text) => ({type: "graphviz", text, id:id()})
+const create = (item) => ({type: "create", date: Date.now(), item: deepcopy(item)})
+const fork = (site) => ({type: "fork", site, date: Date.now()})
+
+function open(band) {
+  let chan = log[band]
+  let call = chan[0].from
+  let when = new Date(chan[0].when).toLocaleString()
+  let mins = ((Date.now() - chan[0].when)/60000).toFixed(1)
+  let page = {
+    title: `${call} on ${band} MHz`,
+    story: [
+      paragraph(`These acknowldgements were recorded over ${mins} minutes starting with ${call} at ${when}.`),
+      graphviz(dot),
+      paragraph(`See [[Spark Decodes]] for more scripts.`)
+    ]
+  }
+  // page.journal = [
+  //   create(page),
+  //   fork('calls.fed.wiki')
+  // ]
+  window.parent.postMessage({
+    action: "showResult",
+    pageKey: window.frameElement.name,
+    keepLineup: event.shiftKey,
+    page
+  })
+}
+
+</script>
+</body>
