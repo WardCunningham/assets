@@ -1,4 +1,7 @@
-<div id=show>Waiting</div>
+<div id=show>waiting</div>
+<style>
+  span {font-size:10px;}
+</style>
 
 <script>
 
@@ -31,7 +34,8 @@ let params = query.split(/&/).reduce(hashed,{})
 
 let color = ["0000ff","1300ff","2600ff","3900ff","4d00ff","6000ff","7300ff","8600ff","9900ff","ac00ff","bf00ff","d200ff","e500ff","f900ff","ff00f2","ff00df","ff00cc","ff00b9","ff00a6","ff0093","ff0080","ff006c","ff0059","ff0046","ff0033","ff0020","ff000d","ff0600","ff1a00","ff2d00","ff4000","ff5300","ff6600","ff7900","ff8c00","ff9f00","ffb300","ffc600","ffd900","ffec00","ffff00","ecff00","d9ff00","c6ff00","b2ff00","9fff00","8cff00","79ff00","66ff00","53ff00","40ff00"]
 
-const fmt = (snr) => params['fmt']=='color' ? `<font style="color:${color[snr+25]}">◼︎</font>` : snr
+const lim = (idx) => Math.max(0, Math.min(color.length-1, idx))
+const fmt = (snr) => params['fmt']=='color' ? `<font style="color:${color[lim(snr+25)]}">█</font>` : snr
 
 
 // L I S T E N

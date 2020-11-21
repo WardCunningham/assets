@@ -4,7 +4,7 @@
     <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
 </head>
 <body>
-  <div id="result">working</div><br>
+  <div id="result">waiting</div><br>
   <div id="chart"></div>
 
 <script>
@@ -48,7 +48,7 @@ function tally(spots) {
   let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
   let max = params['max']||80
   while (log[band] && log[band].length > max) log[band].shift()
-  if(!Object.leys(log).length) result.innerHTML += '.'
+  if(!Object.keys(log).length) result.innerHTML += '.'
 
   for (let spot of spots) {
     let m = spot.msg.match(/^(\d?[A-Z]+\d[A-Z]+) (\d?[A-Z]+\d[A-Z]+) R/)
@@ -75,7 +75,6 @@ function choice(band) {
 }
 
 function link(band) {
-  result.innerHTML = Object.keys(log).map(choice).join('<br>')
   let chan = log[band]
   let when = new Date(chan[0].when).toLocaleString()
   let rels = chan.map(r => `"${r.from}" -> "${r.to}"`).join("\n")
@@ -85,6 +84,7 @@ function link(band) {
   } else {
     display(band)
   }
+  result.innerHTML = Object.keys(log).map(choice).join('<br>')
 }
 
 function dot(band) {
