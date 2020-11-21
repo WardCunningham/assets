@@ -1,0 +1,94 @@
+
+<div id="result">waiting</div><br>
+
+<script>
+
+
+// P A R A M E T E R S
+
+function hashed(hash, arg) {
+    let op = arg.split(/=/)
+    if (op[1]) hash[op[0]] = op[1]
+    return hash
+}
+
+let query = window.location.href.split(/\?/)[1]||''
+let params = query.split(/&/).reduce(hashed,{})
+
+
+// L I S T E N
+
+const socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
+
+socket.addEventListener('open', (event) => {
+  result.innerText = 'connected'
+  socket.send('{"cmd":"subscribeToSpots","Enable":true}')
+})
+
+socket.addEventListener('message', (event) => {
+    let msg = JSON.parse(event.data)
+    tally(msg.spots)
+})
+
+
+// R E C O R D
+
+let broadcast = {}  // call => spot         // merged with exchange
+let exchange = {}   // call-call => [spots] // canonical keys
+function tally(spots) {
+  let m
+  for (let spot of spots) {
+    let msg = spot.msg
+    let list = null
+    if (m = msg.match(/^CQ (\w+ )?(\d?[A-Z]+\d[A-Z]+)\b/)) {
+      let call = m[2]
+      broadcast[call] = short(spot)
+    } else if (m = msg.match(/^(\d?[A-Z]+\d[A-Z]+) (\d?[A-Z]+\d[A-Z]+)\b/)) {
+      let called = m[1]
+      let calls = [called, m[2]].sort().join(' - ')
+      list  = exchange[calls] = exchange[calls] || cq(called)
+      list.push(short(spot))
+    }
+  }
+  activity()
+}
+
+function cq(call) {
+  return broadcast[call] ? [broadcast[call]] : []
+}
+
+function short(spot) {
+  delete spot.power
+  delete spot.drift
+  delete spot.mode
+  delete spot.tunedfrequency
+  delete spot.offsetFrequency
+  delete spot.color
+  delete spot.valid
+  return spot
+}
+
+
+// R E N D E R
+
+function activity() {
+  let all = Object.keys(exchange).map(prioritize)
+  all.sort((a,b) => b.mins - a.mins)
+  result.innerHTML = all.map(each => each.link).join('<br>')
+}
+
+function prioritize(calls) {
+  let list = exchange[calls]
+  let length = list.length
+  let last = list[length-1]
+  let mins = ((Date.now() - new Date(last.time).getTime())/60000).toFixed(1)
+  let info = last.msg.split(' ').reverse()[0]
+  let link = `<span onclick="link('${calls}')">${mins} ${calls} x${length} ${info} </span>`
+  return {calls, mins, link}
+}
+
+function link(calls) {
+  console.table(exchange[calls])
+}
+
+</script>
