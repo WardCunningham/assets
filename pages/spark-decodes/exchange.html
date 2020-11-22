@@ -138,11 +138,16 @@ function table(all) {
       count = 1
     }
     let color = spots[length-1].msg.match(/73$/) ? 'black' : 'gray'
-    row += `<td style="color:${color}">${spots.map(spot => spot.msg).join('<br>')}`
+    row += `<td style="color:${color}">${spots.map(offset).join('<br>')}`
     count += 1
   }
   rows.push(row)
   return `<table>${rows.join("\n")}</table>`
+}
+
+function offset(spot) {
+  let space = spot.time.match(/5Z$/) ? '&nbsp;&nbsp;' : ''
+  return space + spot.msg
 }
 
 
