@@ -30,7 +30,7 @@ let params = query.split(/&/).reduce(hashed,{})
 
 let minutes = params['minutes'] || 5
 let fmt = params['fmt'] || 'column'
-let search = new RegExp(params['search']||'K1JT')
+let search = (params['search']||'K1JT KF7O M0NNB').split(/ +/)
 
 
 // L I S T E N
@@ -146,18 +146,26 @@ function ascell(each) {
   let spots = exchange[each.calls]
   let length = spots.length
   let color = spots[length-1].msg.match(/73$/) ? 'black' : 'gray'
-  if (spots.map(spot => spot.msg).join(' ').match(search)) color = 'crimson'
-  return `<td style="color:${color}" onclick="find('${each.calls}')">${spots.map(offset).join('<br>')}`
+  return `<td style="color:${color}" onclick="find(event)">${spots.map(offset).join('<br>')}`
 }
 
 function offset(spot) {
   let space = spot.time.match(/5Z$/) ? '&nbsp;&nbsp;' : ''
-  return space + spot.msg
+  let words = spot.msg.split(/ +/).map(highlight).join(' ')
+  return space + words
 }
 
-function find(calls) {
-  let pattern = calls.split(' - ').map(call => `(${call})`).join('|')
-  search = new RegExp(`\\b${pattern}\\b`)
+function highlight(word) {
+  let color = search.includes(word) ? ' style="background-color:bisque;"' : ''
+  return `<span${color}>${word}</span>`
+}
+
+function find(event) {
+  if(event.target.nodeName == 'SPAN') {
+    search = [event.target.innerText]
+  } else {
+    search = []
+  }
   activity()
 }
 
