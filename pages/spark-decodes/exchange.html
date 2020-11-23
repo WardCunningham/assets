@@ -30,6 +30,7 @@ let params = query.split(/&/).reduce(hashed,{})
 
 let minutes = params['minutes'] || 5
 let fmt = params['fmt'] || 'column'
+let search = new RegExp(params['search']||'CN85')
 
 
 // L I S T E N
@@ -145,12 +146,19 @@ function ascell(each) {
   let spots = exchange[each.calls]
   let length = spots.length
   let color = spots[length-1].msg.match(/73$/) ? 'black' : 'gray'
-  return `<td style="color:${color}">${spots.map(offset).join('<br>')}`
+  if (spots.map(spot => spot.msg).join(' ').match(search)) color = 'crimson'
+  return `<td style="color:${color}" onclick="find('${each.calls}')">${spots.map(offset).join('<br>')}`
 }
 
 function offset(spot) {
   let space = spot.time.match(/5Z$/) ? '&nbsp;&nbsp;' : ''
   return space + spot.msg
+}
+
+function find(calls) {
+  let pattern = calls.split(' - ').map(call => `(${call})`).join('|')
+  search = new RegExp(`\\b${pattern}\\b`)
+  activity()
 }
 
 
