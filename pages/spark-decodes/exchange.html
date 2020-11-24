@@ -1,9 +1,11 @@
 
 <div id="result">waiting</div>
-<p><button onclick=save()>download</button></p>
+<p><button onclick=save()>download</button> <span id=info></span></p>
 <style>
-  table {
+  body {
     font-family: Arial, Helvetica, sans-serif;
+  }
+  table {
     border-collapse:collapse;
     width:100%;
   }
@@ -165,9 +167,17 @@ function highlight(word) {
   return `<span${color}>${word}</span>`
 }
 
-function find(event) {
+async function find(event) {
   if(event.target.nodeName == 'SPAN') {
-    search = [event.target.innerText]
+    let word = event.target.innerText
+    search = [word]
+    if(word.match(/^[AKNW][A-Z]?\d[A-Z]+$/)) {
+      let json = await fetch(`http:localhost:7890/${word}`).then(res => res.json())
+      info.innerHTML = `
+        | <a href="https://www.google.com/search?q=${word}" target=_blank>${word}</a>
+        | <a href="https://www.google.com/search?q=${json.op}" target=_blank>${json.op}</a>,
+        | <a href="https://www.google.com/maps/place/${json.address} ${json.qth} ${json.state}" target=_blank>${json.qth}, ${json.state}</a>`
+    }
   } else {
     search = []
   }
