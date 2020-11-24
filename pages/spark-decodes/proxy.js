@@ -1,4 +1,5 @@
 // proxy licence looup
+// usage: deno run --allow-net proxy.js
 // usage: http:localhost:7890/K9OX
 
 import { serve } from "https://deno.land/std/http/server.ts";  
@@ -21,6 +22,6 @@ for await (const request of server) {
     }
     request.respond({ status: 200, body, headers })
   } else {
-    request.respond({ status: 404, body: 'not found' })
+    request.respond({ status: 404, body: 'not found', headers })
   }
 }
