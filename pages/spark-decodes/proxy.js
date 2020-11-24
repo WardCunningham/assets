@@ -1,4 +1,4 @@
-// proxy licence looup
+// proxy license looup
 // usage: deno run --allow-net proxy.js
 // usage: http:localhost:7890/K9OX
 
