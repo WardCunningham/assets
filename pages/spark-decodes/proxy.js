@@ -1,5 +1,5 @@
 // proxy license lookup
-// usage: deno run --allow-net proxy.js
+// usage: deno run --allow-net http://ft8.ward.asia.wiki.org/assets/pages/spark-decodes/proxy.js
 // usage: http:localhost:7890/K9OX
 
 import { serve } from "https://deno.land/std/http/server.ts";  
