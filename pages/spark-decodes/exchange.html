@@ -108,11 +108,12 @@ function prioritize(calls) {
   let last = list[length-1]
   let first = list[0].msg.startsWith('CQ ') ? list[1] : list[0]
   let time = new Date(first.time).getTime()
+  let band = (Math.floor(first.frequency/100000)/10).toFixed(1)
   let called = first.msg.split(' ')[0]
   let mins = ((Date.now() - new Date(last.time).getTime())/60000).toFixed(1)
   let info = last.msg.split(' ').reverse()[0]
   let link = `<span onclick="link('${calls}')">${mins} ${calls} x${length} ${info} </span>`
-  return {calls, called, time, mins, link}
+  return {calls, called, time, band, mins, link, }
 }
 
 function link(calls) {
@@ -121,6 +122,7 @@ function link(calls) {
 
 function table(all) {
   const bycalled = (a,b) => a.called < b.called ? -1 : 1
+  const unique = (value, index, self) => self.indexOf(value) === index
   if (!all.length) return 'collecting'
   let slots = {}
   for (each of all) {
@@ -131,8 +133,11 @@ function table(all) {
   let times = Object.keys(slots).sort()
   let rows = []
   for (time of times) {
-    rows.push(`<tr><td bgcolor="#eee">${new Date(+time).toLocaleTimeString()}`)
     let slot = slots[time]
+    let bands = slot.map(each => each.band).filter(unique).sort()
+    let left = `<div style='float: left; text-align: left'>${new Date(+time).toLocaleTimeString()}</div>`
+    let right = `<div style='float: right; text-align: right'>${bands.join(', ')}</div>`
+    rows.push(`<tr><td bgcolor="#eee">${left}${right}`)
     slot.sort(bycalled)
     while (slot.length) {
       row = slot.splice(0,8)
