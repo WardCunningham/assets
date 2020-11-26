@@ -15,6 +15,113 @@
     padding:4px;
   }
 
+/* http://jsfiddle.net/8nnwytbL/ */
+
+[data-tooltip] {
+    display: inline-block;
+    position: relative;
+    cursor: help;
+    padding: 4px;
+}
+/* Tooltip styling */
+[data-tooltip]:before {
+    content: attr(data-tooltip);
+    display: none;
+    position: absolute;
+    background: #000;
+    color: #fff;
+    padding: 4px 8px;
+    font-size: 14px;
+    line-height: 1.4;
+    min-width: 100px;
+    text-align: center;
+    border-radius: 4px;
+}
+/* Dynamic horizontal centering */
+[data-tooltip-position="top"]:before,
+[data-tooltip-position="bottom"]:before {
+    left: 50%;
+    -ms-transform: translateX(-50%);
+    -moz-transform: translateX(-50%);
+    -webkit-transform: translateX(-50%);
+    transform: translateX(-50%);
+}
+/* Dynamic vertical centering */
+[data-tooltip-position="right"]:before,
+[data-tooltip-position="left"]:before {
+    top: 50%;
+    -ms-transform: translateY(-50%);
+    -moz-transform: translateY(-50%);
+    -webkit-transform: translateY(-50%);
+    transform: translateY(-50%);
+}
+[data-tooltip-position="top"]:before {
+    bottom: 100%;
+    margin-bottom: 6px;
+}
+[data-tooltip-position="right"]:before {
+    left: 100%;
+    margin-left: 6px;
+}
+[data-tooltip-position="bottom"]:before {
+    top: 100%;
+    margin-top: 6px;
+}
+[data-tooltip-position="left"]:before {
+    right: 100%;
+    margin-right: 6px;
+}
+
+/* Tooltip arrow styling/placement */
+[data-tooltip]:after {
+    content: '';
+    display: none;
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-color: transparent;
+    border-style: solid;
+}
+/* Dynamic horizontal centering for the tooltip */
+[data-tooltip-position="top"]:after,
+[data-tooltip-position="bottom"]:after {
+    left: 50%;
+    margin-left: -6px;
+}
+/* Dynamic vertical centering for the tooltip */
+[data-tooltip-position="right"]:after,
+[data-tooltip-position="left"]:after {
+    top: 50%;
+    margin-top: -6px;
+}
+[data-tooltip-position="top"]:after {
+    bottom: 100%;
+    border-width: 6px 6px 0;
+    border-top-color: #000;
+}
+[data-tooltip-position="right"]:after {
+    left: 100%;
+    border-width: 6px 6px 6px 0;
+    border-right-color: #000;
+}
+[data-tooltip-position="bottom"]:after {
+    top: 100%;
+    border-width: 0 6px 6px;
+    border-bottom-color: #000;
+}
+[data-tooltip-position="left"]:after {
+    right: 100%;
+    border-width: 6px 0 6px 6px;
+    border-left-color: #000;
+}
+/* Show the tooltip when hovering */
+[data-tooltip]:hover:before,
+[data-tooltip]:hover:after {
+    display: block;
+    z-index: 50;
+}
+
+
 </style>
 <script>
 
@@ -152,14 +259,19 @@ function table(all) {
 function ascell(each) {
   let spots = exchange[each.calls]
   let length = spots.length
-  let color = spots[length-1].msg.match(/73$/) ? 'black' : 'gray'
-  return `<td style="color:${color}" onclick="find(event)">${spots.map(offset).join('<br>')}`
+  let band = (Math.floor(spots[length-1].frequency/100000)/10).toFixed(1)
+  let tip = `data-tooltip="${band}" data-tooltip-position="top"`
+  let color = `style="color:${spots[length-1].msg.match(/73$/) ? 'black' : 'gray'}"`
+  let click = `onclick="find(event)"`
+  let cell = spots.map(offset).join('<br>')
+  return `<td ${color} ${click}><div ${tip}>${cell}</div>`
 }
 
 function offset(spot) {
+  let time = new Date(spot.time).toLocaleTimeString()
   let space = spot.time.match(/5Z$/) ? '&nbsp;&nbsp;' : ''
   let words = spot.msg.split(/ +/).map(highlight).join(' ')
-  return space + words
+  return `<span data-tooltip="${time}" data-tooltip-position="left">${space + words}</span>`
 }
 
 function highlight(word) {
@@ -176,7 +288,7 @@ async function find(event) {
       info.innerHTML = `
         | <a href="https://www.google.com/search?q=${word}" target=_blank>${word}</a>
         | <a href="https://www.google.com/search?q=${json.op}" target=_blank>${json.op}</a>,
-        | <a href="https://www.google.com/maps/place/${json.address} ${json.qth} ${json.state}" target=_blank>${json.qth}, ${json.state}</a>`
+        | <a href="https://www.google.com/maps/place/${json.address} ${json.qth} ${json.state} ${json.zip}" target=_blank>${json.qth}, ${json.state}</a>`
     }
   } else {
     search = []
