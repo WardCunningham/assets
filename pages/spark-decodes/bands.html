@@ -21,7 +21,7 @@ let params = query.split(/&/).reduce(hashed,{})
 
 // L I S T E N
 
-const socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
+let socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
 
 socket.addEventListener('open', (event) => {
   socket.send('{"cmd":"subscribeToSpots","Enable":true}')
