@@ -79,7 +79,7 @@ function link(band) {
   let when = new Date(chan[0].when).toLocaleString()
   let rels = chan.map(r => `"${r.from}" -> "${r.to}"`).join("\n")
   let dot = `strict digraph {\nlayout=neato\nnode [style=filled fillcolor=bisque]\n${rels}}`
-  if (window.frameElement) {
+  if (window && window.frameElement) {
     open(band)
   } else {
     display(band)
@@ -117,11 +117,12 @@ function open(band) {
   let call = chan[0].from
   let when = new Date(chan[0].when).toLocaleString()
   let mins = ((Date.now() - chan[0].when)/60000).toFixed(1)
+  let dott = dot(band)
   let page = {
     title: `${call} on ${band} MHz`,
     story: [
       paragraph(`These acknowldgements were recorded over ${mins} minutes starting with ${call} at ${when}.`),
-      graphviz(dot),
+      graphviz(dott),
       paragraph(`See [[Spark Decodes]] for more scripts.`)
     ]
   }
