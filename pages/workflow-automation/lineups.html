@@ -1,0 +1,56 @@
+<div id=result>working</div>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; }
+</style>
+
+<script>
+
+  const site = 'http://trails.ward.asia.wiki.org'
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+
+  let history = {}
+
+  main()
+
+  async function main() {
+    let slug = location.search || 'chronological-destinations'
+    let index = await fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
+    let work = []
+    for (item of index.story) {
+      if (item.type == 'pagefold')
+        console.log(item.text)
+      else if (item.type == 'paragraph') {
+        let m = item.text.match(/^\[\[(.+?)\]\](.*)$/)
+        if (m) {
+          let title = m[1]
+          let slug = asSlug(title)
+          work.push(trail(title, slug))
+        }
+      }
+    }
+    await Promise.all(work)
+    const chronological = (a,b) => new Date(a) < new Date(b) ? -1 : 1
+    let when = Object.keys(history).sort(chronological)
+    result.innerHTML = when.map(lineup).join('<br>')
+  }
+
+  async function trail(title, slug) {
+    let page = await fetch(`${site}/${slug}.json`).then(res => res.json())
+    let synopsis = page.story[0].text
+    let images = 0
+    for (item of page.story) {
+      if (item.type == 'html') {
+        images += 1
+      }
+    }
+    let date = page.story.find(item => item.text.length<30 && !isNaN(new Date(item.text))).text
+    let day = history[date] = history[date] || []
+    day.push({title, slug, synopsis, images})
+  }
+
+  function lineup(date) {
+    let trails = history[date]
+    return `${date}<ul>${trails.map(trail => `<li title="${trail.synopsis}">${trail.title}`).join("\n")}</ul>`
+  }
+
+</script>
