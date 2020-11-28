@@ -2,13 +2,12 @@
   <body>
     <style>
       #zone {
-        width: 400px;
+        width: 370px;
         background-color: #eee;
         text-align: center;
-        padding: 16px;
       }
       img {
-        width: 100%;
+        width: 360px;
       }
       .warn {
         color: red;
@@ -17,6 +16,8 @@
     <div id="zone" ondrop="drop(event)" ondragover="over(event);">
         <p>drop to<br>locate &<br>squeeze</p>
     </div>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+
     <script>
 
 // https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/File_drag_and_drop
@@ -45,24 +46,31 @@
             upload(event.dataTransfer.files[i]);
           }
         }
+      }
 
-        function upload(file) {
-          zone.innerHTML += `<p>${file.name}</p>`
-          let [majorType, minorType] = file.type.split("/")
-          if (majorType != "image") {
-            zone.innerHTML += `<p class=warn>can't handle type "${majorType}", expected "image"</p>`
-            return
-          }
-          let reader = new FileReader()
-          reader.onload = (loadEvent) => {
-            console.log('onload',loadEvent)
-            zone.innerHTML += `<p><img src="${loadEvent.target.result}"></p>`
-            resizeImage(loadEvent.target.result)
-              .then ((resizedImageURL) =>
-                zone.innerHTML += `<p><img src="${resizedImageURL}"></p>`)
-          }
-          reader.readAsDataURL(file)
+      function upload(file) {
+        zone.innerHTML += `<p>${file.name}</p>`
+        let [majorType, minorType] = file.type.split("/")
+        if (majorType != "image") {
+          zone.innerHTML += `<p class=warn>can't handle type "${majorType}", expected "image"</p>`
+          return
         }
+        let reader = new FileReader()
+        reader.onload = (loadEvent) => {
+          console.log('onload',loadEvent)
+          // zone.innerHTML += `<p><img src="${loadEvent.target.result}"></p>`
+          resizeImage(loadEvent.target.result)
+            .then ((resizedImageURL) => {
+              zone.innerHTML += `<p><img src="${resizedImageURL}"></p>`
+              // download(resizedImageURL,'test.jpg')
+              // https://stackoverflow.com/questions/14011021/how-to-download-a-base64-encoded-image
+              let a = document.createElement("a")
+              a.href = resizedImageURL
+              a.download = `${file.name.split('.')[0]}.jpg`
+              a.click()
+            })
+        }
+        reader.readAsDataURL(file)
 
         function resizeImage (dataURL) {
           const src = new Image;
@@ -72,7 +80,7 @@
           const tW = 1024;
           const tH = 768;
           // image quality
-          const imageQuality = 0.5;
+          const imageQuality = 0.8;
 
           const smallEnough = img => (img.width <= tW) || (img.height <= tH);
 
@@ -108,8 +116,62 @@
             };
           })).then(() => dataURL);
         };
-
       }
+
+
+    function locate(data, file) {
+      EXIF.getData(data, function() {
+        let make = EXIF.getTag(this, "Make");
+        let model = EXIF.getTag(this, "Model");
+        let date = EXIF.getTag(this, "DateTimeOriginal")
+        let lat = latlon([...(EXIF.getTag(this, "GPSLatitude")), (EXIF.getTag(this, "GPSLatitudeRef"))])
+        let lon = latlon([...(EXIF.getTag(this, "GPSLongitude")), (EXIF.getTag(this, "GPSLongitudeRef"))])
+        let map = `https://www.google.com/search?q=${lat},%20${lon}`
+        // report.innerText = JSON.stringify({make, model, date, lat, lon}, null, 2)
+        zone.innerHTML += `<a href="${map}" target=_blank>google map</a>`
+
+        let page = {title:"Historic Images Template",story:[]}
+        let template = {'historic-images-template':page}
+        page.story.push({type:'paragraph',text:"describe this trail",id:id()})
+        page.story.push({type:'html',text:`<img width=100% src=${pix.src}>`,id:id()})
+        page.story.push({type:'paragraph',text:daydate(date),id:id()})
+        page.story.push({type:'map',text:`${lat}, ${lon}\n[${map} google map]`,id:id()})
+        page.journal=[{type:'create',item:deepcopy(page),date:Date.now()},{type:'fork'}]
+        let json = JSON.stringify(template,null,2)
+        zone.innerText += `<pre>${json}</pre>`
+        // console.log(EXIF.getAllTags(this))
+        download(json,file)
+      })
+    }
+
+    const id = () => Math.trunc(Math.random()*1000000000000).toString()
+    const deepcopy = (obj) => JSON.parse(JSON.stringify(obj))
+
+    function daydate (exif) {
+      let str = exif.split(" ");
+      let iso = str[0].replace(/:/g, "-");
+      let date = new Date(iso + " " +str[1]);
+      let day = date.toLocaleString('en-us', {weekday:'long'})
+      let month = date.toLocaleString('en-us', {month:'long'})
+      return `${day}, ${month} ${date.getDate()}, ${date.getYear()+1900}`
+    }
+
+    function latlon (exif) {
+      // let max = 'NS'.includes(exif[3]) ? 90 : 180
+      let deg = exif[0] + exif[1]/60 + exif[2]/60/60
+      return 'NE'.includes(exif[3]) ? deg : -deg
+    }
+
+    function download(string, file) {
+      var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+      var anchor = document.createElement('a');
+      anchor.setAttribute("href",     data);
+      anchor.setAttribute("download", file);
+      document.body.appendChild(anchor); // required for firefox
+      anchor.click();
+      anchor.remove();
+    }
+
       
     </script>
   </body>
