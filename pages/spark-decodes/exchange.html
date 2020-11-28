@@ -197,6 +197,11 @@ function short(spot) {
 
 // R E N D E R
 
+let color = ["0000ff","1300ff","2600ff","3900ff","4d00ff","6000ff","7300ff","8600ff","9900ff","ac00ff","bf00ff","d200ff","e500ff","f900ff","ff00f2","ff00df","ff00cc","ff00b9","ff00a6","ff0093","ff0080","ff006c","ff0059","ff0046","ff0033","ff0020","ff000d","ff0600","ff1a00","ff2d00","ff4000","ff5300","ff6600","ff7900","ff8c00","ff9f00","ffb300","ffc600","ffd900","ffec00","ffff00","ecff00","d9ff00","c6ff00","b2ff00","9fff00","8cff00","79ff00","66ff00","53ff00","40ff00"]
+
+const lim = (idx) => Math.max(0, Math.min(color.length-1, idx))
+const snr = (snr) => `<font style="color:${color[lim(snr+25)]}">◼︎</font>` // █
+
 function activity() {
   let want = Date.now() - minutes*60000
   let all = Object.keys(exchange).map(prioritize).filter(each => each.time >= want)
@@ -271,7 +276,7 @@ function offset(spot) {
   let time = new Date(spot.time).toLocaleTimeString()
   let space = spot.time.match(/5Z$/) ? '&nbsp;&nbsp;' : ''
   let words = spot.msg.split(/ +/).map(highlight).join(' ')
-  return `<span data-tooltip="${time}" data-tooltip-position="left">${space + words}</span>`
+  return `${snr(spot.snr)}<span data-tooltip="${time}" data-tooltip-position="left">${space}${words}</span>`
 }
 
 function highlight(word) {
@@ -284,11 +289,13 @@ async function find(event) {
     let word = event.target.innerText
     search = [word]
     if(word.match(/^[AKNW][A-Z]?\d[A-Z]+$/)) {
+      let spots = Object.values(exchange).flat().filter(tx=>tx.call==word).sort((a,b)=>a.time<b.time?-1:1)
       let json = await fetch(`http:localhost:7890/${word}`).then(res => res.json())
       info.innerHTML = `
         | <a href="https://www.google.com/search?q=${word}" target=_blank>${word}</a>
         | <a href="https://www.google.com/search?q=${json.op}" target=_blank>${json.op}</a>,
-        | <a href="https://www.google.com/maps/place/${json.address} ${json.qth} ${json.state} ${json.zip}" target=_blank>${json.qth}, ${json.state}</a>`
+        | <a href="https://www.google.com/maps/place/${json.address} ${json.qth} ${json.state} ${json.zip}" target=_blank>${json.qth}, ${json.state}</a>
+        | ${spots.map(spot => snr(spot.snr)).join('')}`
     }
   } else {
     search = []
