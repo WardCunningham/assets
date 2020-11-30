@@ -16,7 +16,7 @@
     let slug = location.search || 'chronological-destinations'
     let index = await fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
     let work = []
-    for (item of index.story) {
+    for (let item of index.story) {
       if (item.type == 'pagefold')
         console.log(item.text)
       else if (item.type == 'paragraph') {
@@ -36,21 +36,78 @@
 
   async function trail(title, slug) {
     let page = await fetch(`${site}/${slug}.json`).then(res => res.json())
-    let synopsis = page.story[0].text
+    let story = page.story || []
+    let synopsis = story[0].text
     let images = 0
-    for (item of page.story) {
+    for (let item of story) {
       if (item.type == 'html') {
         images += 1
       }
     }
     let date = page.story.find(item => item.text.length<30 && !isNaN(new Date(item.text))).text
     let day = history[date] = history[date] || []
-    day.push({title, slug, synopsis, images})
+    day.push({title, slug, synopsis, story, images})
   }
 
   function lineup(date) {
     let trails = history[date]
-    return `${date}<ul>${trails.map(trail => `<li title="${trail.synopsis}">${trail.title}`).join("\n")}</ul>`
+    return `<span onclick="showall(event)">${date}</span> »<ul>${trails.map(trail => `<li title="${trail.synopsis}">${trail.title}`).join("\n")}</ul>`
   }
+
+  function showall(event) {
+    let date = event.target.innerText
+    let day = history[date]
+    console.table(day)
+    openpage(date,day)
+  }
+
+
+// E X P O R T
+
+const id = () => Math.trunc(Math.random()*1000000000000).toString()
+const deepcopy = (obj) => JSON.parse(JSON.stringify(obj))
+const paragraph = (text) => ({type: "paragraph", text, id:id()})
+const item = (fields) => Object.assign(fields, {id:id()})
+const create = (item) => ({type: "create", date: Date.now(), item: deepcopy(item)})
+const fork = (site) => ({type: "fork", site, date: Date.now()})
+
+function openpage(date, day) {
+  let title = `Wandering ${new Date(date).toDateString()}`
+  let story = [
+      ...day.map(d => paragraph(`${d.synopsis} See [[${d.title}]]`)),
+      item({type:'map',text:markers(day).join("\n")+`\n${date}`}),
+     ]
+  let page = { title, story }
+  // page.journal = [
+  //   create(page),
+  //   fork('calls.fed.wiki')
+  // ]
+  console.log(page)
+  if (window && window.frameElement) {
+    window.parent.postMessage({
+      action: "showResult",
+      pageKey: window.frameElement.name,
+      keepLineup: event.shiftKey,
+      page
+    })
+  }
+
+  function markers (pages) {
+    let markers = []
+    for (let page of pages) {
+      for (let item of page.story) {
+        if (item.type == 'map') {
+          for (let line of item.text.split(/\n+/)) {
+            if(line.match(/^[\+\-]?\d+(\.\d+)?,? *[\+\-]?\d+(\.\d+)?\b/)) {
+              markers.push(`${line} [[${page.title}]]`)
+            }
+          }
+        }
+      }
+    }
+    return markers
+  }
+
+}
 
 </script>
