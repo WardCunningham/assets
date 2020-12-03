@@ -89,15 +89,16 @@ function link(band) {
 
 function dot(band) {
   let chan = log[band]
+  let dx = call => call.match(/^[AKNW]/) ? '' : `"${call}" [fillcolor=lightgreen]\n`
+  let dxer = chan.map(r => dx(r.from)+dx(r.to)).join('')
   let rels = chan.map(r => `"${r.from}" -> "${r.to}"`).join("\n")
-  return`strict digraph {\nlayout=neato\nnode [style=filled fillcolor=bisque]\n${rels}}`
+  return`strict digraph {\nlayout=neato\nnode [style=filled fillcolor=bisque]\n${dxer}${rels}}`
 }
 
 function display(band) {
   live = band
   more = null
-  dott = dot(band)
-  hpccWasm.graphviz.layout(dott, "svg", "dot").then(svg => {
+  hpccWasm.graphviz.layout(dot(band), "svg", "dot").then(svg => {
     chart.innerHTML = svg;
   })
 }
