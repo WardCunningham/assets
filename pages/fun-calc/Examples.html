@@ -1,0 +1,175 @@
+<!-- From http://lambdaway.free.fr/lambdawalks/?view=meta6 -->
+
+<p>1. examples of (fun calc) code</p>
+<pre id=result></pre>
+
+<script type=module>
+
+import eval_ from './eval.js'
+
+let examples =
+`(+ 1 2) 
+
+(+ 1 (* 2 3) 4)
+
+(sqrt (+ (* 3 3) (* 4 4)))
+
+(* 1 2 3 4 5 6)
+
+(foo hello world)
+
+(+ hello world)
+
+(fun (:x) :x)
+
+((fun (:x) :x) hello)
+
+((fun (:x :y)
+   my name is :y, :x :y.
+ ) james bond)
+
+((fun (:a :b) (+ :a :b)) 1 2)
+
+((fun (:a :b) (+ :a :b)) 3 4)
+
+(def HI hello world)
+
+(HI)
+
+(def φ (/ (+ 1 (sqrt 5)) 2))
+
+(φ)
+
+(def add
+(fun (:a :b)
+    (+ :a :b)
+))
+
+(add 1 2)
+
+(add 3 4)
+
+(add 5)
+
+((add 5) 6)
+
+(add 1 2 3 4 5)
+
+(def area
+ (fun (:a :b :c)
+  ((fun (:a :b :c :s)
+        (sqrt (* :s (- :s :a) (- :s :b) (- :s :c)))
+   ) :a :b :c (/ (+ :a :b :c) 2) )))
+
+(area 3 4 5)
+
+(area 1 1 (sqrt 2))
+
+(def true (fun (:a :b) :a))
+
+(def false (fun (:a :b) :b))
+
+(def if (fun (:a :b :c) (:a :b :c)))
+
+(if true hello world)
+
+(if false hello world)
+
+(equal? hello hello)
+
+(equal? hello world)
+
+(def fac
+ (fun (:n)
+  ((if (equal? :n 0)
+   (fun (:n) 1)
+   (fun (:n) (* :n (fac (- :n 1))))) :n)))
+
+(fac 6)
+
+(fac 100)
+
+(def cons (fun (:a :b :c) (:c :a :b)))
+
+(def car (fun (:c) (:c (fun (:a :b) :a))))
+
+(def cdr (fun (:c) (:c (fun (:a :b) :b))))
+
+(def P (cons hello world))
+
+(P)
+
+(car (P))
+
+(cdr (P))
+
+(def L (cons hello
+       (cons brave 
+       (cons new
+       (cons world nil)))))
+
+(L)
+
+(def list.disp
+ (fun (:l)
+  ((if (equal? :l nil)
+   (fun (:l) )
+   (fun (:l) (car :l) (list.disp (cdr :l)))) :l)))
+
+(list.disp (L))
+
+(def serie
+ (fun (:a :b :s)
+  ((if (equal? :a :b)
+   (fun (:a :b :s) (cons :a nil))
+   (fun (:a :b :s) (cons :a (serie (+ :a :s) :b :s)))) :a :b :s)))
+
+(list.disp (serie 0 10 2))
+
+(* (list.disp (serie 1 10 1)))
+
+(def map
+ (fun (:f :s)
+  ((if (equal? :s nil)
+   (fun (:f :s) nil)
+   (fun (:f :s) (cons (:f (car :s)) (map :f (cdr :s))))) :f :s)))
+
+(list.disp (map (fun (:i) (* :i :i)) (serie 0 20 2)))
+
+(def hanoi
+ (fun (:n :from :to :via)
+  ((if (equal? :n 0)
+   (fun (:n :from :to :via) )
+   (fun (:n :from :to :via)
+    (hanoi (- :n 1) :from :via :to)
+      <br> move disk :n from tower :from to tower :to 
+    (hanoi (- :n 1) :via :to :from) ))
+   :n :from :to :via)))
+
+(hanoi 5 A B C)
+
+(def Y (fun (:f :x) (:f :f :x)))
+
+(def almost_fac
+ (fun (:f :n)
+  ((if (equal? :n 0)
+   (fun (:f :n) 1)
+   (fun (:f :n) (* :n (:f :f (- :n 1))))) :f :n)))
+
+(Y almost_fac 6)
+
+(Y almost_fac 100)`
+
+function tryit(example) {
+  try {
+    return eval_(example)
+  } catch (e) {
+    return e.message
+  }
+}
+
+for (let example of examples.split(/\n\n/)) {
+  result.innerText += `${example}\n-> ${tryit(example)}\n\n`
+}
+
+</script>
