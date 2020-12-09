@@ -1,0 +1,39 @@
+<ul id=list onclick="doit(event)"><li>2020-11-22.txt</ul>
+<script>
+
+let split = /^(\d+:\d+ [APM]{2})(David Bovill|Eric Dobbs|Marc Pierson|Michael Mehaffy|Olaf Brugman|Pete Forsyth|Peter Dimitrios|Unknown Sender|You)(.*)$/
+
+async function doit (event) {
+  let title = event.target.innerText
+  let url = `http://ward.dojo.fed.wiki/assets/pages/hangout-transcripts/${title}`
+  let text = await fetch(url).then(res => res.text())
+  let story = text.split(/\r?\n/).map(line => paragraph(line))
+  let page = {title, story}
+  show(page,event)
+}
+
+function paragraph (line) {
+  let type = 'paragraph'
+  let id = Math.floor(Math.random()*10000000000000).toString()
+  let m = line.match(split)
+  if (m) {
+    let [match, time, who, text] = m
+    text = text.replace(/(https?:\/\/[^ ]+)/g,'[$1 link]')
+    return {type, text, time, who, id}
+  } else {
+    return {type:'code', text:line, id}
+  }
+}
+
+function show (page, event) {
+  if (window && window.frameElement) {
+    window.parent.postMessage({
+      action: "showResult",
+      pageKey: window.frameElement.name,
+      keepLineup: event.shiftKey,
+      page
+    })
+  }
+}
+
+</script>

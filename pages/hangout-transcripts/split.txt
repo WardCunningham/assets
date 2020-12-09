@@ -1,0 +1,43 @@
+9:06 AM 	Olaf Brugman 	hello all
+9:06 AM 	Eric Dobbs 	https://en.wikipedia.org/wiki/Port_Orchard_Independent
+9:20 AM 	Unknown Sender 	I see Lane is here, welcome!
+9:23 AM 	Unknown Sender 	I'm struggling with a technical difficulty ...others are showing other tings
+9:24 AM 	You 	Hi Lane, Welcome.
+9:24 AM 	Eric Dobbs 	WElcome back Pete. We can hear you now.
+9:26 AM 	Marc Pierson 	Why is this not in the list: https://en.wikipedia.org/wiki/The_Bellingham_Herald
+9:36 AM 	Pete Forsyth 	https://en.wikipedia.org/wiki/Wikipedia:News_On_Wiki
+9:38 AM 	Pete Forsyth 	"New Editions" book about Pacific NW newspapers, on archive.org:
+9:42 AM 	Pete Forsyth 	https://archive.org/details/neweditionsnorth0000bagw
+9:42 AM 	Eric Dobbs 	Do you happen to have any collaborators from University of Colorado? Here's an org chart of CU's Office of Data Analytics which has done a lot of work with VIVO and other open data things.  https://www.colorado.edu/oda/sites/default/files/attached-files/oda_officialorgchart.pdf
+9:51 AM 	Eric Dobbs 	Alex Viggio, Director of Engineering is a former coworker & organizer of Agile Denver (and XP Denver before that). Don Elsborg is a neighbor.
+9:52 AM 	Lane Rasberry 	no, we do not have collaborators, but we have put data from our VIVO instance and other sources into Wikidata
+9:53 AM 	Lane Rasberry 	with Pete I do newspapers, with my university I mostly do open citation metadata for academic publications, so VIVO and similar are key
+9:54 AM 	You 	Hello Sherry
+9:55 AM 	David Bovill 	Lane - send us a contact. I work with the intersection of science and wiki  - so it would be great to drill down in a bit more detail?
+10:11 AM 	Lane Rasberry 	rasberry@virginia.edu, https://datascience.virginia.edu/
+10:12 AM 	David Bovill 	From memory is Virginia the home of Zotero?
+10:12 AM 	Lane Rasberry 	not aware of a Zotero connection, Wikipedia says George Mason University presents it
+10:13 AM 	Lane Rasberry 	here is our main project, profiling academic articles - https://scholia.toolforge.org/topic/Q84263196
+10:14 AM 	David Bovill 	Have you been to Newspeak House? Feel like we've met before...
+10:15 AM 	Marc Pierson 	https://vimeo.com/481020824
+10:18 AM 	Marc Pierson 	Recent interview with Thompson on his current work.
+10:18 AM 	Peter Dimitrios 	FYA on QA / Defect Analysis, I used to work with IBM Research on Orthogonal Defect Classification (ODC) ( https://en.wikipedia.org/wiki/Orthogonal_Defect_Classification )
+10:29 AM 	Lane Rasberry 	rasberry@virginia.edu, if anyone wants to talk a bit of Wikidata
+10:31 AM 	Lane Rasberry 	🦠🦠🦠
+10:37 AM 	Lane Rasberry 	I have to run, will join next time! Thanks everyone
+10:39 AM 	Olaf Brugman 	so how does anyone from "the public" know whether it is a good idea to take it or not. there is multiple voices, we see political influence on health and drug admission authorities....so...what to do?
+10:41 AM 	Peter Dimitrios 	Interesting that Alzheimer research has led to Covid successes: https://twitter.com/PeteDaGuru/status/1329495335090204675
+10:43 AM 	Peter Dimitrios 	IT Team's Cough Detector Identifies 97% of COVID-19 Cases Even in Asymptomatic People (repurposed Alzheimer research - AIML Resnet50 2020-11-02): https://t.co/DnG9z3syjL?amp=1
+10:44 AM 	Pete Forsyth 	I'm going to need to duck out. Thank you all for a fantastic session, and your interest in News On Wiki! Thanks Eric for taking notes. David, Marc, Eric, etc. I'd love to follow up after the call. I'll watch my email... pete@wikistrategies.net (or text me 503-383-9454)
+10:48 AM 	Olaf Brugman 	Communities shape what people believe to a large extent. In my geo-environment, 50% of the population uses Whatsapp as its main news and information source. A large part of that uses it as its ONLY source. And that's where the fake news reigns. Would these people go to FedWiki sources?
+10:50 AM 	You 	https://en.wikipedia.org/wiki/Lewis_Mumford
+10:56 AM 	Marc Pierson 	https://vimeo.com/461029781
+10:57 AM 	Michael Mehaffy 	Jane Jacobs. "We have created marvels... but we have left out feedback." YES!
+10:57 AM 	Marc Pierson 	Thompson first interview
+10:57 AM 	Marc Pierson 	https://www.politico.com/magazine/story/2016/12/russian-novel-chernyshevsky-financial-crisis-revolution-214516
+11:02 AM 	Marc Pierson 	Russian writer named Nikolai Chernyshevsky, whose 1863 utopian novel, though critically mocked, became an inspiration for Rand’s generation of the early 1900s.
+11:03 AM 	You 	https://en.wikipedia.org/wiki/Nikolay_Chernyshevsky
+11:04 AM 	Peter Dimitrios 	 Ashby homestatic loops - stable (ashby-homeostat.pdf 2014-11): https://www.researchgate.net/publication/272476023_Ashby%27s_Mobile_Homeostat
+11:05 AM 	Pete Forsyth 	David, I'm just remembering, we wanted to hear something about the Digital Belarus conference you mentioned. Perhaps you could tell us about it next week?
+11:12 AM 	Eric Dobbs 	I have to run, everyone. Many thanks again for another wonderful and inspiring conversation.  You all fill my sails!
+11:16 AM 	Marc Pierson 	David Bovill, please e-mail me. I sent you an email last week. david@mediagarden.org  No response.
