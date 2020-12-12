@@ -1,0 +1,48 @@
+<pre id=choose></pre>
+<script>
+
+let meta
+main()
+
+async function main() {
+  let assets = await fetch('http://ward.dojo.fed.wiki/plugin/assets/list?assets=pages%2Fphoto-to-wiki').then(res => res.json())
+  let upload = assets.files.filter(name => name.match(/^upload-\d+\.json/))
+  meta = await Promise.all(upload.map(name =>
+    fetch(`http://ward.dojo.fed.wiki/assets/pages/photo-to-wiki/${name}`).then(res => res.json())))
+  meta.map((e,i) => Object.assign(e,{name:upload[i]}))
+  meta.sort((a,b) => (new Date(a.now)) > (new Date(b.now)) ? 1 : -1)
+  choose.innerHTML = meta.map(e => `<span onclick="want(event)">${e.now}</span> ${e.geo[0].thoroughfare}`).join("\n")
+}
+
+const id = () => Math.trunc(Math.random()*1000000000000).toString()
+const deepcopy = (obj) => JSON.parse(JSON.stringify(obj))
+const paragraph = (text) => ({type: "paragraph", text, id:id()})
+const item = (fields) => Object.assign(fields, {id:id()})
+const create = (item) => ({type: "create", date: Date.now(), item: deepcopy(item)})
+const fork = (site) => ({type: "fork", site, date: Date.now()})
+
+function want(event) {
+  let click = event.target.innerText
+  let choice = meta.find(e => e.now == click)
+  let image = `http://ward.dojo.fed.wiki/assets/pages/photo-to-wiki/${choice.name.replace('json','jpg')}`
+  let latlon = `${choice.loc.latitude},${choice.loc.longitude}`
+  let title = choice.geo[0].thoroughfare
+  let story = [
+    paragraph(choice.now),
+    item({type:'map', text:`${latlon} [[${title}]]\n[https://www.google.com/search?q=${latlon} google]`}),
+    item({type:'html', text:`<img width=100% src="${image}">`})
+  ]
+  let page = { title, story }
+  page.journal = [ create(page) ]
+  console.log({choice, page})
+  if (window && window.frameElement) {
+    window.parent.postMessage({
+      action: "showResult",
+      pageKey: window.frameElement.name,
+      keepLineup: event.shiftKey,
+      page
+    })
+  }
+}
+
+</script>
