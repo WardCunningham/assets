@@ -51,18 +51,39 @@
 
   function lineup(date) {
     let trails = history[date]
-    return `<span onclick="showall(event)">${date}</span> »<ul>${trails.map(trail => `<li title="${trail.synopsis}">${trail.title}`).join("\n")}</ul>`
+    let all = `<span onclick="showall(event)">${date}</span>`
+    let each = `<span onclick="showeach(event)" data-date="${date}">  » </span>`
+    let list = trails.map(trail => `<li title="${trail.synopsis}">${trail.title}`).join("\n")
+    return `${all} ${each}<ul>${list}</ul>`
   }
 
   function showall(event) {
     let date = event.target.innerText
     let day = history[date]
-    console.table(day)
     openpage(date,day)
+  }
+
+  function showeach(event) {
+    let date = event.target.getAttribute('data-date')
+    let day = history[date]
+    openpage(date,day)
+    let titles = day.map(d => d.title)
+    openlist(titles, event)
   }
 
 
 // E X P O R T
+
+function openlist(titles, event) {
+  let action = "doInternalLink"
+  let keepLineup = true
+  for (let title of titles) {
+    if (window && window.frameElement) {
+      let pageKey = window.frameElement.name
+      window.parent.postMessage({ action, title, pageKey, keepLineup })
+    }
+  }
+}
 
 const id = () => Math.trunc(Math.random()*1000000000000).toString()
 const deepcopy = (obj) => JSON.parse(JSON.stringify(obj))
@@ -78,10 +99,7 @@ function openpage(date, day) {
       item({type:'map',text:markers(day).join("\n")+`\n${date}`}),
      ]
   let page = { title, story }
-  // page.journal = [
-  //   create(page),
-  //   fork('calls.fed.wiki')
-  // ]
+  page.journal = [ create(page) ]
   console.log(page)
   if (window && window.frameElement) {
     window.parent.postMessage({
