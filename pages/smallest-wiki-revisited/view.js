@@ -10,10 +10,17 @@ function start () {
   let body = document.getElementsByTagName('body')[0]
   body.innerHTML += `
     <style>
-      body {font-family: Arial, Helvetica, sans-serif;}
-      section {display:flex; flex-wrap:wrap; height:95%;}
-      article {width:300px; padding:8px;}
-      footer {width:100%; background-color:#ccc; padding:8px;}
+      body {font-family: Arial, Helvetica, sans-serif;
+        display:flex; flex-direction:column;
+        margin:0; padding:0; width:100%; height:100%; overflow:hidden;}
+      section {flex: 1; display: flex; flex-direction: row;
+        overflow: scroll; scrollbar-width: none;}
+      article {flex: 0 0 400px; position: relative;
+        background-color: white; margin: 8px; box-shadow: 2px 1px 4px rgba(0, 0, 0, 0.2);}
+      .paper {padding: 8px; overflow-y: auto; overflow-x: hidden;
+        top: 0; bottom: 0; left: 0; right: 0; position: absolute;}
+      footer {background-color:#ccc; padding:10px;
+        flex-basis:20px;}
     </style>
     <section>${section()}</section>
     <footer>${footer()}</footer>`
@@ -53,7 +60,7 @@ async function refresh(panel) {
   let url = panel.where=='view' ? `./favicon.png` : `//${panel.where}/favicon.png`
   let title = `<h3><img width=24 src="${url}"> ${panel.page.title}</h3>`
   let story = panel.page.story.map(item => render(item,panel)).join("\n")
-  document.getElementById(panel.pid).innerHTML = title+story
+  document.getElementById(panel.pid).innerHTML = `<div class=paper>${title}${story}</div>`
 }
 
 function render(item, panel) {
