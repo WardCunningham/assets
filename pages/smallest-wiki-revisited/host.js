@@ -51,10 +51,12 @@ async function dispatch (req) {
   function variable() {
     let m
     if (m = url.match(/^\/([a-z-]+)\.json/)) {
-      Deno.readTextFile(`${req.wiki}/pages/${m[1]}`)
-        .then(body => req.respond({status: 200, headers, body}))
+      let path = `${req.wiki}/pages/${m[1]}`
+      Deno.readTextFile(path)
+        .then(body => req.respond({status:200, headers, body}))
+        .catch(err => req.respond({status:404, headers, body:'not found'})  )
     } else {
-      req.respond({status: 404, headers, body:'not found'})
+      req.respond({status:400, headers, body:'improper request'})
     }
   }
 }
