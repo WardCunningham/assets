@@ -15,12 +15,12 @@ function start () {
       article {width:300px; padding:8px;}
       footer {width:100%; background-color:#ccc; padding:8px;}
     </style>
-    <section>${panels()}</section>
+    <section>${section()}</section>
     <footer>${footer()}</footer>`
    body.addEventListener('click',click)
 }
 
-function panels() {
+function section() {
   let hash = (location.hash||'view/welcome-visitors').replace(/(^[\/#]+)|(\/+$)/g,'')
   let fields = hash.split('/')
   let html = []
@@ -38,6 +38,15 @@ function panels() {
 
 function footer() {
   return `<span>smallest wiki revisited</span>`
+}
+
+
+function update() {
+  let section = document.getElementsByTagName('section')[0]
+  section.innerHTML = lineup.map(panel => `<article id=${panel.pid}><h3>${panel.page.title}</h3></article>`).join("\n")
+  for (let panel of lineup) {
+    refresh(panel)
+  }
 }
 
 async function refresh(panel) {
@@ -73,9 +82,10 @@ async function click(event) {
     event.preventDefault()
     event.stopPropagation()
     let title = target.innerText
-    console.log({target, title, pid})
     let panel = await resolve(title, pid)
-    console.log(panel)
+    let hit = lineup.findIndex(panel => panel.pid == pid)
+    lineup.splice(hit+1,lineup.length, panel)
+    update()
   }
 }
 
