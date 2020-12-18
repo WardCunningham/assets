@@ -4,6 +4,13 @@
 export { start }
 
 const newpid = () => Math.floor(Math.random()*1000000)
+const typename = filename => filename.replace(/^wiki-client-type-/,'').replace(/\.js$/,'')
+const typehash = (hash, filename) => {hash[typename(filename)] = filename; return hash}
+
+let types = fetch('http://ward.asia.wiki.org/plugin/assets/list?assets=pages%2Fclient-type-modules')
+  .then(res=>res.json())
+  .then(json => json.files.reduce(typehash,{}))
+
 let lineup = window.lineup = []
 
 function start () {
@@ -57,19 +64,30 @@ function update() {
 }
 
 async function refresh(panel) {
+  types = await types
+  console.log(types)
   let url = panel.where=='view' ? `./favicon.png` : `//${panel.where}/favicon.png`
   let title = `<h3><img width=24 src="${url}"> ${panel.page.title}</h3>`
-  let story = panel.page.story.map(item => render(item,panel)).join("\n")
-  document.getElementById(panel.pid).innerHTML = `<div class=paper>${title}${story}</div>`
+  let story = await Promise.all(panel.page.story.map(item => render(item,panel)))
+  document.getElementById(panel.pid).innerHTML = `<div class=paper>${title}${story.join("\n")}</div>`
 }
 
-function render(item, panel) {
+async function render(item, panel) {
   switch (item.type) {
     case 'paragraph':
       let resolved = item.text
         .replace(/\[\[(.+?)\]\]/g, internal)
         .replace(/\[(.+?) (.+?)\]/g, external)
       return `<p>${resolved}</p>`
+    default:
+      let handler = types[item.type]
+      if (typeof handler === 'string') {
+        let url = `http://ward.asia.wiki.org/assets/pages/client-type-modules/${handler}`
+        handler = types[item.type] = await import(url)
+      }
+      if (handler) {
+        return handler.emit(null, item)
+      }
   }
   return `<p style="background-color:#eee;">${item.type}</p>`
 
