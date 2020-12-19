@@ -7,13 +7,16 @@ function escape(text) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/\*(.+?)\*/g, '<i>$1</i>')
 }
 
 function expand(line) {
   if (line.startsWith('#')) {
     line = line.replace(/^\#+ +/,'')
     return `<h3>${line}</h3>`
+  } else if (line == '') {
+    return '<br>'
+  } else {
+    return line
   }
 }
 
