@@ -2,8 +2,15 @@
 
 export { emit, bind }
 
+function expand(text) {
+  // this idiom closes unmatched tags
+  let div = document.createElement('div')
+  div.innerHTML = text
+  return div.innerHTML
+}
+
 function emit($item, item) {
-  let html = item.text
+  let html = expand(item.text)
   if($item)
     $item.innerHTML = html
   else
