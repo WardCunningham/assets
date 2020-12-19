@@ -18,7 +18,7 @@ async function dispatch (req) {
     case '/favicon.png':
     case '/favicon.ico':
       favicon(); break
-    case '/sitemap.json':
+    case '/system/sitemap.json':
       sitemap(); break
     case '/view.js':
       module(); break
