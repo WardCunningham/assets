@@ -1,0 +1,67 @@
+<p><button id=doInternalLink>Open an Existing Page</button>
+<p><button id=showResult>Create a Ghost Page</button>
+<p><button id=importer>Import Many Pages</button>
+
+<script>
+
+const pageKey = window.frameElement.name;
+const itemId = () => Math.abs(Math.random()*1e20|0).toString(16)
+
+document.querySelector('#doInternalLink').addEventListener('click', event => {
+  window.parent.postMessage({
+    action:"doInternalLink",
+    title: "About Frame Plugin",
+    pageKey,
+    keepLineup: event.shiftKey
+  });
+});
+
+document.querySelector('#showResult').addEventListener('click', event => {
+  window.parent.postMessage({
+    action:"showResult",
+    page: {
+      title: "Hello, World!",
+      story: [
+        {
+          type: "paragraph",
+          text: "Greetings from frame content!",
+          id: itemId()
+        }
+      ]
+    },
+    pageKey,
+    keepLineup: event.shiftKey
+  });
+});
+
+document.querySelector('#importer').addEventListener('click', event => {
+  window.parent.postMessage({
+    action:"importer",
+    pages: {
+      "hello-world": {
+        title: "Hello, World!",
+        story: [
+          {
+            type: "paragraph",
+            text: "Greetings from frame content!",
+            id: itemId()
+          }
+        ]
+      },
+      "greetings-programs": {
+        title: "Greetings, Programs!",
+        story: [
+          {
+            type: "paragraph",
+            text: "We're inside the MCP cone!",
+            id: itemId()
+          }
+        ]
+      }
+    },
+    pageKey,
+    keepLineup: event.shiftKey
+  });
+});
+
+</script>
