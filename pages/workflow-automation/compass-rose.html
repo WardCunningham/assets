@@ -1,0 +1,94 @@
+<style>
+  table {border-collapse: collapse; font-family: Arial, Helvetica, sans-serif; font-stretch: ultra-condensed; font-size: small;}
+  td {padding:8px; width:140px; border: 1px solid black; vertical-align: top;}
+</style>
+<table onclick="move(event)">
+ <tr><td id=b7><td id=b0><td id=b1>
+ <tr><td id=b6><td id=or><td id=b2>
+ <tr><td id=b5><td id=b4><td id=b3>
+</table>
+<script>
+
+  let trails = []
+  let td = [b0, b1, b2, b3, b4, b5, b6, b7]
+  let home = {lat:45.4702129 , lon:-122.7456307 , link:'home'}
+
+  let origin
+  let octants
+
+  fetch('http://trails.ward.asia.wiki.org/places-i-have-been.json')
+    .then(res => res.json())
+    .then(page => parse(page.story[0].text))
+
+  function parse(markup) {
+    for (line of markup.split(/\r?\n/)) {
+      let [all,lat,lon,link] = line.match(/(\d+\.\d+), (-\d+\.\d+) *\[\[(.*?)\]\]/)
+      trails.push({lat:+lat, lon:+lon, link})
+    }
+    draw(home)
+  }
+
+  function draw(where) {
+    octants = {0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[], 7:[]}
+    let chunk = 3
+    for (let trail of trails) {
+      // http://www.csgnetwork.com/degreelenllavcalc.html
+      let dx = trail.dx = (trail.lat - where.lat) * -69.05
+      let dy = trail.dy = (trail.lon - where.lon) * 48.99
+      trail.r = Math.sqrt(dx*dx + dy*dy)
+      trail.t = (Math.floor(Math.atan(dy,dx) * 8 / Math.PI + 8)) % 8
+    } 
+    trails.sort((a,b) => a.r - b.r)
+    origin = trails.slice(0,chunk)
+    let remains = trails.slice(chunk,trails.length)
+    for (let trail of remains) {
+      octants[trail.t].push(trail)
+    }
+    // const fmt = trail => `${trail.dx.toFixed(2)} ${trail.dy.toFixed(2)} ${trail.link}`
+    const fmt = trail => `<p>${trail.link}</p>`
+    for (let octant in octants) {
+      td[octant].innerHTML = octants[octant].slice(0,chunk).map(fmt).join('')
+    }
+    or.innerHTML = origin.map(fmt).join('')
+  }
+
+  function move(event) {
+    let link = event.target.innerText
+    let home = trails.find(trail => trail.link == link)
+    draw(home)
+    open(link)
+  }
+
+  const id = () => Math.trunc(Math.random()*1000000000000).toString()
+  const deepcopy = (obj) => JSON.parse(JSON.stringify(obj))
+  const paragraph = (text) => ({type: "paragraph", text, id:id()})
+  const item = (fields) => Object.assign(fields, {id:id()})
+  const create = (item) => ({type: "create", date: Date.now(), item: deepcopy(item)})
+  const fork = (site) => ({type: "fork", site, date: Date.now()})
+
+  function open(link) {
+    const fmt = trail => `${trail.lat}, ${trail.lon} [[${trail.link}]]`
+    let dirs = Object.keys(octants)
+    let good = dirs.filter(dir => octants[dir].length)
+    let near = good.map(dir => octants[dir][0])
+    let text = [...origin.map(fmt), ...near.map(fmt)].join("\n")
+
+    let title = `Near ${link}`
+    let story = [
+      paragraph('We map the nearest trails and the closest in eight compass point directions.'),
+      item({type:'map',text})
+    ]
+    let page = { title, story }
+    page.journal = [ create(page) ]
+    console.log(page)
+    if (window && window.frameElement) {
+      window.parent.postMessage({
+        action: "showResult",
+        pageKey: window.frameElement.name,
+        keepLineup: event.shiftKey,
+        page
+      })
+    }    
+  }
+
+</script>
