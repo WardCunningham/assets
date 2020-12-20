@@ -1,16 +1,16 @@
 <style>
   table {border-collapse: collapse; font-family: Arial, Helvetica, sans-serif; font-stretch: ultra-condensed; font-size: small;}
-  td {padding:8px; width:140px; border: 1px solid black; vertical-align: top;}
+  td {padding:8px; width:140px; border: 1px solid gray; vertical-align: top;}
 </style>
 <table onclick="move(event)">
- <tr><td id=b7><td id=b0><td id=b1>
- <tr><td id=b6><td id=or><td id=b2>
- <tr><td id=b5><td id=b4><td id=b3>
+ <tr><td id=nw><td id=n><td id=ne>
+ <tr><td id=w><td id=or><td id=e>
+ <tr><td id=sw><td id=s><td id=se>
 </table>
 <script>
 
   let trails = []
-  let td = [b0, b1, b2, b3, b4, b5, b6, b7]
+  let td = [n, ne, e, se, s, sw, w, nw]
   let home = {lat:45.4702129 , lon:-122.7456307 , link:'home'}
 
   let origin
@@ -33,10 +33,11 @@
     let chunk = 3
     for (let trail of trails) {
       // http://www.csgnetwork.com/degreelenllavcalc.html
-      let dx = trail.dx = (trail.lat - where.lat) * -69.05
-      let dy = trail.dy = (trail.lon - where.lon) * 48.99
+      let dy = trail.dx = (trail.lat - where.lat) * 69.05
+      let dx = trail.dy = (trail.lon - where.lon) * 48.99
       trail.r = Math.sqrt(dx*dx + dy*dy)
-      trail.t = (Math.floor(Math.atan(dy,dx) * 8 / Math.PI + 8)) % 8
+      let angle = Math.round(180*Math.atan2(dx,dy)/Math.PI+360) % 360
+      trail.t = Math.floor((angle+360+45/2)/45%8)
     } 
     trails.sort((a,b) => a.r - b.r)
     origin = trails.slice(0,chunk)
@@ -71,9 +72,9 @@
     let dirs = Object.keys(octants)
     let good = dirs.filter(dir => octants[dir].length)
     let near = good.map(dir => octants[dir][0])
-    let text = [...origin.map(fmt), ...near.map(fmt)].join("\n")
+    let text = [...origin.splice(0,1).map(fmt), ...near.map(fmt)].join("\n")
 
-    let title = `Near ${link}`
+    let title = `Near ${link}`.slice(0,30)
     let story = [
       paragraph('We map the nearest trails and the closest in eight compass point directions.'),
       item({type:'map',text})
