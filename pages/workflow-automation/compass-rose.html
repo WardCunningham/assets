@@ -74,7 +74,7 @@
     let near = good.map(dir => octants[dir][0])
     let text = [...origin.splice(0,1).map(fmt), ...near.map(fmt)].join("\n")
 
-    let title = `Near ${link}`.slice(0,30)
+    let title = `Near ${link}`.slice(0,29)
     let story = [
       paragraph('We map the nearest trails and the closest in eight compass point directions.'),
       item({type:'map',text})
