@@ -16,9 +16,11 @@
   let origin
   let octants
 
+  const markup = (page, type) => page.story.find(item => item.type == type).text
+
   fetch('http://trails.ward.asia.wiki.org/places-i-have-been.json')
     .then(res => res.json())
-    .then(page => parse(page.story[0].text))
+    .then(page => parse(markup(page,'map')))
 
   function parse(markup) {
     for (line of markup.split(/\r?\n/)) {
@@ -67,17 +69,19 @@
   const create = (item) => ({type: "create", date: Date.now(), item: deepcopy(item)})
   const fork = (site) => ({type: "fork", site, date: Date.now()})
 
-  function open(link) {
+  async function open(link) {
     const fmt = trail => `${trail.lat}, ${trail.lon} [[${trail.link}]]`
     let dirs = Object.keys(octants)
     let good = dirs.filter(dir => octants[dir].length)
     let near = good.map(dir => octants[dir][0])
     let text = [...origin.splice(0,1).map(fmt), ...near.map(fmt)].join("\n")
+    let html = await gallery()
 
     let title = `Near ${link}`.slice(0,29)
     let story = [
       paragraph('We map the nearest trails and the closest in eight compass point directions.'),
-      item({type:'map',text})
+      item({type:'map',text}),
+      item({type:'html',text:html})
     ]
     let page = { title, story }
     page.journal = [ create(page) ]
@@ -86,10 +90,25 @@
       window.parent.postMessage({
         action: "showResult",
         pageKey: window.frameElement.name,
-        keepLineup: event.shiftKey,
+        keepLineup: false, //event.shiftKey,
         page
       })
     }    
+  }
+
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+
+  async function gallery() {
+    let gets = []
+    for (let td of document.getElementsByTagName('td')) {
+      let link = td.innerText.split(/\n/)[0]
+      if (link) gets.push(fetch(`http://trails.ward.asia.wiki.org/${asSlug(link)}.json`).then(res => res.json()))
+    }
+    let pages = await Promise.all(gets)
+    return pages.map(page => markup(page,'html')
+      .replace(/100%/,'32%')
+      .replace(/<img/,`<img title="${page.title}"`))
+    .join("\n")
   }
 
 </script>
