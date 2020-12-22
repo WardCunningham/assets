@@ -1,0 +1,57 @@
+<script>
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+  let people = ['Joshua', 'Beth', 'Ward', 'Eric']
+  for (let peep of people) {
+    person(peep)
+  }
+  let vendors = ['amazon', 'apple', 'shopify']
+  for (let brand of vendors) {
+    source(brand)
+  }
+
+  async function person(name) {
+    for (let i = 0; i<1000; i++) {
+      console.log('work', name)
+      await webserver(choose())
+      await delay(Math.random()*name.length*100)
+    }
+
+    function choose () {
+      let queries = ['search', 'browse', 'update', 'select', 'details', 'purchase', 'checkout']
+      for (q of queries) if (Math.random() < 0.5) return q
+      return '500 error'
+    }
+  }
+
+  async function webserver(query) {
+    console.log('webserver', query)
+    await database(Math.random()<0.8 ? 'read' : 'write')
+    await delay(Math.random()*query.length*100)
+  }
+
+
+  async function database(op) {
+    console.log('database', op)
+    await delay(Math.random()*op.length*100)
+  }
+
+  async function source(vendor) {
+    for (let i = 0; i<1000; i++) {
+      console.log('deliver', vendor)
+      await backend(choose(['crate','box','bag']))
+      await delay(Math.random()*vendor.length*100)
+    }
+
+    function choose(list) {
+      for (q of list) if (Math.random() < 0.5) return q
+      return '500 error'
+    }
+  }
+
+  async function backend(delivery) {
+    console.log('backend', delivery)
+    await database(Math.random()<0.8 ? 'read' : 'write')
+    await delay(Math.random()*delivery.length*100)    
+  }
+</script>
