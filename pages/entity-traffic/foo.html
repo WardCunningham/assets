@@ -1,8 +1,8 @@
 <h3>Watch this space</h3>
 <ul>
-  <li> Joshua -- 523
-  <li> Beth -- 615
-  <li> Ward -- 592
+  <li> Joshua -- <span id=Joshua></span>
+  <li> Beth --   <span id=Beth></span>
+  <li> Ward --   <span id=Ward></span>
 </ul>
 <script>
 
@@ -14,8 +14,9 @@
   }
 
   async function work(peep) {
-    for (let i = 0; i<1000; i++) {
+    for (let i = 0; i<80; i++) {
       console.log(peep, 'working')
+      document.getElementById(peep).innerText += '|'
       await delay(Math.random()*peep.length*100)
     }
   }
