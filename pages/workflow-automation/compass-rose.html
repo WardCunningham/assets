@@ -47,19 +47,21 @@
     let chunk = 3
     for (let trail of trails) {
       // http://www.csgnetwork.com/degreelenllavcalc.html
-      let dy = trail.dx = (trail.lat - where.lat) * 69.05
-      let dx = trail.dy = (trail.lon - where.lon) * 48.99
+      let north = trail.lat - where.lat
+      let east = trail.lon - where.lon
+      let dy = trail.dy = north * 69.05
+      let dx = trail.dx = east * 48.99
       trail.r = Math.sqrt(dx*dx + dy*dy)
-      let angle = Math.round(180*Math.atan2(dx,dy)/Math.PI+360) % 360
-      trail.t = Math.floor((angle+360+45/2)/45%8)
+      let angle = Math.atan2(dy,dx)
+      let bering = (90-angle*180/Math.PI+360)%360
+      trail.oct = Math.round(bering/45)%8
     } 
     trails.sort((a,b) => a.r - b.r)
     origin = trails.slice(0,chunk)
     let remains = trails.slice(chunk,trails.length)
     for (let trail of remains) {
-      octants[trail.t].push(trail)
+      octants[trail.oct].push(trail)
     }
-    // const fmt = trail => `${trail.dx.toFixed(2)} ${trail.dy.toFixed(2)} ${trail.link}`
     const fmt = trail => `<p>${trail.link}</p>`
     for (let octant in octants) {
       td[octant].innerHTML = octants[octant].slice(0,chunk).map(fmt).join('')
