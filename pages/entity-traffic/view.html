@@ -1,0 +1,14 @@
+<div id=output></div>
+
+<script type=module>
+
+  import { start } from './sim.js'
+  start (log)
+
+  function log (name, details) {
+    output.innerHTML += `${name}: ${details}<br>`
+  }
+
+
+
+</script>
