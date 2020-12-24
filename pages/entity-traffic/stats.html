@@ -1,0 +1,42 @@
+<div id=output></div>
+<br><br>
+<div id=usemodel></div>
+
+<script type=module>
+
+  import { start } from './sim.js'
+
+  let model = {}
+  let stats = {}
+  let t0 = Date.now()
+  let count = 0
+  let clock = setInterval(harvest,10000)
+  start (log)
+
+  function log (name, details) {
+    let thing = `${name}: ${details}`
+    model[thing] = model[thing] || 0
+    model[thing]++
+
+    stats[thing] = stats[thing] || [0]
+    stats[thing][count] = (stats[thing][count] || 0) + 1
+    
+    stats[name] = stats[name] || [0]
+    stats[name][count] = (stats[name][count] || 0) + 1
+    refresh()
+  }
+
+  function refresh() {
+    let rows = Object.keys(model).sort().map(thing => `<tr><td>${thing}<td>${model[thing]}</tr>`)
+    output.innerHTML = `<table>${rows.join("\n")}</table>`
+  }
+
+  function harvest() {
+    usemodel.innerHTML = `<p>elapsed ${Math.round((Date.now()-t0)/1000)} seconds</p>`
+    let rows = Object.keys(stats).sort().map(thing => `<tr><td>${thing}<td>${stats[thing].join('<td>')}</tr>`)
+    usemodel.innerHTML += `<table>${rows.join("\n")}</table>`
+    count++
+  }
+
+
+</script>
