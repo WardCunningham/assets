@@ -64,7 +64,7 @@ function client() {
   return `<html>
     <body>
       <script type=module>
-        import { start } from "./view.js"
+        import { start } from "http://small.fed.wiki/assets/view.js"
         start()
       </script>
     </body>
