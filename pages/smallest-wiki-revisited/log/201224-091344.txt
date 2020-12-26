@@ -1,0 +1,7 @@
+[0m[1m[31merror[0m: Uncaught AddrInUse: Address already in use (os error 48)
+    at [0m[1m[3m[38;5;8mprocessResponse[0m [0m[38;5;8m([0m[0m[38;5;8mdeno:core/core.js[0m[0m[38;5;8m:[0m[0m[38;5;8m223[0m[0m[38;5;8m:[0m[0m[38;5;8m11[0m[0m[38;5;8m)[0m
+    at [0m[1m[3m[38;5;8mObject.jsonOpSync[0m [0m[38;5;8m([0m[0m[38;5;8mdeno:core/core.js[0m[0m[38;5;8m:[0m[0m[38;5;8m246[0m[0m[38;5;8m:[0m[0m[38;5;8m12[0m[0m[38;5;8m)[0m
+    at [0m[1m[3m[38;5;8mopListen[0m [0m[38;5;8m([0m[0m[38;5;8mdeno:cli/rt/30_net.js[0m[0m[38;5;8m:[0m[0m[38;5;8m32[0m[0m[38;5;8m:[0m[0m[38;5;8m17[0m[0m[38;5;8m)[0m
+    at [0m[1m[3m[38;5;8mObject.listen[0m [0m[38;5;8m([0m[0m[38;5;8mdeno:cli/rt/30_net.js[0m[0m[38;5;8m:[0m[0m[38;5;8m207[0m[0m[38;5;8m:[0m[0m[38;5;8m17[0m[0m[38;5;8m)[0m
+    at [0m[1m[3mserve[0m ([0m[36mserver.ts[0m:[0m[33m301[0m:[0m[33m25[0m)
+    at [0m[36mfile:///Users/ward/FedWiki/assets/pages/smallest-wiki-revisited/start.js[0m:[0m[33m8[0m:[0m[33m14[0m

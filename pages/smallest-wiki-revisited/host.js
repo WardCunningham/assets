@@ -2,7 +2,7 @@
 // usage: dispatch(req)
 
 
-import { serve } from "https://deno.land/std@0.79.0/http/server.ts";
+import { serve } from "https://deno.land/std/http/server.ts";
 export { dispatch }
 
 async function dispatch (req) {
@@ -10,6 +10,8 @@ async function dispatch (req) {
 
   let headers = new Headers();
   headers.set('access-control-allow-origin','*')
+  headers.set('content-type', 'application/javascript')
+
 
   switch (path) {
     case '':
@@ -28,6 +30,7 @@ async function dispatch (req) {
 
   function welcome() {
     let body = client()
+    headers.set('content-type', 'text/html')
     req.respond({status:200, headers, body})
   }
 
@@ -38,12 +41,13 @@ async function dispatch (req) {
   }
 
   function sitemap() {
-    req.respond({status:404, headers, body:'no sitemap'})
+    Deno.readTextFile(`${req.wiki}/status/sitemap.json`)
+      .then(body => req.respond({status:200, headers, body}))
   }
 
   function module() {
     headers.set('content-type', 'application/javascript')
-    Deno.readTextFile(`./view.js`)
+    Deno.readTextFile(`.${path}`)
       .then(body => req.respond({status:200, headers, body}))
   }
 
@@ -63,6 +67,12 @@ async function dispatch (req) {
 function client() {
   return `<html>
     <body>
+      <style>
+        body {
+          background: linear-gradient(45deg, #ddd 25%, transparent 80%) 0,0;
+          background-size: 1em 1em;
+          background-color: #eee; }
+      </style>
       <script type=module>
         import { start } from "http://small.fed.wiki/assets/view.js"
         start()
