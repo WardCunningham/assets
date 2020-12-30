@@ -54,6 +54,7 @@ for await (const req of server) {
   if(req.method == 'POST') {
     req.respond({body: await doit(req)})
   } else {
+    console.log(req.url)
     req.respond({body: html})
   }
 }

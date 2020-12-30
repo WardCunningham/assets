@@ -65,9 +65,11 @@ async function dispatch (req) {
 }
 
 function client() {
-  return `<html>
+  return `<!doctype html>
+  <html>
     <body>
       <style>
+        body,html { width:100%; height:100%; }
         body {
           background: linear-gradient(45deg, #ddd 25%, transparent 80%) 0,0;
           background-size: 1em 1em;

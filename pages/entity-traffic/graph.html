@@ -1,0 +1,65 @@
+<head>
+    <meta charset="UTF-8">
+    <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
+    <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+</head>
+<body>
+  <div id="output">waiting</div><br>
+  <div id="chart"></div>
+  <div id="detail"></div>
+
+  <script type=module>
+
+  import { start } from './sim.js'
+
+  let model = {}
+  let label = {}
+
+  let clock = setInterval(harvest,100)
+  start (log)
+
+  function log (name, details, from) {
+    let thing = `${from} -> ${name}`
+    model[thing] = model[thing] || 0
+    model[thing]++
+    refresh()
+  }
+
+  function refresh() {
+    let rows = Object.keys(model).sort().map(thing => `<tr><td>${thing}<td>${model[thing]}</tr>`)
+    output.innerHTML = `<table>${rows.join("\n")}</table>`
+  }
+
+  function harvest() {
+    let rows = Object.keys(model).sort()
+    display("detail", rows.map(thing => `${thing} [label="${model[thing]}"]`))
+    display("chart", abstract(rows, 'balancer').map(thing => `${thing} [label="${label[thing]||model[thing]}"]`))
+
+  }
+
+  function abstract(rows, detail) {
+    let result = []
+    let thing
+    for (let row of rows) {
+      if (row.startsWith(detail)) {
+        // ignore
+      } else if (row.endsWith(detail)) {
+        thing = row.replace(detail,'database')
+        result.push(thing)
+        label[thing] = label[thing] || 0
+        label[thing] = model[row]
+      } else {
+        result.push(row)
+      }
+    }
+    return result
+  }
+
+  function display(elementx, edges) {
+    let dot = `digraph { rankdir=LR; node [shape=box style=filled fillcolor=gold]; \n${edges.join("\n")} }`
+    hpccWasm.graphviz.layout(dot, "svg", "dot").then(svg => {
+      document.getElementById(elementx).innerHTML = svg;
+    })
+  }
+
+  </script>

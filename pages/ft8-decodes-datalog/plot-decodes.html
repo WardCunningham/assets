@@ -73,9 +73,19 @@
       data = data.filter(t=>Math.max(...t.y)>min)
     }
     Plotly.plot('graph', data)
+    setTimeout(detail, 1000)
+  }
+
+  function detail () {
+    if (params.search) {
+      Plotly.d3.selectAll('.traces').on("click", (e)=> {
+        let trace = e[0].trace.name
+        let google = 'https://www.google.com/search?q=amateur+'
+        window.open(google+trace,'_blank').focus()
+      })
+    }
   }
 
   sample()
-
   </script>
 </body>

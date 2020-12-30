@@ -15,33 +15,38 @@ function start(logger) {
 
 async function person(name) {
   for (let i = 0; i<1000; i++) {
-    log('work', name)
-    await webserver(choose(['search', 'browse', 'update', 'select', 'details', 'purchase', 'checkout']))
+    // log("user", person, 'work')
+    await webserver(choose(['search', 'browse', 'update', 'select', 'details', 'purchase', 'checkout']), 'user')
     await delay(norm(name.length*100))
   }
 }
 
-async function webserver(query) {
-  log('webserver', query)
-  await database(prob(80) ? 'read' : 'write')
+async function webserver(query, from) {
+  log('webserver', query, from)
+  await balancer((prob(80) ? 'read' : 'write'), 'webserver')
   await delay(norm(query.length*100))
 }
 
-async function database(op) {
-  log('database', op)
+async function balancer(op, from) {
+  log('balancer', op, from)
+  return await database(op, 'balancer')
+}
+
+async function database(op, from) {
+  log('database', op, from)
   await delay(norm(op.length*100))
 }
 
 async function source(vendor) {
   for (let i = 0; i<1000; i++) {
-    log('deliver', vendor)
-    await backend(choose(['crate','box','bag']))
+    // log('deliver', vendor, 'vender')
+    await backend(choose(['crate','box','bag']),vendor)
     await delay(norm(vendor.length*100))
   }
 }
 
-async function backend(delivery) {
-  log('backend', delivery)
-  await database(Math.random()<0.8 ? 'read' : 'write')
+async function backend(delivery, from) {
+  log('backend', delivery, from)
+  await balancer((Math.random()<0.8 ? 'read' : 'write'), 'backend')
   await delay(Math.random()*delivery.length*100)    
 }

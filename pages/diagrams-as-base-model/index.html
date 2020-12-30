@@ -86,14 +86,14 @@
         <td><div data="description">
     </table>
 
-    <svg>
-      <image id="draw"  x="10" y="10" height="70%" width="90%" href="https://source.datanerd.us/pages/architecture/otm/data/Architecture/SIGSALY Key Store.png"/>
+    <svg id="container">
+      <image id="draw"  x="10" y="10" height="70%" width="90%" href="#"/>
       <circle id="dot" cx=300 cy=300 r=5 style="fill: red;", visibility=hidden />
       <rect id="irect" x=100 y=100 width=200 height=200 fill=none stroke=green stroke-dasharray="10"/>
       <rect id="srect" x=110 y=110 width=200 height=200 fill=none stroke=red stroke-dasharray="5"/>
     </svg>
 
-    <img id=test src="https://source.datanerd.us/pages/architecture/otm/data/Architecture/SIGSALY Key Store.png" height=5px>
+    <img id=test src="#" height=5px>
 
     <!--
       https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
@@ -134,11 +134,14 @@
       let updates = {}    // "[team,diagram]" => revised team/diagram.json
 
       let selection = {team:null, diagram:null, thing:null}
-      let welcome = draw.getAttribute('href')
 
       let db = location.href.replace('/index.html','')
       if (db.startsWith('file')) db = 'https://source.datanerd.us/pages/architecture/otm/'
+
       index = fetch(`${db}/index.json`).then(res => res.json()).then(json => {index = json; refresh('team')})
+
+      let welcome =  `${db}/index.png`
+      draw.setAttribute('href',welcome)
 
       ibox = {width: 0, height: 0}
       sbox = {x: 0, y:0, width: 0, height:0}
@@ -162,8 +165,8 @@
 
       function screen2image (xy) {
         boxes()
-        let x = (xy[0] - sbox.x) * ibox.width / sbox.width
-        let y = (xy[1] - sbox.y) * ibox.height / sbox.height
+        let x = Math.round((xy[0] - sbox.x) * ibox.width / sbox.width)
+        let y = Math.round((xy[1] - sbox.y) * ibox.height / sbox.height)
         return [x,y]
       }
 
@@ -312,11 +315,12 @@
         return text
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
-          .replace(/(https:\/\/source.datanerd.us.*?)(\s|$)/g, '<a href="$1" target="_blank">GHE</a>$2')
-          .replace(/(https:\/\/el-dorado.datanerd.us.*?)(\s|$)/g, '<a href="$1" target="_blank">El Dorado</a>$2')
+          .replace(/(https:\/\/source\.datanerd\.us\.*?)(\s|$)/g, '<a href="$1" target="_blank">GHE</a>$2')
+          .replace(/(https:\/\/el-dorado\.datanerd\.us\.*?)(\s|$)/g, '<a href="$1" target="_blank">El Dorado</a>$2')
           .replace(/(https:\/\/(staging-)?one.newrelic.com.*?)(\s|$)/g, '<a href="$1" target="_blank">NR1</a>$2')
-          .replace(/(https:\/\/nerdlife.datanerd.us*?)(\s|$)/g, '<a href="$1" target="_blank">NerdLife</a>$2')
-          .replace(/(https:\/\/pages.datanerd.us.*?)(\s|$)/g, '<a href="$1" target="_blank">pages</a>$2')
+          .replace(/(https:\/\/nerdlife\.datanerd\.us*?)(\s|$)/g, '<a href="$1" target="_blank">NerdLife</a>$2')
+          .replace(/(https:\/\/pages\.datanerd\.us\.*?)(\s|$)/g, '<a href="$1" target="_blank">pages</a>$2')
+          .replace(/(https:\/\/staging-api\.newrelic\.com\/graphiql\?*?)(\s|$)/g, '<a href="$1" target="_blank">graphiql</a>$2')
           .replace(/\n/g, '<br>')
       }
 
