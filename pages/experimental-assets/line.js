@@ -16,7 +16,7 @@ function reload(org, hash) {
   for (let field of fields) {
     let [slug,site] = field.split('@')
     let pid = newpid()
-    let panel = {pid, site, slug}
+    let panel = {pid, site, slug, where:site}
     lineup.push(panel)
     flight.push(fetch(purl(site,slug)).then(res => res.json()).then(json => {panel.page = json; refresh(panel)}))
   }

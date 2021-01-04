@@ -30,7 +30,7 @@ async function monkey() {
 
 
 function panels() {
-  console.table(lineup.map(panel=>({pid:panel.pid, dt:panel.dt, site:panel.site, slug:panel.slug})))
+  console.table(lineup.map(panel=>({pid:panel.pid, dt:panel.dt, site:panel.site, slug:panel.slug, where:panel.where})))
 }
 
 function panes() {
