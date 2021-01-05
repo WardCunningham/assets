@@ -10,13 +10,14 @@ let hash = 'welcome-visitors/smallest-wiki-explained/radio-network-simulator@sim
 await reload(origin, hash)
 panels()
 // panes()
-for (let i of [1,2,3,4,5,6,7,8,9]) {
+for (let i=0; i<30; i++) {
   await monkey()  
 }
 
 async function monkey() {
   let panel = choose(lineup.slice().reverse())
   if(panel) {
+    // console.log('monkey panel',panel)
     let links = panel.panes.map(pane=>pane.links)
     // console.log(links)
     let choice = choose(links.flat())

@@ -80,6 +80,7 @@ async function click(title, pid) {
   let panel = await resolve(title, pid)
   let hit = lineup.findIndex(panel => panel.pid == pid)
   lineup.splice(hit+1,lineup.length, panel)
+  return refresh(panel)
 }
 
 async function resolve(title, pid) {
@@ -101,8 +102,8 @@ async function resolve(title, pid) {
 }
 
 function probe(where, slug) {
-  let site = where == 'view' ? origin : where
-  return fetch(`//${site}/${slug}.json`)
+  let site = where == null ? origin : where
+  return fetch(`http://${site}/${slug}.json`)
     .then(res => res.ok ? res.json() : null)
     .catch(err => null)
 }
