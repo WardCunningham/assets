@@ -1,0 +1,70 @@
+<head>
+    <meta charset="UTF-8">
+    <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
+    <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+</head>
+<body>
+  <div id="chart"></div>
+
+<script type=module>
+
+
+import { reload, click, lineup } from './line.js'
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+const prob = (pcnt) => Math.random()*100 < pcnt
+const norm = (mean) => (Math.random()-Math.random()+1)*mean
+const choose = (list) => {for (let one of list) if (prob(50)) return one; return null}
+const quote = (title) => `"${title.replace(/ +/g,'\n')}"`
+
+let origin = 'small.fed.wiki'
+let hash = 'welcome-visitors/smallest-wiki-explained/radio-network-simulator@simnet.ward.asia.wiki.org/client-type-modules@ward.asia.wiki.org'
+
+let model = {}
+
+ramble()
+
+async function ramble() {
+  await reload(origin, hash)
+  while (true) {
+    await monkey()  
+    draw()
+    await delay(1000)
+  }  
+}
+
+
+async function monkey() {
+  let panel = choose(lineup.slice().reverse())
+  if(panel) {
+    // console.log('monkey panel',panel)
+    let links = panel.panes.map(pane=>pane.links)
+    // console.log(links)
+    let choice = choose(links.flat())
+    if(choice) {
+      console.log('click', panel.page.title, '=>', choice)
+      let key = `${quote(panel.page.title)} -> ${quote(choice)}`
+      model[key] = model[key] || 0
+      model[key] += 1
+      await click(choice, panel.pid)
+    }
+  }
+}
+
+function draw() {
+  let roots = lineup.map(panel => quote(panel.page.title))
+  let rows = Object.keys(model).sort()
+  let edges = rows.map(thing => `${thing} [label="${model[thing]}"]`)
+  let dot = `digraph {
+    rankdir=LR
+    node [shape=box style=filled fillcolor=gold]
+    ${roots.join("\n")}
+    node [fillcolor=bisque]
+    ${edges.join("\n")}
+  }`
+  hpccWasm.graphviz.layout(dot, "svg", "dot").then(svg => {
+    chart.innerHTML = svg;
+  })
+}
+
+</script>
