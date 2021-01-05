@@ -3,6 +3,9 @@
 export { emit, bind }
 
 function expand(text) {
+  if (typeof document === 'undefined') {
+    return text
+  }
   // this idiom closes unmatched tags
   let div = document.createElement('div')
   div.innerHTML = text
