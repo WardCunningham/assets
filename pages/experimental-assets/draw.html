@@ -27,9 +27,11 @@ ramble()
 async function ramble() {
   await reload(origin, hash)
   while (true) {
-    await monkey()  
-    draw()
-    await delay(1000)
+    await draw()
+    await Promise.all([
+      monkey(),
+      delay(1000)
+    ])
   }  
 }
 
@@ -51,7 +53,7 @@ async function monkey() {
   }
 }
 
-function draw() {
+async function draw() {
   let roots = lineup.map(panel => quote(panel.page.title))
   let rows = Object.keys(model).sort()
   let edges = rows.map(thing => `${thing} [label="${model[thing]}"]`)
@@ -62,9 +64,8 @@ function draw() {
     node [fillcolor=bisque]
     ${edges.join("\n")}
   }`
-  hpccWasm.graphviz.layout(dot, "svg", "dot").then(svg => {
-    chart.innerHTML = svg;
-  })
+  let svg
+  chart.innerHTML = await hpccWasm.graphviz.layout(dot, "svg", "dot")
 }
 
 </script>
