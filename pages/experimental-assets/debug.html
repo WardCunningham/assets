@@ -68,16 +68,21 @@ async function monkey() {
 async function draw() {
   let roots = lineup.map(panel => quote(panel.page.title))
   let rows = Object.keys(model).sort()
-  let edges = rows.map(thing => `${thing} [label="${model[thing]}"]`)
   let dot = `digraph {
     rankdir=LR
     node [shape=box style=filled fillcolor=gold]
     ${roots.join("\n")}
     node [fillcolor=bisque]
-    ${edges.join("\n")}
+    ${rows.map(edge).join("\n")}
   }`
   trace.innerHTML = `<table border=1><tr><td>${lineup.slice(-10).map(panel => debug(panel)).join('<td>')}</table>`
   chart.innerHTML = await hpccWasm.graphviz.layout(dot, "svg", "dot")
+}
+
+function edge(key) {
+  let count = model[key]
+  let width = count >= 10 ? 2 : 1
+  return `${key} [label="${count}" penwidth="${width}"]`
 }
 
 function debug(panel) {
