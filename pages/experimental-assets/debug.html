@@ -8,7 +8,6 @@
     td {vertical-align:top;}
   </style>
   <div id="chart"></div>
-  <div id="messg"></div>
   <div id="trace"></div>
 
 <script type=module>
@@ -28,23 +27,18 @@ let hash = location.hash || 'welcome-visitors'
 let model = {}
 let recent = []
 
-ramble()
+reload(origin, hash).then(() => window.requestAnimationFrame(ramble))
 
 async function ramble() {
-  let trouble = null
-  await reload(origin, hash)
-  while (true) {
-    await draw()
-    trouble = checks()
-    if (trouble) break
-    await Promise.all([
-      monkey(),
-      delay(1000)
-    ])
-  }
-  messg.innerHTML = `<p><pre>${JSON.stringify(trouble)}</pre></p>`
+  let trouble = checks()
+  if (trouble && !confirm(JSON.stringify({...trouble,panel:lineup.slice(-1)[0]},null,2).replace(/\n/,'\n'))) return
+  await Promise.all([
+    monkey(),
+    delay(1000)
+  ])
+  await draw()
+  window.requestAnimationFrame(ramble)
 }
-
 
 async function monkey() {
   let panel = choose(lineup.slice().reverse())
@@ -100,7 +94,7 @@ function checks() {
   if (typeof panel.pid === 'undefined') return {error:"undefined pid"}
   if (typeof panel.page.title !== 'string') return {error:"expect title as string"}
   if (!Array.isArray(panel.page.story)) return {error:"expect story as Array"}
-  // if (!panel.panes.map(pane=>pane.links).flat().length) return {error:"no links on page"}
+  if (!panel.panes.map(pane=>pane.links).flat().length) return {error:"no links on page"}
   return undefined
 }
 
