@@ -4,7 +4,12 @@
     <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
 </head>
 <body>
+  <style>
+    td {vertical-align:top;}
+  </style>
   <div id="chart"></div>
+  <div id="messg"></div>
+  <div id="trace"></div>
 
 <script type=module>
 
@@ -26,14 +31,18 @@ let recent = []
 ramble()
 
 async function ramble() {
+  let trouble = null
   await reload(origin, hash)
   while (true) {
     await draw()
+    trouble = checks()
+    if (trouble) break
     await Promise.all([
       monkey(),
       delay(1000)
     ])
-  }  
+  }
+  messg.innerHTML = `<p><pre>${JSON.stringify(trouble)}</pre></p>`
 }
 
 
@@ -67,8 +76,27 @@ async function draw() {
     node [fillcolor=bisque]
     ${edges.join("\n")}
   }`
-  let svg
+  trace.innerHTML = `<table border=1><tr><td>${lineup.slice(-10).map(panel => debug(panel)).join('<td>')}</table>`
   chart.innerHTML = await hpccWasm.graphviz.layout(dot, "svg", "dot")
+}
+
+function debug(panel) {
+  let pid = panel.pid
+  let title = panel.page.title
+  let where = panel.where || null
+  let story = panel.page.story.filter(item => item.type != 'paragraph').map(item => item.type)
+  let links = panel.panes.map(pane=>pane.links).flat()
+  let json = {pid, title, where, story, links}
+  return `<pre>${JSON.stringify(json,null, 2)}</pre>`
+}
+
+function checks() {
+  let panel = lineup.slice(-1)[0]
+  if (typeof panel.pid === 'undefined') return {error:"undefined pid"}
+  if (typeof panel.page.title !== 'string') return {error:"expect title as string"}
+  if (!Array.isArray(panel.page.story)) return {error:"expect story as Array"}
+  // if (!panel.panes.map(pane=>pane.links).flat().length) return {error:"no links on page"}
+  return undefined
 }
 
 </script>

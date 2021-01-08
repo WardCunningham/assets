@@ -3,6 +3,7 @@ export { reload, click, lineup }
 let origin = 'localhost'
 
 const newpid = () => Math.floor(Math.random()*1000000)
+const newpanel = (props) => ({pid:newpid(), ...props})
 const purl = (site, slug) => site ? `http://${site}/${slug}.json` : `http://${origin}/${slug}.json`
 
 let lineup = []
@@ -15,8 +16,7 @@ function reload(org, hash) {
   let flight = []
   for (let field of fields) {
     let [slug,site] = field.split('@')
-    let pid = newpid()
-    let panel = {pid, site, slug, where:site}
+    let panel = newpanel({site, slug, where:site})
     lineup.push(panel)
     flight.push(fetch(purl(site,slug)).then(res => res.json()).then(json => {panel.page = json; refresh(panel)}))
   }
@@ -94,10 +94,10 @@ async function resolve(title, pid) {
   // console.log({path, pages})
   let hit = pages.findIndex(page => page)
   if (hit >= 0) {
-    return {pid:newpid(), where:path[hit], slug, page:pages[hit]}
+    return newpanel({where:path[hit], slug, page:pages[hit]})
   } else {
     let page = {title,story:[],journal:[]}
-    return {pid:newpid(), where:'ghost', slug, page}
+    return newpanel({where:'ghost', slug, page})
   }
 }
 
