@@ -3,7 +3,7 @@ export { reload, click, lineup }
 let origin = 'localhost'
 
 const newpid = () => Math.floor(Math.random()*1000000)
-const newpanel = (props) => ({pid:newpid(), ...props})
+const newpanel = (props) => ({pid:newpid(), stats:{}, ...props})
 const purl = (site, slug) => site ? `http://${site}/${slug}.json` : `http://${origin}/${slug}.json`
 
 let lineup = []
@@ -77,10 +77,13 @@ async function render(pane,panel) {
 }
 
 async function click(title, pid) {
+  let start = Date.now()
   let panel = await resolve(title, pid)
+  panel.stats.fetch = Date.now() - start
   let hit = lineup.findIndex(panel => panel.pid == pid)
   lineup.splice(hit+1,lineup.length, panel)
-  return refresh(panel)
+  start = Date.now()
+  return refresh(panel).then(() => {panel.stats.refresh = Date.now() - start})
 }
 
 async function resolve(title, pid) {

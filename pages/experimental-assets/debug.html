@@ -91,7 +91,8 @@ function debug(panel) {
   let where = panel.where || null
   let story = panel.page.story.filter(item => item.type != 'paragraph').map(item => item.type)
   let links = panel.panes.map(pane=>pane.links).flat()
-  let json = {pid, title, where, story, links}
+  let stats = panel.stats
+  let json = {pid, title, where, story, links, stats}
   return `<pre>${JSON.stringify(json,null, 2)}</pre>`
 }
 
