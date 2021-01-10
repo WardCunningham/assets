@@ -21,10 +21,10 @@ function main() {
   const near = 0.1;
   const far = 10;
   const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-  camera.position.z = 4;
+  camera.position.z = 5;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(background, .3)
+  scene.fog = new THREE.FogExp2(background, .2)
 
   {
     const color = 0xFFFFFF;
@@ -49,7 +49,22 @@ function main() {
   let p = [1, .04, .04]
   let v = [0, .01, .01]
   let a = [0, 0, 0]
-  let m = [[1,1,0],[-1,1,0],[0,-1,1],[0,-1,-1]]
+  // let m = [[1,1,0],[-1,1,0],[0,-1,1],[0,-1,-1]]
+
+  let q = (1 + Math.sqrt(5)) / 2
+  let m = []
+
+  rect((a,b) => [0, a*1, b*q])
+  rect((a,b) => [a*1, b*q, 0])
+  rect((a,b) => [a*q, 0, b*1])
+
+  function rect(f) {
+    m.push(f(+1,+1))
+    m.push(f(-1,+1))
+    m.push(f(+1,-1))
+    m.push(f(-1,-1))
+  }
+
 
   let g = (b) => {
     let f = .001
@@ -78,7 +93,7 @@ function main() {
     dot.position.y = p[1]
     dot.position.z = p[2]
 
-    if (points.length > 200) points.shift()
+    if (points.length > 250) points.shift()
     points.push(dot.localToWorld(new THREE.Vector3()))
     line.geometry.setFromPoints(points)
 
