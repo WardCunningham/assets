@@ -1,0 +1,96 @@
+<canvas id="c" width=380 height=380></canvas>
+<script type="module">
+import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r119/build/three.module.js';
+import * as oc from 'https://threejsfundamentals.org/threejs/resources/threejs/r119/examples/jsm/controls/OrbitControls.js';
+
+function string(color,points) {
+  let material = new THREE.LineBasicMaterial( {color} )
+  let geometry = new THREE.BufferGeometry().setFromPoints(points)
+  return new THREE.Line( geometry, material )
+}
+
+function main() {
+  const canvas = document.querySelector('#c');
+  const antialias = true
+  const renderer = new THREE.WebGLRenderer({canvas,antialias});
+  const background = 0xeeeeee
+  renderer.setClearColor(background);
+
+  const fov = 60;
+  const aspect = 1;
+  const near = 0.1;
+  const far = 10;
+  const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+  camera.position.z = 4;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(background, .3)
+
+  {
+    const color = 0xFFFFFF;
+    const intensity = 1;
+    const light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(-1, 2, 4);
+    scene.add(light);
+  }
+
+  const radius = 0.2
+  const detail = 2
+  const geometry = new THREE.IcosahedronBufferGeometry(radius,detail);
+  const material = new THREE.MeshPhongMaterial({color: 0xffc0a0});
+
+  const dot = new THREE.Mesh(geometry, material);
+  scene.add(dot);
+
+  let points = []
+  let line = string('black',points)
+  scene.add(line)
+
+  let p = [1, .04, .04]
+  let v = [0, .01, .01]
+  let a = [0, 0, 0]
+  let m = [[1,1,0],[-1,1,0],[0,-1,1],[0,-1,-1]]
+
+  let g = (b) => {
+    let f = .001
+    let d = [b[0]-p[0], b[1]-p[1], b[2]-p[2]]
+    let rr = d[0]*d[0] + d[1]*d[1] + d[2]*d[2]
+    a[0] += f*d[0]/rr; a[1] += f*d[1]/rr; a[2] += f*d[2]/rr; 
+  }
+
+  for (let [x,y,z] of m) {
+    let mag = new THREE.Mesh(geometry, material)
+    mag.position.x = x
+    mag.position.y = y
+    mag.position.z = z
+    scene.add(mag)
+  }
+
+  let orbit = new oc.OrbitControls(camera, renderer.domElement);
+
+  function render(time) {
+    time *= 0.001;  // convert time to seconds
+    a = [0, 0, 0]; g(m[0]); g(m[1]); g(m[2]); g(m[3])
+    v[0] += a[0]; v[1] += a[1]; v[2] += a[2]
+    p[0] += v[0]; p[1] += v[1]; p[2] += v[2]
+
+    dot.position.x = p[0]
+    dot.position.y = p[1]
+    dot.position.z = p[2]
+
+    if (points.length > 200) points.shift()
+    points.push(dot.localToWorld(new THREE.Vector3()))
+    line.geometry.setFromPoints(points)
+
+
+    orbit.update()
+    renderer.render(scene, camera);
+
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+
+}
+
+main();
+</script>
