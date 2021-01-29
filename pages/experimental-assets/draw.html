@@ -15,7 +15,7 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 const prob = (pcnt) => Math.random()*100 < pcnt
 const norm = (mean) => (Math.random()-Math.random()+1)*mean
 const choose = (list) => {for (let one of list) if (prob(50)) return one; return null}
-const quote = (title) => `"${title.replace(/ +/g,'\n')}"`
+const quote = (title) => `"${title.replace(/ +/g,'\\n')}"`
 
 let origin = 'small.fed.wiki'
 let hash = location.hash || 'welcome-visitors'
