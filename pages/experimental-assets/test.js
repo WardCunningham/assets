@@ -10,7 +10,7 @@ let hash = 'welcome-visitors/smallest-wiki-explained/radio-network-simulator@sim
 await reload(origin, hash)
 panels()
 // panes()
-for (let i=0; i<30; i++) {
+for (let i=0; i<300; i++) {
   await monkey()  
 }
 
