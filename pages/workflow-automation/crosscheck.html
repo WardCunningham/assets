@@ -17,19 +17,16 @@
   async function cross(...checks) {
     let [dest, been, sitemap] = await Promise.all(checks)
     console.log({dest, been, sitemap})
-
-
     result.innerHTML = `<table>
       <tr>
         <th>Chronologial Destinations
         <th>Places I Have Been
-        <th>System Sitemap
+        <th>Recent Changes
       <tr>
         <td>${links(dest.story.map(item => item.text))}
         <td>${links(been.story[1].text.split(/\n/))}
         <td>${sitemap.map(info => info.title).filter(trail).sort().join('<br>')}
     `
-
   }
 
   function links(list) {
@@ -44,12 +41,14 @@
   function trail(title) {
     const stops = [
       'Chronological', 'Comforts', 'Compass', 'Creeks', 'Culverts', 'Crossing',
-      'Environmental', 'Fall', 'Garden Home Junction', 'Historic',
+      'Environmental', 'Garden Home Junction', 'Historic',
       'Incremental', 'Iron Mountain', 'Jeffries Creek', 'Kalama', 'Marshall Proposed',
       'Movable', 'Navigate', 'Near', 'Pandemic', 'Places', 'Red Electric Trail System', 'Round',
       'Sisters', 'Sleeping', 'Southwest', 'Terminal', 'Things', 'Topo', 'Trail', 'Tryon Creek Trail System', 'Tuning',
-      'Wandering', 'Ward', 'Wider', 'Workflow', 'Welcome', 'West', 'Winter'
-      ]
+      'Wandering', 'Ward', 'Wider', 'Workflow', 'Welcome', 'West',
+      'Spring 20', 'Summer 20', 'Fall 20', 'Winter 20'
+
+    ]
     for (stop of stops) {
       if (title.startsWith(stop)) return false
     }

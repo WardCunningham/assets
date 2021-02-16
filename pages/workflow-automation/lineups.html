@@ -103,7 +103,9 @@ const fork = (site) => ({type: "fork", site, date: Date.now()})
 function openpage(date, day) {
   let title = `Wandering ${new Date(date).toDateString()}`
   let story = [
-      ...day.map(d => paragraph(`${d.synopsis} See [[${d.title}]]`)),
+      ...day.map(d => paragraph(`
+        ${d.synopsis} See [[${d.title}]],
+        ${d.assets.map(slug=>'[['+slug+']]').join(', ')}`)),
       item({type:'map',text:markers(day).join("\n")+`\n${date}`}),
      ]
   let page = { title, story }
