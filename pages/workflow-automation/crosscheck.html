@@ -1,0 +1,60 @@
+<div id=result>working</div>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; }
+    td { vertical-align: text-top; }
+</style>
+<script>
+
+  const site = 'http://trails.ward.asia.wiki.org'
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+
+  cross(
+  	fetch(`${site}/chronological-destinations.json`).then(res => res.json()),
+  	fetch(`${site}/places-i-have-been.json`).then(res => res.json()),
+  	fetch(`${site}/system/sitemap.json`).then(res => res.json())
+  )
+
+  async function cross(...checks) {
+    let [dest, been, sitemap] = await Promise.all(checks)
+    console.log({dest, been, sitemap})
+
+
+    result.innerHTML = `<table>
+      <tr>
+        <th>Chronologial Destinations
+        <th>Places I Have Been
+        <th>System Sitemap
+      <tr>
+        <td>${links(dest.story.map(item => item.text))}
+        <td>${links(been.story[1].text.split(/\n/))}
+        <td>${sitemap.map(info => info.title).filter(trail).sort().join('<br>')}
+    `
+
+  }
+
+  function links(list) {
+    let want = []
+    for (maybe of list) {
+      let m = maybe.match(/\[\[(.*?)\]\]/)
+      if (m) want.push(m[1])
+    }
+    return want.sort().join('<br>')
+  }
+
+  function trail(title) {
+    const stops = [
+      'Chronological', 'Comforts', 'Compass', 'Creeks', 'Culverts', 'Crossing',
+      'Environmental', 'Fall', 'Garden Home Junction', 'Historic',
+      'Incremental', 'Iron Mountain', 'Jeffries Creek', 'Kalama', 'Marshall Proposed',
+      'Movable', 'Navigate', 'Near', 'Pandemic', 'Places', 'Red Electric Trail System', 'Round',
+      'Sisters', 'Sleeping', 'Southwest', 'Terminal', 'Things', 'Topo', 'Trail', 'Tryon Creek Trail System', 'Tuning',
+      'Wandering', 'Ward', 'Wider', 'Workflow', 'Welcome', 'West', 'Winter'
+      ]
+    for (stop of stops) {
+      if (title.startsWith(stop)) return false
+    }
+    return true
+  }
+
+</script>
+
