@@ -7,6 +7,7 @@
 
   const site = 'http://trails.ward.asia.wiki.org'
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const uniq = (value, index, self) => self.indexOf(value) === index
 
   let history = {}
 
@@ -39,22 +40,29 @@
     let story = page.story || []
     let synopsis = story[0].text
     let images = 0
+    let assets = []
     for (let item of story) {
       if (item.type == 'html') {
         images += 1
+        let m = item.text.match(/\bsrc=http:\/\/trails.ward.asia.wiki.org\/assets\/pages\/(.*?)\//)
+        if (m && !assets.includes(m[1])) {
+          assets.push(m[1])
+        }
       }
     }
     let date = page.story.find(item => item.text.length<30 && !isNaN(new Date(item.text))).text
     let day = history[date] = history[date] || []
-    day.push({title, slug, synopsis, story, images})
+    day.push({title, slug, synopsis, story, images, assets})
   }
 
   function lineup(date) {
     let trails = history[date]
+    let assets = trails.map(trail => trail.assets).flat().filter(uniq)
     let all = `<span onclick="showall(event)">${date}</span>`
     let each = `<span onclick="showeach(event)" data-date="${date}">  » </span>`
+    let images = `<br><span style="color:gray; font-size:small;">${assets.join(', ')}</span>`
     let list = trails.map(trail => `<li title="${trail.synopsis}">${trail.title}`).join("\n")
-    return `${all} ${each}<ul>${list}</ul>`
+    return `${all} ${each} ${images}<ul>${list}</ul>`
   }
 
   function showall(event) {
