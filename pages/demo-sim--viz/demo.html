@@ -103,7 +103,7 @@ income for the users.
       let dot = `digraph { rankdir=RL; node [shape=box style=filled fillcolor=gold]; \n${edges.join("\n")} }`
       drawing = true
       hpccWasm.graphviz.layout(dot, "svg", "dot").then(svg => {
-        chart.innerHTML = svg;
+        chart.innerHTML = svg.replace(/width="\d+pt" height="\d+pt"/,'');
         drawing = false
       })
     }
