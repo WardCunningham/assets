@@ -73,12 +73,16 @@ function tally(spots) {
     let c = log[b]
     let k = Object.keys(c)
     k.sort((a,b)=>c[b].avg-c[a].avg)
-    report.push(`<h3 onclick="link(event)">${b}</h3>`)
+    report.push(`<tr><td colspan=4 onclick="link(event)"><br><h3>${b}</h3>`)
     for (let call of k) {
-      report.push(`${call}  (${c[call].avg} : ${c[call].dst||'?'}) ⇒  ${c[call].snr.map(n=>fmt(n)).join(' ')}<br>`)
+      report.push(`<tr>
+        <td>${call}
+        <td style="text-align: right;">${c[call].avg.toFixed(1)}
+        <td style="text-align: right;">${c[call].dst||''}
+        <td>${c[call].snr.map(n=>fmt(n)).join(' ')}`)
     }
   }
-  show.innerHTML = report.join('')
+  show.innerHTML = `<table>${report.join('')}</table`
 }
 
 function avg(list) {
