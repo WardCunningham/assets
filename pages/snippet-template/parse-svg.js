@@ -11,15 +11,10 @@ console.log(data)
 function svg() {
   while (lines.length) {
     if (lines[0].startsWith('<!--')) {
-      // console.log(lines[0])
     } else if(lines[0].endsWith('-->')) {
-      // console.log(lines[0])
     } else if(lines[0] == '') {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('<svg')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('</svg')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('<g id="graph')) {
       graph()
     } else {
@@ -30,13 +25,10 @@ function svg() {
 }
 
 function graph() {
-  console.log('graph')
   lines.shift()
   while (!lines[0].startsWith('</g')) {
     if (lines[0].startsWith('<!--')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('<polygon')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('<g id="node')) {
       node()
     } else if(lines[0].startsWith('<g id="edge')) {
@@ -49,24 +41,17 @@ function graph() {
 }
 
 function node() {
-  console.log('node')
   let name, place
   lines.shift()
   while (!lines[0].startsWith('</g')) {
     if (lines[0].startsWith('<!--')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('<polygon')) {
-      // console.log(lines[0])
       place = polygon()
     } else if(lines[0].startsWith('<title')) {
-      // console.log(lines[0])
       name = title()
     } else if(lines[0].startsWith('<text')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('</g')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('<path')) {
-      // console.log(lines[0])
     } else {
       console.log(`can't make out node '${lines[0]}'`)
     }
@@ -76,21 +61,14 @@ function node() {
 }
 
 function edge() {
-  console.log('edge')
   lines.shift()
   while (!lines[0].startsWith('</g')) {
     if (lines[0].startsWith('<!--')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('<polygon')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('<title')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('<text')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('</g')) {
-      // console.log(lines[0])
     } else if(lines[0].startsWith('<path')) {
-      // console.log(lines[0])
     } else {
       console.log(`can't make out edge '${lines[0]}'`)
     }
