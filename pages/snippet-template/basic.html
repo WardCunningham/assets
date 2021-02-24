@@ -1,0 +1,52 @@
+<html>
+<body>
+<h3>See it Work</h3>
+<pre id=show>waiting</pre>
+<script type=module>
+
+import * as THREE from 'https://unpkg.com/three@0.124.0/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three@0.124.0/examples/jsm/controls/OrbitControls.js';
+
+window.addEventListener("message", ({data}) => {
+ console.log("message received", data)
+ if (data.action == "frameContext") {
+   const {slug, item, page} = data
+   let code = page.story.find(it => it.type == "code")
+   if (code && code.text) { render(code.text) }
+ }
+})
+
+window.parent.postMessage({ action:"sendFrameContext" }, "*")
+
+async function render (text) {
+  let tick = null
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(2);
+  document.body.appendChild(renderer.domElement);
+
+  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 15);
+  camera.position.z = 3;
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+
+  const scene = new THREE.Scene();
+
+  try {
+    eval(text)
+    show.innerHTML = ''
+  } catch (e) {
+    show.innerHTML = `<pre>${e.message}</pre>`
+  }
+
+  renderer.setAnimationLoop(() => {
+    controls.update();
+    if(tick) tick()
+    renderer.render(scene, camera);
+  })
+}
+
+</script>
+</body>
+</html>
