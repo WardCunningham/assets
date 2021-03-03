@@ -1,0 +1,25 @@
+<pre id=markup>working</pre>
+
+<script>
+
+  const here = (slug) => fetch(`http://ward.dojo.fed.wiki/${slug}.json`).then(res => res.json())
+  const there = (slug) => fetch(`http://trails.ward.asia.wiki.org/${slug}.json`).then(res => res.json())
+  const item = (page, type) => page.story.find(item => item.type == type)
+  const title = (line) => line.match(/label="(.*)"/)[1].replace(/\\n/g,' ')
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const fix = (title) => title.replace(/Home Sweet Home/,'Crossing Wiki Creek')
+  const coord = (markup) => markup.split(/\n/).filter(line => line.match(/^\d/)).join("\n")
+  const rounded = (coord) => coord.split(/, /).map(num => Number.parseFloat(num).toFixed(9)).join(', ')
+
+  generate()
+
+  async function generate() {
+    let dot = await here('pandemic-wandering').then(page => item(page, 'graphviz').text)
+    let titles = dot.split(/\n/).filter(line => line.match(/label=/)).map(line => title(line))
+    let trails = await Promise.all(titles.map(title => there(asSlug(fix(title)))))
+    let coords = trails.map(trail => coord(item(trail, 'map').text)).join("\n")
+    let pretty = coords.split(/\n/).map(line => rounded(line)).join("\n")
+    markup.innerHTML = pretty
+  }
+
+</script>
