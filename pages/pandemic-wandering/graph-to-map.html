@@ -14,11 +14,11 @@
   generate()
 
   async function generate() {
-    let dot = await here('pandemic-wandering').then(page => item(page, 'graphviz').text)
-    let titles = dot.split(/\n/).filter(line => line.match(/label=/)).map(line => title(line))
-    let trails = await Promise.all(titles.map(title => there(asSlug(fix(title)))))
-    let coords = trails.map(trail => coord(item(trail, 'map').text)).join("\n")
-    let pretty = coords.split(/\n/).map(line => rounded(line)).join("\n")
+    const dot = await here('pandemic-wandering').then(page => item(page, 'graphviz').text)
+    const titles = dot.split(/\n/).filter(line => line.match(/label=/)).map(line => title(line))
+    const trails = await Promise.all(titles.map(title => there(asSlug(fix(title)))))
+    const coords = trails.map(trail => coord(item(trail, 'map').text)).join("\n")
+    const pretty = coords.split(/\n/).map(line => rounded(line)).join("\n")
     markup.innerHTML = pretty
   }
 
