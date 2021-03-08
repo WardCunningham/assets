@@ -1,0 +1,39 @@
+<p style="width:300px;">We search this server for installed plugins and then scrape their links for more pages.</p>
+<button onclick="download()">download</button>
+<table><tr><td><pre id=todo><td><pre id=done></table>
+
+<script>
+  let site = 'http://asia.wiki.org'
+  let exprt = {}
+  start()
+
+  async function start() {
+    let about = name => `about-${name}-plugin`
+    let plugins = await fetch(`${site}/system/plugins.json`).then(res => res.json())
+    todo.innerHTML = plugins.map(about).join("\n")
+    for (let plugin of plugins) {
+      console.log(about(plugin))
+      scrape(about(plugin))
+    }
+  }
+
+  async function scrape(slug) {
+    let page = await fetch(`${site}/${slug}.json`).then(res => res.json())
+    done.innerHTML += `${slug}\n`
+    exprt[slug] = page
+    todo.innerHTML = todo.innerHTML.replace(slug,'')
+  }
+
+  async function download() {
+    let string = JSON.stringify(exprt,null,2)
+    let file = 'about-pages.json'
+    var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+    var anchor = document.createElement('a');
+    anchor.setAttribute("href",     data);
+    anchor.setAttribute("download", file);
+    document.body.appendChild(anchor); // required for firefox
+    anchor.click();
+    anchor.remove();
+  }
+
+</script>
