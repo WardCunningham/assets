@@ -8,12 +8,12 @@ import * as THREE from 'https://unpkg.com/three@0.124.0/build/three.module.js';
 import { OrbitControls } from 'https://unpkg.com/three@0.124.0/examples/jsm/controls/OrbitControls.js';
 
 window.addEventListener("message", ({data}) => {
- console.log("message received", data)
- if (data.action == "frameContext") {
-   const {slug, item, page} = data
-   let code = page.story.find(it => it.type == "code")
-   if (code && code.text) { render(code.text) }
- }
+  console.log("message received", data)
+  if (data.action == "frameContext") {
+    const {slug, item, page} = data
+    let code = page.story.filter(it => it.type == 'code').map(it => it.text)
+    if (code.length) { render(code.join("\n")) }
+  }
 })
 
 window.parent.postMessage({ action:"sendFrameContext" }, "*")
