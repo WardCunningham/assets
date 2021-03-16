@@ -1,0 +1,39 @@
+<html>
+<body>
+<pre id=show>waiting</pre>
+<div id=output><div>
+<script type=module>
+
+window.addEventListener("message", handler)
+
+function handler ({data}) {
+  console.log("message received", data)
+  if (data.action == "frameContext") {
+    const {slug, item, page} = data
+    let code = page.story.filter(it => it.type == 'code').map(it => it.text)
+    if (code.length) { render(code.join("\n")) }
+  }
+}
+
+window.parent.postMessage({ action:"sendFrameContext" }, "*")
+
+async function render (text) {
+  try {
+    let result = eval(text)
+    console.log(text,result)
+    show.innerHTML = ''
+    if (!result) return
+    let maybe = JSON.stringify(result)
+    if (maybe.length > 50) maybe = JSON.stringify(result,null,2)
+    output.innerHTML += `<pre>${maybe}</pre>`
+  } catch (e) {
+    show.innerHTML = `<pre>${e.message}</pre>`
+  }
+
+
+
+}
+
+</script>
+</body>
+</html>
