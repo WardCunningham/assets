@@ -1,5 +1,6 @@
 <!-- deno run --allow-net --allow-read https://deno.land/std/http/file_server.ts -->
 
+<div id=stats></div>
 <svg id=box viewBox="0 0 100 100"></svg>
 
 <script type=module>
@@ -11,16 +12,19 @@
   requestAnimationFrame(render)
 
   function render() {
+    count = 0
     box.innerHTML = agents.map(circle).join("\n")
+    stats.innerHTML = `${Math.round(100*count/agents.length)}% green`
     requestAnimationFrame(render)
   }
 
   function circle(agent) {
+    if (agent.color == 'green') count++
     return `
       <circle
         cx="${agent.xy[0]}"
         cy="${agent.xy[1]}"
-        r=".49"
+        r="1.5"
         fill="${agent.color}"
       />`
   }
