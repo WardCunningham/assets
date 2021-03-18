@@ -6,31 +6,32 @@
 <script type=module>
 
   import {start} from './sim.js'
-  let agents = start(Array(200))
-  let count = 0
+  let agents = Array(200)
+  start(agents)
 
   requestAnimationFrame(render)
 
   function render() {
-    count = 0
+    let count = 0
     box.innerHTML = agents.map(circle).join("\n")
     stats.innerHTML = `${Math.round(100*count/agents.length)}% green`
     requestAnimationFrame(render)
-  }
 
-  function circle(agent) {
-    if (agent.color == 'green') count++
-    let r = 1.5
-    if (agent.prev && agent.prev != agent.color) r *= 1.2
-    agent.prev = agent.color
-    return `
-      <circle
-        cx="${agent.xy[0]}"
-        cy="${agent.xy[1]}"
-        r="${r}"
-        fill="${agent.color}"
-      />`
+    function circle(agent) {
+      if (agent.color == 'green') count++
+      let r = 1.5
+      if (agent.prev && agent.prev != agent.color) r *= 1.2
+      agent.prev = agent.color
+      return `
+        <circle
+          cx="${agent.xy[0]}"
+          cy="${agent.xy[1]}"
+          r="${r}"
+          fill="${agent.color}"
+          stroke="white"
+          stroke-width=".05px"
+        />`
+    }
   }
-
 
 </script>

@@ -1,23 +1,22 @@
 export {start}
 
 const rn = () => Math.floor(50*(Math.random()+Math.random()))
-const at = {}
 
 function start(agents) {
 
   place()
   connect()
   network()
-  return agents
 
   function place() {
+    const occupied = {}
     for (let i =0; i<agents.length; i++) {
       let xy = [rn(), rn()]
-      if (at[xy]) {
+      if (occupied[xy]) {
         i--
       } else {
         let color = Math.random()<0.5 ? 'purple' : 'green'
-        at[xy] = agents[i] = {xy, color}      
+        occupied[xy] = agents[i] = {xy, color}
       }
     }
   }
