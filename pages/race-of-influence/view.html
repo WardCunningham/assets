@@ -1,0 +1,29 @@
+<!-- deno run --allow-net --allow-read https://deno.land/std/http/file_server.ts -->
+
+<svg id=box viewBox="0 0 100 100"></svg>
+
+<script type=module>
+
+  import {start} from './sim.js'
+  let agents = start(Array(200))
+  let count = 0
+
+  requestAnimationFrame(render)
+
+  function render() {
+    box.innerHTML = agents.map(circle).join("\n")
+    requestAnimationFrame(render)
+  }
+
+  function circle(agent) {
+    return `
+      <circle
+        cx="${agent.xy[0]}"
+        cy="${agent.xy[1]}"
+        r=".49"
+        fill="${agent.color}"
+      />`
+  }
+
+
+</script>

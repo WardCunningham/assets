@@ -1,0 +1,58 @@
+export {start}
+
+const rn = () => Math.floor(50*(Math.random()+Math.random()))
+const at = {}
+
+function start(agents) {
+
+  place()
+  connect()
+  network()
+  return agents
+
+  function place() {
+    for (let i =0; i<agents.length; i++) {
+      let xy = [rn(), rn()]
+      if (at[xy]) {
+        i--
+      } else {
+        let color = Math.random()<0.5 ? 'purple' : 'green'
+        at[xy] = agents[i] = {xy, color}      
+      }
+    }
+  }
+
+  function connect() {
+    for (let agent of agents) {
+      const dist = other => Math.abs(agent.xy[0]-other.xy[0])+Math.abs(agent.xy[1]-other.xy[1])
+      agent.closest = agents
+        .map(other => ({dist:dist(other), other}))
+        .sort((a, b) => a.dist - b.dist)
+        .slice(1,5)
+        .map(each => each.other)
+    }
+  }
+
+  function network() {
+    for (let agent of agents) {
+      speaking(agent)
+    }
+  }
+
+  async function speaking(agent) {
+    const delay = async ms => new Promise(resolve => setTimeout(resolve, ms))
+    while(true) {
+      await delay(rn() * (agent.color == 'purple' ? 20 : 30))
+      for (let other of agent.closest) {
+        listening(other, agent)
+      }
+    }
+  }
+
+  function listening(agent, other) {
+    if (rn() < 30 && agent.color != other.color) {
+      agent.color = other.color
+    }
+  }
+
+}
