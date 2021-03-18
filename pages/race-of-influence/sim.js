@@ -26,10 +26,9 @@ function start(agents) {
     for (let agent of agents) {
       const dist = other => Math.abs(agent.xy[0]-other.xy[0])+Math.abs(agent.xy[1]-other.xy[1])
       agent.closest = agents
-        .map(other => ({dist:dist(other), other}))
-        .sort((a, b) => a.dist - b.dist)
+        .slice()
+        .sort((a, b) => dist(a) - dist(b))
         .slice(1,5)
-        .map(each => each.other)
     }
   }
 
