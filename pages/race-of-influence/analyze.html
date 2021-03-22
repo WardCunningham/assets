@@ -1,0 +1,76 @@
+<!-- deno run --allow-net --allow-read https://deno.land/std/http/file_server.ts -->
+
+<span id=stats></span>
+<svg id=box viewBox="0 0 100 100"></svg>
+<svg viewBox="0 0 100 100">
+  <polyline
+    id="grid"
+    points="0,0 0,100 100,100 100,0 0,0 0,50 100,50"
+    stroke="#ccc" fill="none"/>
+  <polyline
+    id="growing"
+    points="0,50"
+    fill="none"
+    stroke="brown"
+    stroke-width=".5"
+    stroke-linejoin="round"/>
+</svg>
+
+<script type=module>
+
+  import {start} from './sim.js'
+  let agents = Array(200)
+  start(agents)
+
+  let x = 1
+  let y = 50
+  let t = 0
+
+  requestAnimationFrame(render)
+
+  function render() {
+    let count = 0
+    box.innerHTML = agents.map(circle).join("\n")
+    let pct = 100*count/agents.length
+    stats.innerHTML = `${Math.round(pct)}% green`
+    plot(pct)
+    requestAnimationFrame(render)
+
+    function circle(agent) {
+      if (agent.color == 'green') count++
+      let r = 1.5
+      if (agent.prev && agent.prev != agent.color) r *= 1.2
+      agent.prev = agent.color
+      return `
+        <circle
+          cx="${agent.xy[0]}"
+          cy="${agent.xy[1]}"
+          r="${r}"
+          fill="${agent.color}"
+          stroke="white"
+          stroke-width=".05px"
+        />`
+    }
+  }
+
+  function plot (pct) {
+    if (t++ % 6) return
+    y = pct
+    let points = growing.getAttribute('points')
+    if (x > 102) { x = 0; y = 50; points='0,50', reset() }
+    growing.setAttribute('points', points + ' ' + [x,100-y])
+    x += .5
+  }
+
+  function reset() {
+    let hist = growing.cloneNode()
+    hist.setAttribute('id','')
+    hist.setAttribute('stroke','#ddd')
+    grid.before(hist)
+    for (let agent of agents) {
+      agent.color = Math.random() < .5 ? 'green' : 'purple'
+    }
+  }
+
+
+</script>
