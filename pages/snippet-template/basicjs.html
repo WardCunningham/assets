@@ -20,7 +20,7 @@ window.parent.postMessage({ action:"sendFrameContext" }, "*")
 async function render (text) {
   try {
     let result = eval(text)
-    console.log(text,result)
+    console.log({text,result})
     show.innerHTML = ''
     if (!result) return
     let maybe = JSON.stringify(result)
