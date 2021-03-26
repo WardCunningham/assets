@@ -5,17 +5,16 @@
 <script type=module>
 
 window.addEventListener("message", handler)
+window.parent.postMessage({ action:"sendFrameContext" }, "*")
 
 function handler ({data}) {
-  console.log("message received", data)
   if (data.action == "frameContext") {
+    window.removeEventListener("message", handler)
     const {slug, item, page} = data
     let code = page.story.filter(it => it.type == 'code').map(it => it.text)
     if (code.length) { render(code.join("\n")) }
   }
 }
-
-window.parent.postMessage({ action:"sendFrameContext" }, "*")
 
 async function render (text) {
   try {
@@ -29,9 +28,6 @@ async function render (text) {
   } catch (e) {
     show.innerHTML = `<pre>${e.message}</pre>`
   }
-
-
-
 }
 
 </script>
