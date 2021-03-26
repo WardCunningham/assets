@@ -2,11 +2,13 @@
 <style>
   body { font-family: Arial, Helvetica, sans-serif; }
     td { vertical-align: text-top; }
+    thead tr th { text-align: left; position: sticky; top: 0px; background-color: white}
 </style>
 <script>
 
   const site = 'http://trails.ward.asia.wiki.org'
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const uniq = (value, index, self) => self.indexOf(value) === index
 
   cross(
   	fetch(`${site}/chronological-destinations.json`).then(res => res.json()),
@@ -17,15 +19,39 @@
   async function cross(...checks) {
     let [dest, been, sitemap] = await Promise.all(checks)
     console.log({dest, been, sitemap})
+    report(
+      links(dest.story.map(item => item.text)).filter(uniq),
+      links(been.story[1].text.split(/\n/)).filter(uniq),
+      sitemap.map(info => info.title).filter(trail).sort()
+    )
+  }
+
+  function report (dest, been, sitemap) {
+    console.log({dest, been, sitemap})
+
+    function tr (regex) {
+      const apply = (regex, list) => list.filter(each => regex.test(each))
+      const same = (a, b) => a.toString() == b.toString()
+      let cols = [apply(regex,dest),apply(regex,been),apply(regex,sitemap)]
+      let color = (same(cols[0],cols[1]) && same(cols[0],cols[2])) ? 'white' : '#fee'
+      const td = col => `<td><hr><div style="background-color:${color}">${col.join("<br>")}</div>`
+      return `<tr>${cols.map(td).join("\n")}`
+    }
+
+    // https://javascript.info/regexp-lookahead-lookbehind
+    let rows = [
+      /^\d/,
+      /^A/, /^B/, /^C/, /^D/, /^E/, /^F/, /^G/, /^H/, /^I/,
+      /^J/, /^K/, /^L/, /^M/, /^N/, /^O/, /^P/, /^Q/, /^R/,
+      /^S(?!W )/, /^SW \d/, /^SW [A-Z]/,
+      /^T/, /^U/, /^V/, /^W/, /^X/, /^Y/, /^Z/,
+    ].map(tr)
     result.innerHTML = `<table>
-      <tr>
+      <thead><tr>
         <th>Chronologial Destinations
         <th>Places I Have Been
         <th>Recent Changes
-      <tr>
-        <td>${links(dest.story.map(item => item.text))}
-        <td>${links(been.story[1].text.split(/\n/))}
-        <td>${sitemap.map(info => info.title).filter(trail).sort().join('<br>')}
+      <tbody>${rows.join("\n")}
     `
   }
 
@@ -35,19 +61,18 @@
       let m = maybe.match(/\[\[(.*?)\]\]/)
       if (m) want.push(m[1])
     }
-    return want.sort().join('<br>')
+    return want.sort()
   }
 
   function trail(title) {
     const stops = [
       'Chronological', 'Comforts', 'Compass', 'Creeks', 'Culverts', 'Crossing',
-      'Environmental', 'Garden Home Junction', 'Historic',
+      'Environmental', 'Garden Home Junction', 'Heritage', 'Historic',
       'Incremental', 'Iron Mountain', 'Jeffries Creek', 'Kalama', 'Marshall Proposed',
-      'Movable', 'Navigate', 'Near', 'Pandemic', 'Places', 'Red Electric Trail System', 'Round',
-      'Sisters', 'Sleeping', 'Southwest', 'Terminal', 'Things', 'Topo', 'Trail', 'Tryon Creek Trail System', 'Tuning',
+      'Movable', 'Navigate', 'Near', 'Pandemic', 'Places', 'Portland', 'Red Electric Trail System', 'Round',
+      'Sisters', 'Sleeping', 'Southwest', 'Terminal', 'Things', 'Topo', 'Trail', 'Trees', 'Tryon Creek Trail System', 'Tuning',
       'Wandering', 'Ward', 'Wider', 'Workflow', 'Welcome', 'West',
       'Spring 20', 'Summer 20', 'Fall 20', 'Winter 20'
-
     ]
     for (stop of stops) {
       if (title.startsWith(stop)) return false
