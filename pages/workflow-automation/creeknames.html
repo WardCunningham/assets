@@ -1,0 +1,56 @@
+<div id=result>working</div>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; }
+  span { color: gray}
+</style>
+
+<script>
+
+  const site = 'http://trails.ward.asia.wiki.org'
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  // const gaps = (value, index, self) => !index || self[index-1]+10 < value
+
+  let creeks = {}
+
+  main()
+
+  async function main() {
+    let slug = location.search || 'chronological-destinations'
+    let index = await fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
+    let work = []
+    for (let item of index.story) {
+      if (item.type == 'paragraph') {
+        let m = item.text.match(/^\[\[(.+?)\]\]/)
+        if (m) {
+          let title = m[1]
+          let slug = asSlug(title)
+          work.push(trail(title, slug))
+        }
+      }
+    }
+    await Promise.all(work)
+    const chronological = (a,b) => new Date(a.dates[0]) < new Date(b.dates[0]) ? -1 : 1
+    result.innerHTML = Object.keys(creeks).sort().map(creek => 
+      `<p><b>${creek} Creek</b><br>
+        ${creeks[creek].filter(uniq).sort().join("<br>")}`).join("\n")
+  }
+
+  async function trail(title, slug) {
+    let page = await fetch(`${site}/${slug}.json`).then(res => res.json())
+    result.innerText += ' .'
+    let story = page.story || []
+    for (let item of story) {
+      if (item.type == 'paragraph') {
+        for (m of item.text.matchAll(/\b(?!The)([A-Z][a-z]+) [Cc]reek\b/g)) {
+          let list = creeks[m[1]] = creeks[m[1]] || []
+          list.push(title)          
+        }
+      }
+    }
+  }
+
+
+
+
+</script>

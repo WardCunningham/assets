@@ -1,0 +1,69 @@
+<div id=result>working</div>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; }
+  span { color: gray}
+</style>
+
+<script>
+
+  const site = 'http://trails.ward.asia.wiki.org'
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  const gaps = (value, index, self) => !index || self[index-1]+10 < value
+
+  let revisits = []
+
+  main()
+
+  async function main() {
+    let slug = location.search || 'chronological-destinations'
+    let index = await fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
+    let work = []
+    for (let item of index.story) {
+      if (item.type == 'paragraph') {
+        let m = item.text.match(/^\[\[(.+?)\]\](.*)$/)
+        if (m) {
+          let title = m[1]
+          let slug = asSlug(title)
+          work.push(trail(title, slug))
+        }
+      }
+    }
+    await Promise.all(work)
+    const chronological = (a,b) => new Date(a.dates[0]) < new Date(b.dates[0]) ? -1 : 1
+    result.innerHTML = revisits.sort(chronological).map(trail => 
+      `<p><b>${trail.title}</b><br>
+        ${trail.dates.join(",<br>")}<br>
+        <span>
+        ${trail.batches.join(", ")}<br>
+        ${trail.serials.join(", ")}
+        </span>`).join("\n")
+  }
+
+  async function trail(title, slug) {
+    let page = await fetch(`${site}/${slug}.json`).then(res => res.json())
+    result.innerText += ' .'
+    let story = page.story || []
+    let synopsis = story[0].text
+    let batches = []
+    let serials = []
+    for (let item of story) {
+      if (item.type == 'html') {
+        let m = item.text.match(/\bsrc=http:\/\/trails.ward.asia.wiki.org\/assets\/pages\/(.*?)\/IMG_(.*?).jpg/i)
+        if (m) {
+          batches.push(m[1])
+          serials.push(1*m[2])
+        }
+      }
+    }
+    batches = batches.filter(uniq)
+    serials = serials.sort().filter(gaps)
+    let dates = page.story.filter(item => item.text.length<30 && !isNaN(new Date(item.text))).map(item => item.text)
+    if(dates.length < 2 && batches.length < 2 && serials.length < 2) return
+    revisits.push({title, synopsis, dates, batches, serials})
+  }
+
+
+
+
+</script>
