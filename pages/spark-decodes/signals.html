@@ -71,9 +71,11 @@ function tally(spots) {
       spot.msg == prev ? '▋' : '█'
     op.snr.push([spot.snr,ch,spot.msg])
     op.avg = avg(op.snr.map(n => n[0]))
-    let dt = Math.round((now-op.last)/(30*1000))
-    dist[dt] = dist[dt] || 0
-    dist[dt] += 1
+    if (op.last) {
+      let dt = Math.round((now-op.last)/(30*1000))
+      dist[dt] = dist[dt] || 0
+      dist[dt] += 1
+    }
     op.last = now
     if(spot.distance) op.dst = Math.round(spot.distance)
   }
