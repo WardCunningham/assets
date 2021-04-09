@@ -56,8 +56,10 @@ socket.addEventListener('message', (event) => {
 
 let log = {}
 let t0 = Date.now()
+let dist = {}
 
 function tally(spots) {
+  let now = Date.now()
   let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
   let chan = log[band] = log[band] || {}
   for (let spot of spots) {
@@ -69,8 +71,14 @@ function tally(spots) {
       spot.msg == prev ? '▋' : '█'
     op.snr.push([spot.snr,ch,spot.msg])
     op.avg = avg(op.snr.map(n => n[0]))
+    let dt = Math.round((now-op.last)/(30*1000))
+    dist[dt] = dist[dt] || 0
+    dist[dt] += 1
+    op.last = now
     if(spot.distance) op.dst = Math.round(spot.distance)
   }
+  let expired = Object.keys(chan).filter(call => chan[call].last < now-(10*60*1000))
+  for (let call of expired) delete chan[call]
   let report = []
   for (let b in log) {
     let c = log[b]
@@ -85,7 +93,7 @@ function tally(spots) {
         <td>${c[call].snr.map(n=>fmt(n)).join(' ')}`)
     }
   }
-  show.innerHTML = `<table>${report.join('')}</table`
+  show.innerHTML = `<table>${report.join('')}</table> <pre>${JSON.stringify(dist,null,2)}</pre>`
 }
 
 function avg(list) {
