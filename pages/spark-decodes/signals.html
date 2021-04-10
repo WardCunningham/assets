@@ -1,7 +1,17 @@
-<div id=show>waiting</div>
 <style>
-  span {font-size:10px;}
+  body {font-family:helvetica,Arial,Sans;}
+  span { font-size:10px; }
+  th { width: 30px; }
+  td { vertical-align:top; }
 </style>
+
+<table border="1" style="border-collapse:collapse; border-color:#ccc;" >
+  <thead><tr><th>00<th>05<th>10<th>15<th>20<th>25<th>30<th>35<th>40<th>45<th>50<th>55</thead>
+  <tbody id=clock></tbody>
+</table>
+
+<div id=show>waiting</div>
+
 
 <script>
 
@@ -40,6 +50,28 @@ const fmt = (snr) => params['fmt']=='color' ? `<font title="${snr[2]}" style="co
 
 // L I S T E N
 
+let blank = ['','','','','','','','','','','','']
+let ticks = [blank.slice()]
+
+function tick(mark) {
+  let slot = Math.floor(Date.now()/5000%12)
+  let row = ticks.slice(-1)[0]
+  row[slot] += mark
+  clock.innerHTML = ticks.map(row => `<tr>${row.map(cell => `<td>${cell}`).join("")}`).join("\n")
+}
+
+function tock() {
+  let now = Math.floor(Date.now()/1000)%60
+  if (now == 0) {
+    ticks.push(blank.slice())
+    if (ticks.length > 4) ticks.splice(0,1)
+    tick(`<b>${('0000' + Math.floor(Date.now()/1000/60)%60).slice(-2)}</b>`)
+  }
+  tick('.')
+}
+
+setInterval(tock,1000)
+
 const socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
 
 socket.addEventListener('open', (event) => {
@@ -61,6 +93,7 @@ let dist = {}
 function tally(spots) {
   let now = Date.now()
   let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
+  tick('<br>'+band)
   let chan = log[band] = log[band] || {}
   for (let spot of spots) {
     let call = spot.call
