@@ -52,6 +52,7 @@ const fmt = (snr) => params['fmt']=='color' ? `<font title="${snr[2]}" style="co
 
 let blank = ['','','','','','','','','','','','']
 let ticks = [blank.slice()]
+let drift = 0
 
 function tick(mark) {
   let slot = Math.floor(Date.now()/5000%12)
@@ -61,6 +62,7 @@ function tick(mark) {
 }
 
 function tock() {
+  drift = Date.now()%1000
   let now = Math.floor(Date.now()/1000)%60
   if (now == 0) {
     ticks.push(blank.slice())
@@ -70,11 +72,12 @@ function tock() {
   tick('.')
 }
 
-setInterval(tock,1000)
+setTimeout(() => setInterval(tock,1000), 1000-Date.now()%1000)
 
-const socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
+let socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
 
 socket.addEventListener('open', (event) => {
+  tick('open')
   socket.send('{"cmd":"subscribeToSpots","Enable":true}')
 })
 
