@@ -1,7 +1,7 @@
 <div id=result>working</div>
 <style>
   body { font-family: Arial, Helvetica, sans-serif; }
-  span { color: gray}
+  span { cursor: pointer; }
 </style>
 
 <script>
@@ -9,6 +9,7 @@
   const site = 'http://trails.ward.asia.wiki.org'
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
   const uniq = (value, index, self) => self.indexOf(value) === index
+  const creekname = /\b(?!The)([A-Z][a-z]+('s)?) [Cc]reek\b/g
   // const gaps = (value, index, self) => !index || self[index-1]+10 < value
 
   let creeks = {}
@@ -31,26 +32,38 @@
     }
     await Promise.all(work)
     const chronological = (a,b) => new Date(a.dates[0]) < new Date(b.dates[0]) ? -1 : 1
+    const link = (text) => `<span onclick=dolink(event)>${text}</span>`
     result.innerHTML = Object.keys(creeks).sort().map(creek => 
       `<p><b>${creek} Creek</b><br>
-        ${creeks[creek].filter(uniq).sort().join("<br>")}`).join("\n")
+        ${creeks[creek].filter(uniq).sort().map(link).join("<br>")}`).join("\n")
   }
 
   async function trail(title, slug) {
     let page = await fetch(`${site}/${slug}.json`).then(res => res.json())
     result.innerText += ' .'
+    tally(title, title)
     let story = page.story || []
     for (let item of story) {
-      if (item.type == 'paragraph') {
-        for (m of item.text.matchAll(/\b(?!The)([A-Z][a-z]+) [Cc]reek\b/g)) {
-          let list = creeks[m[1]] = creeks[m[1]] || []
-          list.push(title)          
-        }
-      }
+      if (item.type == 'paragraph') tally(title, item.text)
     }
   }
 
+  function tally (title, text) {
+    for (m of text.matchAll(creekname)) {
+      let list = creeks[m[1]] = creeks[m[1]] || []
+      list.push(title)
+    }
+  }
 
+  function dolink (event) {
+    let title = event.target.innerText
+    let message = {
+      action:"doInternalLink",
+      title,
+      keepLineup: event.shiftKey
+    }
+    window.parent.postMessage(message, "*")
+  }
 
 
 </script>
