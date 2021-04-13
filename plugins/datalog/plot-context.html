@@ -1,0 +1,57 @@
+
+<head>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+<div id=chart></div>
+
+<script>
+
+let layout = {
+  showlegend: false,
+  paper_bgcolor:'#eee', plot_bgcolor:'white',
+  margin: { l: 30, r: 0, b: 40, t: 0, pad: 0 }
+}
+
+let trace1 = { x: [1, 2, 3, 4], y: [10, 15, 13, 17]};
+let trace2 = { x: [1, 2, 3, 4], y: [16, 5, 11, 9]};
+let traces = null
+
+window.addEventListener("message", handler)
+let message = { action:"sendFrameContext" }
+window.parent.postMessage(message, "*")
+
+function handler ({data}) {
+  if (data.action == "frameContext") {
+    window.removeEventListener("message", handler)
+    handle(data)
+  }
+}
+
+async function handle ({slug, page}) {
+  const markup = (type) => page.story
+    .filter(item => item.type == type)
+    .map(item => item.text)
+
+  let code = markup('code').join("\n")
+  let chunk = markup('datalog')[0].match(/HOUR|DAY|MONTH/)[0].toLowerCase()
+  let keep = markup('datalog')[0].match(/KEEP\s+(\d+)\b/)[1]*1
+  let keys = [...Array(keep).keys()].reverse()
+  let site = markup('frame')[0].match(/https?:\/\/.*?(?=\/)/)[0]
+  let url = `${site}/plugin/datalog/${slug}/${chunk}/`
+  let files = await Promise.all(keys.map(n => fetch(url+n).then(res => res.ok ? res.text() : '')))
+  let data = files.join("").split(/\n/).slice(0,-1).map(line => JSON.parse(line))
+
+  try {
+    result = eval(code)
+    Plotly.plot(chart, traces || [trace1,trace2], layout);
+  } catch (err) {
+    console.log(err)
+    chart.innerHTML = `${err}`
+  }
+
+}
+
+</script>
+</body>
+</html>
