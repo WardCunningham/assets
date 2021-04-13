@@ -22,9 +22,13 @@ async function render (text) {
     console.log({text,result})
     show.innerHTML = ''
     if (!result) return
+    if (typeof result == typeof "" && result.match(/\s*</)) {
+      output.innerHTML = result
+    } else {
     let maybe = JSON.stringify(result)
-    if (maybe.length > 50) maybe = JSON.stringify(result,null,2)
-    output.innerHTML += `<pre>${maybe}</pre>`
+      if (maybe.length > 50) maybe = JSON.stringify(result,null,2)
+      output.innerHTML += `<pre>${maybe}</pre>`
+    }
   } catch (e) {
     show.innerHTML = `<pre>${e.message}</pre>`
   }
