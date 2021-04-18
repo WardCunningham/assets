@@ -6,11 +6,12 @@
 </style>
 
 <table border="1" style="border-collapse:collapse; border-color:#ccc;" >
-  <thead><tr><th>00<th>05<th>10<th>15<th>20<th>25<th>30<th>35<th>40<th>45<th>50<th>55</thead>
+  <thead><tr><th><th>00<th>05<th>10<th>15<th>20<th>25<th>30<th>35<th>40<th>45<th>50<th>55</thead>
   <tbody id=clock></tbody>
 </table>
+<p><button onclick="reopen(event)">reopen</button>
 
-<div id=show>waiting</div>
+<div id=show><p>waiting</div>
 
 
 <script>
@@ -50,14 +51,16 @@ const fmt = (snr) => params['fmt']=='color' ? `<font title="${snr[2]}" style="co
 
 // L I S T E N
 
-let blank = ['','','','','','','','','','','','']
+let socket = null
+let blank = ['','','','','','','','','','','','','']
 let ticks = [blank.slice()]
 let drift = 0
+let delay = {}
 
 function tick(mark) {
   let slot = Math.floor(Date.now()/5000%12)
   let row = ticks.slice(-1)[0]
-  row[slot] += mark
+  row[slot+1] += mark
   clock.innerHTML = ticks.map(row => `<tr>${row.map(cell => `<td>${cell}`).join("")}`).join("\n")
 }
 
@@ -65,26 +68,34 @@ function tock() {
   drift = Date.now()%1000
   let now = Math.floor(Date.now()/1000)%60
   if (now == 0) {
-    ticks.push(blank.slice())
+    let row = blank.slice()
+    row[0] =`<b>${('0000' + Math.floor(Date.now()/1000/60)%60).slice(-2)}</b>`
+    ticks.push(row)
     if (ticks.length > 4) ticks.splice(0,1)
-    tick(`<b>${('0000' + Math.floor(Date.now()/1000/60)%60).slice(-2)}</b>`)
   }
   tick('.')
 }
 
 setTimeout(() => setInterval(tock,1000), 1000-Date.now()%1000)
+reopen()
 
-let socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
+function reopen() {
+  socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
 
-socket.addEventListener('open', (event) => {
-  tick('open')
-  socket.send('{"cmd":"subscribeToSpots","Enable":true}')
-})
+  socket.addEventListener('open', (event) => {
+    tick('open')
+    socket.send('{"cmd":"subscribeToSpots","Enable":true}')
+  })
 
-socket.addEventListener('message', (event) => {
-    let msg = JSON.parse(event.data)
-    tally(msg.spots)
-})
+  socket.addEventListener('message', (event) => {
+      let msg = JSON.parse(event.data)
+      if (!msg.spots) return
+      tally(msg.spots)
+      expire()
+      render()
+  })
+}
+
 
 
 // R E C O R D
@@ -96,6 +107,8 @@ let dist = {}
 function tally(spots) {
   let now = Date.now()
   let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
+  let time = new Date(spots[0].time).valueOf()
+  delay[band] = (now-time)/1000
   tick('<br>'+band)
   let chan = log[band] = log[band] || {}
   for (let spot of spots) {
@@ -115,10 +128,22 @@ function tally(spots) {
     op.last = now
     if(spot.distance) op.dst = Math.round(spot.distance)
   }
-  let expired = Object.keys(chan).filter(call => chan[call].last < now-(10*60*1000))
-  for (let call of expired) delete chan[call]
+}
+
+function expire() {
+  let now = Date.now()
+  for (let band in log) {
+    let chan = log[band]
+    let expired = Object.keys(chan).filter(call => chan[call].last < now-(10*60*1000))
+    if(expired.length) console.log(new Date().toLocaleTimeString(), band, '⇒', ...expired)
+    for (let call of expired) delete chan[call]
+  }
+}
+
+function render() {
   let report = []
-  for (let b in log) {
+  let bands = Object.keys(log).sort((a,b) => a-b)
+  for (let b of bands) {
     let c = log[b]
     let k = Object.keys(c)
     k.sort((a,b)=>c[b].avg-c[a].avg)
