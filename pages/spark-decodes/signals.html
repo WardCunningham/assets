@@ -1,3 +1,6 @@
+<head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎧</text></svg>">
+</head>
 <style>
   body {font-family:helvetica,Arial,Sans;}
   span { font-size:10px; }
@@ -80,6 +83,7 @@ setTimeout(() => setInterval(tock,1000), 1000-Date.now()%1000)
 reopen()
 
 function reopen() {
+  if(socket) socket.close()
   socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
 
   socket.addEventListener('open', (event) => {
@@ -137,6 +141,7 @@ function expire() {
     let expired = Object.keys(chan).filter(call => chan[call].last < now-(10*60*1000))
     if(expired.length) console.log(new Date().toLocaleTimeString(), band, '⇒', ...expired)
     for (let call of expired) delete chan[call]
+    if(!Object.keys(chan).length) delete log[band]
   }
 }
 
@@ -156,7 +161,7 @@ function render() {
         <td>${c[call].snr.map(n=>fmt(n)).join(' ')}`)
     }
   }
-  show.innerHTML = `<table>${report.join('')}</table> <pre>${JSON.stringify(dist,null,2)}</pre>`
+  show.innerHTML = `<table>${report.join('')}</table>`
 }
 
 function avg(list) {
