@@ -37,6 +37,7 @@
 
   async function trail(title, slug) {
     let page = await fetch(`${site}/${slug}.json`).then(res => res.json())
+    result.innerText += ' .'
     let story = page.story || []
     let synopsis = story[0].text
     let images = 0
