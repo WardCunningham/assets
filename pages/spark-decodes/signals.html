@@ -55,12 +55,14 @@ const fmt = (snr) => params['fmt']=='color' ? `<font title="${snr[2]}" style="co
 // L I S T E N
 
 let socket = null
+let minute = Math.floor(Date.now()/1000/60)
 let blank = ['','','','','','','','','','','','','']
 let ticks = [blank.slice()]
 let drift = 0
 let delay = {}
 
 function tick(mark) {
+  tock()
   let slot = Math.floor(Date.now()/5000%12)
   let row = ticks.slice(-1)[0]
   row[slot+1] += mark
@@ -68,18 +70,17 @@ function tick(mark) {
 }
 
 function tock() {
-  drift = Date.now()%1000
-  let now = Math.floor(Date.now()/1000)%60
-  if (now == 0) {
+  let now = Math.floor(Date.now()/1000/60)
+  if (now > minute) {
+    minute = now
     let row = blank.slice()
-    row[0] =`<b>${('0000' + Math.floor(Date.now()/1000/60)%60).slice(-2)}</b>`
+    row[0] =`<b>${('0000'+(now%60)).slice(-2)}</b>`
     ticks.push(row)
     if (ticks.length > 4) ticks.splice(0,1)
   }
-  tick('.')
 }
 
-setTimeout(() => setInterval(tock,1000), 1000-Date.now()%1000)
+setTimeout(() => setInterval(() => {drift = Date.now()%1000; tick('.')}, 1000), 1000-Date.now()%1000)
 reopen()
 
 function reopen() {
