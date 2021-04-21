@@ -1,0 +1,94 @@
+<html>
+<head></head>
+<body>
+<style>
+  img { padding:4px; }
+</style>
+<div id=report>working</div>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+<script>
+
+// http://js.ward.asia.wiki.org/frame-plugin-integrations.html
+
+window.addEventListener("message", handler)
+window.parent.postMessage({ action:"sendFrameContext" }, "*")
+
+async function handler ({data}) {
+  if (data.action == "frameContext") {
+    window.removeEventListener("message", handler)
+    const {site, slug, item, page} = data
+    let assets = page.story.filter(item => item.type == 'assets')
+    if (!assets.length) return report.text = 'need Assets plugin on this page'
+    let markup = assets[0].text
+    let url = `//${site}/plugin/assets/list?assets=${markup}`
+    let list = await fetch(url).then(res=>res.json())
+    if(list.error != null) return report.text = 'need files in this Assets folder'
+    let files = list.files.filter(name => name.match(/^\w+\.(jpg|jpeg)$/)).slice(-12)
+    if(!files.length) return report.text = 'need jpg image files to continue'
+    report.innerHTML = files.map(file => `<img width=45% src="//${site}/assets/${markup}/${file}" onclick="pick(event)">`).join(" ")
+  }
+}
+
+function show(stuff) {
+  report.innerHTML = `<pre>${JSON.stringify(stuff,null,2)}</pre>`
+}
+
+async function pick(event) {
+  // let src = event.target.src
+  // let story = [{type:'html',text:`<img width=100% src="${src}">`}]
+  // let page = {title:'Page Template', story}
+  let page = await build(event.target)
+  let message = {
+    action: "showResult",
+    page,
+    keepLineup: event.shiftKey
+  }
+  window.parent.postMessage(message, "*");
+}
+
+// https://github.com/exif-js/exif-js
+
+function build(img) {
+  return new Promise((resolve, reject) => {
+    EXIF.getData(img, function() {
+      let file = img.src.split('/').pop()
+      let make = EXIF.getTag(this, "Make");
+      let model = EXIF.getTag(this, "Model");
+      let date = EXIF.getTag(this, "DateTimeOriginal")
+      let lat = latlon([...EXIF.getTag(this, "GPSLatitude"), EXIF.getTag(this, "GPSLatitudeRef")])
+      let lon = latlon([...EXIF.getTag(this, "GPSLongitude"), EXIF.getTag(this, "GPSLongitudeRef")])
+      let map = `https://www.google.com/search?q=${lat},%20${lon}`
+      // report.innerText = JSON.stringify({make, model, date, lat, lon}, null, 2)
+      // google.innerHTML=`<a href="${map}" target=_blank>google map</a>`
+
+      let page = {title:"Page Template",story:[]}
+      page.story.push({type:'paragraph',text:"describe this trail",id:id()})
+      page.story.push({type:'html',text:`<img width=100% src=${img.src}>`,id:id()})
+      page.story.push({type:'paragraph',text:daydate(date),id:id()})
+      page.story.push({type:'map',text:`${lat}, ${lon}\n[${map} google map]`,id:id()})
+      page.journal=[{type:'create',item:deepcopy(page),date:Date.now()},{type:'fork'}] 
+      resolve(page)  
+    })
+  })
+}
+
+
+const id = () => Math.trunc(Math.random()*1000000000000).toString()
+const deepcopy = (obj) => JSON.parse(JSON.stringify(obj))
+
+function daydate (exif) {
+  let str = exif.split(" ");
+  let iso = str[0].replace(/:/g, "-");
+  let date = new Date(iso + " " +str[1]);
+  let day = date.toLocaleString('en-us', {weekday:'long'})
+  let month = date.toLocaleString('en-us', {month:'long'})
+  return `${day}, ${month} ${date.getDate()}, ${date.getYear()+1900}`
+}
+
+function latlon (exif) {
+  // let max = 'NS'.includes(exif[3]) ? 90 : 180
+  let deg = exif[0] + exif[1]/60 + exif[2]/60/60
+  return 'NE'.includes(exif[3]) ? deg : -deg
+}
+
+</script>
