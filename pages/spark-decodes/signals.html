@@ -81,7 +81,11 @@ function clunk(past,mark) {
   row[slot+1] = mark + row[slot+1]
 }
 
-setTimeout(() => setInterval(() => {drift = Date.now()%1000; tick('.')}, 1000), 1000-Date.now()%1000)
+if(params['clock']) {
+  let dt = 1000
+  setTimeout(() => setInterval(() => {drift = Date.now()%dt; tick('.')}, dt), dt-Date.now()%dt)
+}
+
 reopen()
 
 function reopen() {
