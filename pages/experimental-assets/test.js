@@ -9,8 +9,8 @@ let origin = 'small.fed.wiki'
 let hash = 'welcome-visitors/smallest-wiki-explained/radio-network-simulator@simnet.ward.asia.wiki.org/client-type-modules@ward.asia.wiki.org'
 await reload(origin, hash)
 panels()
-// panes()
-for (let i=0; i<300; i++) {
+panes(99)
+for (let i=0; i<20; i++) {
   await monkey()  
 }
 
@@ -24,18 +24,18 @@ async function monkey() {
     if(choice) {
       console.log('click', panel.page.title, '=>', choice)
       await click(choice, panel.pid)
-      panels() 
+      panes(1)
+      panels()
     }
   }
 }
-
 
 function panels() {
   console.table(lineup.map(panel=>({pid:panel.pid, dt:panel.dt, site:panel.site, slug:panel.slug, where:panel.where})))
 }
 
-function panes() {
-  for (let panel of lineup) {
+function panes(n) {
+  for (let panel of lineup.slice(-n)) {
     console.log(panel.page.title)
     console.table(panel.panes.map(pane=>({
       id:pane.id,

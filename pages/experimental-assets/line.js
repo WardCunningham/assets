@@ -37,6 +37,11 @@ function refresh(panel) {
   return Promise.all(flight)
 }
 
+function dynaload(type) {
+  let url = `http://small.fed.wiki/assets/types/wiki-client-type-${type}.js`
+  return import(url).catch(err=>({emit:() => `<p>troubled ${type}</p>`}))
+}
+
 async function render(pane,panel) {
   let item = pane.item
   switch (item.type) {
@@ -47,19 +52,9 @@ async function render(pane,panel) {
     pane.dt = Date.now() - t0
     return pane.look = `<p>${resolved}</p>`
   default:
-    let handler = await types[item.type]
-    if (handler === undefined) {
-      let url = `http://small.fed.wiki/assets/types/wiki-client-type-${item.type}.js`
-      try {
-        let handler = import(url).catch(err=>{console.log('import',err)})
-        types[item.type] = handler
-      } catch (err) {
-        console.log('import fails', url)
-        types[item.type] = false
-      }
-      handler = await types[item.type]
-    }
+    let handler = types[item.type] || await dynaload(item.type)
     if (handler) {
+      types[item.type] = handler
       pane.look = handler.emit(null, item)
       pane.dt = Date.now() - t0
     }
