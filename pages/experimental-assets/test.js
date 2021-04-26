@@ -23,8 +23,12 @@ while(todo.length) {
     confirm(lineup.length == m[1])
   } else if (m = next.match(/^► see (\w+) plugin?$/)) {
     confirm(true)
+  } else if (m = next.match(/^► show lineup?$/)) {
+    panels()
   } else if (m = next.match(/^► drop ([a-z-]+)@([a-zA-Z0-9\.]+)$/)) {
     confirm(false)
+  } else {
+    console.log(Colors.yellow("unknown"))
   }
 }
 
