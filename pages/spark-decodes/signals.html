@@ -43,20 +43,22 @@ const lim = (idx) => Math.max(0, Math.min(color.length-1, idx))
 const fmt = (snr) => params['fmt']=='color' ? `<font title="${snr[2]}" style="color:${color[lim(snr[0]+25)]}">${snr[1]}</font>` : snr[0]
 
 
-// L I S T E N
+// G E O G R A P H Y
 
-let socket = null
-let minute = Math.floor(Date.now()/1000/60)
-let blank = ['','','','','','','','','','','','','']
-let ticks = [blank.slice()]
-let drift = 0
-let delay = {}
-
-
-let crow = {} // call => dist
+let crow = {}   // call => dist
+let skunk = {}  // call => time
 let here = [45.470493,-122.7486358]
 
-function files(here,there) {
+function maidenhead(grid) {
+  // https://en.wikipedia.org/wiki/Maidenhead_Locator_System
+  const a = i => grid.charCodeAt(i)-'A'.charCodeAt(0) || 0
+  const n = i => grid.charCodeAt(i)-'0'.charCodeAt(0) || 0
+  let lat = a(1)*10 + n(3)*1 + a(5)/24 + n(7)/240 - 90
+  let lon = a(0)*20 + n(2)*2 + a(4)/12 + n(6)/120 - 180
+  return [1*lat.toFixed(5),1*lon.toFixed(5)]
+}
+
+function flies(here,there) {
   // http://js.ward.asia.wiki.org/great-circle-distance.html
   let rad = (deg) => 2 * Math.PI * deg / 360
   let sin = Math.sin
@@ -68,13 +70,26 @@ function files(here,there) {
   return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
 }
 
-fetch('http://trails.ward.asia.wiki.org/places-heard-on-ft8.json')
-  .then(res => res.json())
-  .then(page => {
-    let map = page.story.filter(item => item.type == 'map')[0]
-    let markers = map.text.split(/\n/).filter(mark => mark.match(/^\d/)).map(mark => mark.split(/[, ]+/))
-    for (let [lat,lon,call] of markers) crow[call] = files(here,[lat,lon]).toFixed(1)
-  })
+function familiar() {
+  fetch('http://trails.ward.asia.wiki.org/places-heard-on-ft8.json')
+    .then(res => res.json())
+    .then(page => {
+      let map = page.story.filter(item => item.type == 'map')[0]
+      let markers = map.text.split(/\n/).filter(mark => mark.match(/^\d/)).map(mark => mark.split(/[, ]+/))
+      for (let [lat,lon,call] of markers) crow[call] = flies(here,[lat,lon]).toFixed(1)
+    })
+}
+
+
+// L I S T E N
+
+let socket = null
+let minute = Math.floor(Date.now()/1000/60)
+let blank = ['','','','','','','','','','','','','']
+let ticks = [blank.slice()]
+let drift = 0
+let delay = {}
+
 
 function tick(mark) {
   tock()
@@ -128,6 +143,8 @@ function reopen() {
       expire()
       render()
   })
+
+  familiar()
 }
 
 
@@ -162,6 +179,13 @@ function tally(spots) {
     }
     op.last = now
     if(spot.distance) op.dst = crow[spot.call] || Math.round(spot.distance)
+    if(op.dst == 23) skunk[spot.call] = time
+    // if(spot.distance && spot.locator) console.log(
+    //   [spot.call,
+    //   spot.distance*0.621371,
+    //   spot.locator,
+    //   flies(maidenhead('CN85'),maidenhead(spot.locator)),
+    //   spot.distance*0.621371 - flies(maidenhead('CN85'),maidenhead(spot.locator))])
   }
 }
 
