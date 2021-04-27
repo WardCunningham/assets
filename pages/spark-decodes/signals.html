@@ -129,7 +129,7 @@ function tally(spots) {
     let prev = op.snr.length ? op.snr.slice(-1)[0][2] : 'xxxx'
     let ch = /^CQ/.test(spot.msg) ? '◀' :/73$/.test(spot.msg) ? '▶' :
       spot.msg == prev ? '▋' : '█'
-    op.snr.push([spot.snr,ch,spot.msg])
+    op.snr.push([spot.snr,ch,spot.msg,spot.frequency,new Date(spot.time).valueOf()/1000])
     op.avg = avg(op.snr.map(n => n[0]))
     if (op.last) {
       let dt = Math.round((now-op.last)/(30*1000))
@@ -162,7 +162,7 @@ function render() {
     report.push(`<tr><td colspan=4 onclick="link(event)"><br><h3>${b}</h3>`)
     for (let call of k) {
       report.push(`<tr>
-        <td>${call}
+        <td onclick="csv('${b}','${call}')">${call}
         <td style="text-align: right;">${c[call].avg.toFixed(1)}
         <td style="text-align: right;">${c[call].dst||''}
         <td>${c[call].snr.map(n=>fmt(n)).join(' ')}`)
@@ -206,6 +206,23 @@ function link(event) {
     }
   })
 
+}
+
+function csv(band, call) {
+  let file = `${call}-${band}-${new Date().toISOString()}.CSV`
+  let head = ["snr","ico","message","freq","timestamp"]
+  let text = [head,...log[band][call].snr].map(row => row.join("\t")).join("\n")
+  download(text, file)
+}
+
+function download(string, file) {
+  var data = "data:text/plain;charset=utf-8," + encodeURIComponent(string);
+  var anchor = document.createElement('a');
+  anchor.setAttribute("href",     data);
+  anchor.setAttribute("download", file);
+  document.body.appendChild(anchor); // required for firefox
+  anchor.click();
+  anchor.remove();
 }
 
 </script>
