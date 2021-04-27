@@ -52,6 +52,30 @@ let ticks = [blank.slice()]
 let drift = 0
 let delay = {}
 
+
+let crow = {} // call => dist
+let here = [45.470493,-122.7486358]
+
+function files(here,there) {
+  // http://js.ward.asia.wiki.org/great-circle-distance.html
+  let rad = (deg) => 2 * Math.PI * deg / 360
+  let sin = Math.sin
+  let cos = Math.cos
+  let acos = Math.acos
+  let [lat1,lon1] = here.map(deg => rad(deg))
+  let [lat2,lon2] = there.map(deg => rad(deg))
+  let earth = 3958.8
+  return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
+}
+
+fetch('http://trails.ward.asia.wiki.org/places-heard-on-ft8.json')
+  .then(res => res.json())
+  .then(page => {
+    let map = page.story.filter(item => item.type == 'map')[0]
+    let markers = map.text.split(/\n/).filter(mark => mark.match(/^\d/)).map(mark => mark.split(/[, ]+/))
+    for (let [lat,lon,call] of markers) crow[call] = files(here,[lat,lon]).toFixed(1)
+  })
+
 function tick(mark) {
   tock()
   let slot = Math.floor(Date.now()/5000%12)
@@ -137,7 +161,7 @@ function tally(spots) {
       dist[dt] += 1
     }
     op.last = now
-    if(spot.distance) op.dst = Math.round(spot.distance)
+    if(spot.distance) op.dst = crow[spot.call] || Math.round(spot.distance)
   }
 }
 
