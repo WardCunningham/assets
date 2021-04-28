@@ -51,12 +51,12 @@ let here = [45.470493,-122.7486358]
 
 function maidenhead(grid) {
   // https://en.wikipedia.org/wiki/Maidenhead_Locator_System
-  const a = i => grid.charCodeAt(i)-'A'.charCodeAt(0) || 0
-  const n = i => grid.charCodeAt(i)-'0'.charCodeAt(0) || 0
-  let lat = a(1)*10 + n(3)*1 + a(5)/24 + n(7)/240 - 90
-  let lon = a(0)*20 + n(2)*2 + a(4)/12 + n(6)/120 - 180
+  const d = (i,a) => grid.charCodeAt(i)-a.charCodeAt(0) || 0
+  let lat = d(1,'A')*10 + d(3,'0')*1 + d(5,'a')/24 + d(7,'0')/240 - 90
+  let lon = d(0,'A')*20 + d(2,'0')*2 + d(4,'a')/12 + d(6,'0')/120 - 180
   return [1*lat.toFixed(5),1*lon.toFixed(5)]
 }
+
 
 function flies(here,there) {
   // http://js.ward.asia.wiki.org/great-circle-distance.html
@@ -78,6 +78,7 @@ function familiar() {
       let markers = map.text.split(/\n/).filter(mark => mark.match(/^\d/)).map(mark => mark.split(/[, ]+/))
       for (let [lat,lon,call] of markers) crow[call] = flies(here,[lat,lon]).toFixed(1)
     })
+  skunk = {}
 }
 
 
@@ -179,13 +180,13 @@ function tally(spots) {
     }
     op.last = now
     if(spot.distance) op.dst = crow[spot.call] || Math.round(spot.distance*0.621371)
-    if(op.dst == 23) skunk[spot.call] = time
+    if(op.dst == 14) skunk[spot.call] = time
     // if(spot.distance && spot.locator) console.log(
     //   [spot.call,
     //   spot.distance*0.621371,
     //   spot.locator,
-    //   flies(maidenhead('CN85'),maidenhead(spot.locator)),
-    //   spot.distance*0.621371 - flies(maidenhead('CN85'),maidenhead(spot.locator))])
+    //   flies(maidenhead('CN85pl'),maidenhead(spot.locator+'mm')),
+    //   spot.distance*0.621371 - flies(maidenhead('CN85pl'),maidenhead(spot.locator+'mm'))])
   }
 }
 
