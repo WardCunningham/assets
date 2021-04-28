@@ -178,7 +178,7 @@ function tally(spots) {
       dist[dt] += 1
     }
     op.last = now
-    if(spot.distance) op.dst = crow[spot.call] || Math.round(spot.distance)
+    if(spot.distance) op.dst = crow[spot.call] || Math.round(spot.distance*0.621371)
     if(op.dst == 23) skunk[spot.call] = time
     // if(spot.distance && spot.locator) console.log(
     //   [spot.call,
