@@ -1,0 +1,80 @@
+<head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+</head>
+
+<body>
+<style>
+  body {font-family:helvetica,Arial,Sans;}
+  span { font-size:10px; }
+  th { width: 90px; padding:8px; }
+  td { vertical-align:top; padding:8px; cursor:pointer; }
+</style>
+
+<table border="1" style="border-collapse:collapse; border-color:#ccc;" >
+  <thead><tr><th>call<th>addr<th>latlon</thead>
+  <tbody id=output></tbody>
+</table>
+
+<pre id=markup></pre>
+
+<script>
+
+const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+let skunk = JSON.parse(atob(params.skunk))
+
+let addrs = {} // call => 
+  // {
+  //   "call": "K9OX",
+  //   "op": "Cunningham, Howard G",
+  //   "address": "6896 SW 67TH AVE",
+  //   "qth": "Portland",
+  //   "state": "OR",
+  //   "zip": "97223",
+  //   "lotw": true,
+  //   "last_lotw_upload": "2019-12-15T22:31:01Z",
+  //   "class": "E"
+  // }
+
+
+output.innerHTML = skunk.map(call => `<tr>
+  <td onclick="find(event)">${call}
+  <td onclick="map(event)">
+  <td ondragenter="dropok(event)" ondragover="dropok(event)" ondrop="latlon(event)">`).join("\n")
+
+
+async function find(event) {
+	let call = event.target.innerText
+  if (!addrs[call]) addrs[call] = await fetch(`http://localhost:7890/${call}`).then(res=>res.json())
+  let addr = addrs[call]
+  event.target.nextSibling.innerText =  `${addr.address||'United States Postal Service'}, ${addr.qth} ${addr.state} ${addr.zip}`
+}
+
+async function map(event) {
+  // https://developers.google.com/maps/documentation/urls/get-started
+  let addr = event.target.innerText
+  if (!addr) return
+  let url = `https://www.google.com/maps/search/?api=1&query=${addr}`
+  window.open(url, '_blank').focus()
+}
+
+async function latlon(event) {
+  let link = event.dataTransfer.getData("URL");
+  let latlon = link.match(/@(-?[0-9.]+,-?[0-9\.]+)\b/)[1]
+  event.target.innerText = latlon
+  event.preventDefault()
+  markers()
+}
+
+function dropok(event) {
+  let target = event.target
+  if (!target.innerText && target.previousSibling.innerText) event.preventDefault()
+}
+
+function markers() {
+  let lines = output.innerText.split("\n")
+  let fields = lines.map(r => r.split("\t")).filter(r => r[2])
+  markup.innerText = fields.map(r => `${r[2]} ${r[0]}`).join("\n")
+}
+
+</script>
+</body>

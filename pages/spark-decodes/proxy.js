@@ -15,7 +15,7 @@ for await (const request of server) {
   if(want) {
     let body = cache[want[1]]
     if(!body) {
-      let json = await fetch(`https://rig.kk4wjs.com/out/${want[2]}/${want[1]}.json`).then(res=>res.json())
+      let json = await fetch(`https://rig.kk4wjs.com/out/${want[2]}/${want[1]}.json`).then(res=>res.ok ? res.json() : console.log(res.text()))
       json.op = title(json.op)
       json.qth = title(json.qth)
       cache[want[1]] = body = JSON.stringify(json, null, 2)

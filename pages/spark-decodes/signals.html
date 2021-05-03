@@ -3,7 +3,6 @@
 </head>
 <style>
   body {font-family:helvetica,Arial,Sans;}
-  span { font-size:10px; }
   th { width: 30px; }
   td { vertical-align:top; }
 </style>
@@ -12,7 +11,9 @@
   <thead><tr><th><th>00<th>05<th>10<th>15<th>20<th>25<th>30<th>35<th>40<th>45<th>50<th>55</thead>
   <tbody id=clock></tbody>
 </table>
-<p><button onclick="reopen(event)">reopen</button>
+<p>
+  <button onclick="reopen(event)">reopen</button> &nbsp;
+  <span id=skunked onclick="locals(event)">no new locals</span>
 
 <div id=show><p>waiting</div>
 
@@ -40,14 +41,23 @@ const params = Object.fromEntries(new URLSearchParams(location.search).entries()
 let color = ["0000ff","1300ff","2600ff","3900ff","4d00ff","6000ff","7300ff","8600ff","9900ff","ac00ff","bf00ff","d200ff","e500ff","f900ff","ff00f2","ff00df","ff00cc","ff00b9","ff00a6","ff0093","ff0080","ff006c","ff0059","ff0046","ff0033","ff0020","ff000d","ff0600","ff1a00","ff2d00","ff4000","ff5300","ff6600","ff7900","ff8c00","ff9f00","ffb300","ffc600","ffd900","ffec00","ffff00","ecff00","d9ff00","c6ff00","b2ff00","9fff00","8cff00","79ff00","66ff00","53ff00","40ff00"]
 
 const lim = (idx) => Math.max(0, Math.min(color.length-1, idx))
-const fmt = (snr) => params['fmt']=='color' ? `<font title="${snr[2]}" style="color:${color[lim(snr[0]+25)]}">${snr[1]}</font>` : snr[0]
+const fmt = (snr) => params.color ? `<font title="${snr[2]}" style="color:${color[lim(snr[0]+25)]}">${snr[1]}</font>` : snr[0]
+
+
+// P A R A M S
+
+if (params.here) params.here = params.here.split(/,/).map(num => 1*num)
+if (!params.here) params.here = [45.470493,-122.7486358]
+params.color = 'color' in params
+params.clunk = 'clunk' in params
+params.clock = 'clock' in params
+console.table(params)
 
 
 // G E O G R A P H Y
 
 let crow = {}   // call => dist
 let skunk = {}  // call => time
-let here = [45.470493,-122.7486358]
 
 function maidenhead(grid) {
   // https://en.wikipedia.org/wiki/Maidenhead_Locator_System
@@ -76,9 +86,10 @@ function familiar() {
     .then(page => {
       let map = page.story.filter(item => item.type == 'map')[0]
       let markers = map.text.split(/\n/).filter(mark => mark.match(/^\d/)).map(mark => mark.split(/[, ]+/))
-      for (let [lat,lon,call] of markers) crow[call] = flies(here,[lat,lon]).toFixed(1)
+      for (let [lat,lon,call] of markers) crow[call] = flies(params.here,[lat,lon]).toFixed(1)
     })
   skunk = {}
+  skunked.innerText = `no new locals`
 }
 
 
@@ -112,7 +123,7 @@ function tock() {
 }
 
 function clunk(past,mark) {
-  if (!params['clunk']) return
+  if (!params.clunk) return
   let row = ticks.slice(-1)[0]
   if (Math.floor(past/1000/60) < minute) {
     row = ticks.slice(-2)[0]
@@ -121,7 +132,7 @@ function clunk(past,mark) {
   row[slot+1] = mark + row[slot+1]
 }
 
-if(params['clock']) {
+if(params.clock) {
   let dt = 1000
   setTimeout(() => setInterval(() => {drift = Date.now()%dt; tick('.')}, dt), dt-Date.now()%dt)
 }
@@ -130,7 +141,7 @@ reopen()
 
 function reopen() {
   if(socket) socket.close()
-  socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
+  socket = new WebSocket(`ws://${params.domain||'localhost'}:4649/Spark`)
 
   socket.addEventListener('open', (event) => {
     tick('open')
@@ -161,7 +172,7 @@ function tally(spots) {
   let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
   let time = new Date(spots[0].time).valueOf()
   delay[band] = (now-time)/1000
-  clunk(time,`<span>${band} ⇒</span><br>`)
+  clunk(time,`<span style="font-size:10px;">${band} ⇒</span><br>`)
   tick('<br>'+band)
   let chan = log[band] = log[band] || {}
   for (let spot of spots) {
@@ -179,8 +190,11 @@ function tally(spots) {
       dist[dt] += 1
     }
     op.last = now
-    if(spot.distance) op.dst = crow[spot.call] || Math.round(spot.distance*0.621371)
-    if(op.dst == 14) skunk[spot.call] = time
+    if(crow[spot.call]) op.dst = crow[spot.call]
+    if(spot.distance && !op.dst) op.dst = Math.round(spot.distance*0.621371)
+    if(op.dst == 14) {
+      skunk[spot.call] = time
+      skunked.innerText = `${Object.keys(skunk).length} new locals`}
     // if(spot.distance && spot.locator) console.log(
     //   [spot.call,
     //   spot.distance*0.621371,
@@ -212,8 +226,8 @@ function render() {
     for (let call of k) {
       report.push(`<tr>
         <td onclick="csv('${b}','${call}')">${call}
-        <td style="text-align: right;">${c[call].avg.toFixed(1)}
         <td style="text-align: right;">${c[call].dst||''}
+        <td style="text-align: right;">${c[call].avg.toFixed(1)}
         <td>${c[call].snr.map(n=>fmt(n)).join(' ')}`)
     }
   }
@@ -272,6 +286,12 @@ function download(string, file) {
   document.body.appendChild(anchor); // required for firefox
   anchor.click();
   anchor.remove();
+}
+
+function locals() {
+  let arg = btoa(JSON.stringify(Object.keys(skunk)))
+  let url = `locals.html?skunk=${arg}`
+  window.open(url, '_blank').focus();
 }
 
 </script>
