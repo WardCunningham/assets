@@ -1,4 +1,5 @@
 <html>
+<body style="margin:0;">
 <script type=module>
 
 import * as THREE from 'https://unpkg.com/three@0.124.0/build/three.module.js';
@@ -35,7 +36,6 @@ const rn = (v) => v * (Math.random()-.5)
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-scene.background = new THREE.Color('gray')
 scene.add(new THREE.AmbientLight(0xffffff, 0.2))
 let light = new THREE.DirectionalLight('white', 0.3)
 light.position.set(2, 2, -1)
@@ -87,4 +87,5 @@ renderer.setAnimationLoop(() => {
 })
 
 </script>
+</body>
 </html>
