@@ -20,6 +20,13 @@ controls.autoRotate = true
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("rgb(25,40,50)")
 
+window.addEventListener( 'resize', onWindowResize, false )
+function onWindowResize(){
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
 
 // C U B E
 
