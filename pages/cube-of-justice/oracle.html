@@ -14,12 +14,21 @@ camera.position.z = 3;
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.autoRotate = true
 
 const scene = new THREE.Scene();
+scene.background = new THREE.Color("rgb(25,40,50)")
+
+
+// C U B E
+
 const geo = new THREE.BoxGeometry(1, 1, 1)
 const mat = new THREE.MeshNormalMaterial()
 const box = new THREE.Mesh(geo, mat)
+scene.add(box)
 
+
+// G R A V E Y A R D
 
 const rn = (v) => v * (Math.random()-.5)
 
@@ -62,9 +71,7 @@ for (let g of ghosts) {
 }
 
 
-scene.background = new THREE.Color("rgb(25,40,50)")
-scene.add(box)
-controls.autoRotate = true
+// A N I M A T I O N
 
 renderer.setAnimationLoop(() => {
   controls.update();
