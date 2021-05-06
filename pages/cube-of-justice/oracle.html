@@ -19,6 +19,49 @@ const scene = new THREE.Scene();
 const geo = new THREE.BoxGeometry(1, 1, 1)
 const mat = new THREE.MeshNormalMaterial()
 const box = new THREE.Mesh(geo, mat)
+
+
+const rn = (v) => v * (Math.random()-.5)
+
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+
+scene.background = new THREE.Color('gray')
+scene.add(new THREE.AmbientLight(0xffffff, 0.2))
+let light = new THREE.DirectionalLight('white', 0.3)
+light.position.set(2, 2, -1)
+light.castShadow = true
+scene.add(light)
+
+let mat2 = new THREE.MeshStandardMaterial()
+let slab = new THREE.CubeGeometry(.3,.6,.1)
+for (let i=0; i<30; i++) {
+  let grave = new THREE.Mesh(slab,mat2)
+  grave.castShadow = true
+  grave.position.set(rn(5), -1, rn(5))
+  grave.rotation.set(0, rn(1), rn(.5))
+  scene.add(grave)
+}
+
+let table = new THREE.Mesh(
+  new THREE.PlaneGeometry(6, 6), mat2)
+table.rotation.x = - Math.PI/2
+table.position.y = - 1.2
+table.receiveShadow = true
+scene.add(table)
+
+let ghosts =
+  [{c:'#ffff00'},{c:'#ff00ff'},{c:'#00ffff'}]
+for (let g of ghosts) {
+  g.l = new THREE.PointLight(g.c, 1, 2)
+  g.l.position.set(rn(4), 0, rn(4))
+  g.l.castShadow = true
+  g.r = rn(3)+3
+  g.v = rn(2)
+  scene.add(g.l)
+}
+
+
 scene.background = new THREE.Color("rgb(25,40,50)")
 scene.add(box)
 controls.autoRotate = true
@@ -26,6 +69,13 @@ controls.autoRotate = true
 renderer.setAnimationLoop(() => {
   controls.update();
   box.rotation.x += 0.02
+  box.rotation.y += 0.005
+
+  for (let g of ghosts) {
+    let a = g.v * Date.now() / 1000
+    g.l.position.set(Math.sin(a*6),0,Math.cos(a*3))
+  }
+
   renderer.render(scene, camera);
 })
 
