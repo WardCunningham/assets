@@ -1,0 +1,33 @@
+<html>
+<script type=module>
+
+import * as THREE from 'https://unpkg.com/three@0.124.0/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three@0.124.0/examples/jsm/controls/OrbitControls.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(2);
+document.body.appendChild(renderer.domElement);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 15);
+camera.position.z = 3;
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+const scene = new THREE.Scene();
+const geo = new THREE.BoxGeometry(1, 1, 1)
+const mat = new THREE.MeshNormalMaterial()
+const box = new THREE.Mesh(geo, mat)
+scene.background = new THREE.Color("rgb(25,40,50)")
+scene.add(box)
+controls.autoRotate = true
+
+renderer.setAnimationLoop(() => {
+  controls.update();
+  box.rotation.x += 0.02
+  renderer.render(scene, camera);
+})
+
+</script>
+</html>
