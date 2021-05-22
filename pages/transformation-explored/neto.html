@@ -1,0 +1,37 @@
+<head>
+  <meta charset="UTF-8">
+  <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
+  <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+</head>
+
+<div id=diagram></div>
+
+<script type=module>
+
+  import { model } from "./model.js"
+
+  const quote = label => `"${label.split(/ /).join('\\n')}"`
+
+  let dot = []
+  dot.push('strict digraph {')
+  dot.push('node [style=filled fillcolor=bisque]')
+  neato()
+  dot.push('}')
+  draw()
+
+  function neato() {
+    dot.push('layout=neato')
+    dot.push('overlap = false')
+    dot.push('splines=true')
+    for (let variable in model)
+      for (let dependent of model[variable].upstream)
+        dot.push(`${quote(dependent)} -> ${quote(variable)}`) 
+  }
+
+  function draw() {
+    hpccWasm.graphviz.layout(dot.join("\n"), "svg", "dot").then(svg => {
+      diagram.innerHTML = svg;
+    })
+  }
+  
+</script>

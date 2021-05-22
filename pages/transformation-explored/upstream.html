@@ -1,0 +1,69 @@
+<head>
+  <meta charset="UTF-8">
+  <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
+  <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+</head>
+
+<div id=diagram></div>
+
+<script type=module>
+
+  import { model } from "./model.js"
+
+  const quote = label => `"${label.split(/ /).join('\\n')}"`
+  diagram.addEventListener("click", reroot)
+
+
+  let dot = []
+  context('Student achievement')
+  draw()
+
+  function reroot(event) {
+    let node = event.target.closest('.node')
+    let titles = node?.getElementsByTagName('title')
+    if (!titles) return
+    let text = titles[0].innerHTML.replace(/\\n/g, ' ')
+    dot = []
+    context(text)
+    draw()
+  }
+
+  function context(root) {
+    let mark = {} // variable => true
+   const ready = variable => !mark[variable]
+    dot.push('strict digraph {')
+    dot.push('rankdir=RL')
+    dot.push('node [style=filled fillcolor=bisque]')
+
+    let todo = [root]
+    while(todo.length > 0) {
+      let next = todo.shift()
+      if (mark[next]) continue
+      mark[next] = true
+      for (let more of model[next].upstream.filter(ready)) {
+        dot.push(`${quote(more)} -> ${quote(next)}`)
+        todo.push(more)
+      }
+    }
+
+    // todo = [root]
+    // while(todo.length > 0) {
+    //   let next = todo.shift()
+    //   if (mark[next]) continue
+    //   mark[next] = true
+    //   for (let more of model[next].downstream.filter(ready)) {
+    //     dot.push(`${quote(next)} -> ${quote(more)}`)
+    //     todo.push(more)
+    //   }
+    // }
+
+    dot.push('}')
+  }
+
+  function draw() {
+    hpccWasm.graphviz.layout(dot.join("\n"), "svg", "dot").then(svg => {
+      diagram.innerHTML = svg;
+    })
+  }
+  
+</script>
