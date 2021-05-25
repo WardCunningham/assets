@@ -1,0 +1,44 @@
+<div id=output></div>
+
+<script>
+  let pages = ['introduction','0cybeyes','1qguide','2_1cs1','2_2cs2','2_3cs3','2cs','3pd_5sys','4autonomy','5intbal','6infsys','7envtbal','8psysdes','9wholsys','10appfed','bibliography','janus','links','preface','recursion','variety']
+  output.innerHTML = pages.map(page => `<span onclick="convert(event)">${page}</span>`).join('<br>')
+
+  async function convert(event) {
+    let file = event.target.innerText
+    let page = await fetch(`http://ward.dojo.fed.wiki/assets/pages/the-vsm-guide/${file}.html`).then(res => res.text())
+    let message = {
+      action: "importer",
+      pages: wikify(page),
+      keepLineup: event.shiftKey
+    }
+    window.parent.postMessage(message, "*");
+  }
+
+  function paragraph(text) {
+    return {type:'paragraph', text, id:Math.floor(Math.random()*10000000000000)}
+  }
+
+  function wikify(text) {
+    let pages = {}
+    let starts = {}
+    debugger
+    let nextmatch = text.matchAll(/<(\/?\w+).*?>/g)
+    let match = nextmatch.next()
+    console.log(match)
+    while(!match.done && match.value[0] != '<td align="left">')
+      match = nextmatch.next()
+    console.log(match)
+    let tagdump = []
+    let h2index = []
+    for (match of nextmatch) {
+      tagdump.push(paragraph(match[0]))
+      if(match[1] == 'h2') starts.h2 = match.index + match[0].length
+      if(match[1] == '/h2') h2index.push(paragraph(`[[${text.slice(starts.h2, match.index)}]]`))
+    }
+    pages['tag-dump'] = {title:'Tag Dump', story:tagdump}
+    pages['h2-index'] = {title:'H2 Index', story:h2index}
+    return pages
+  }
+
+</script>
