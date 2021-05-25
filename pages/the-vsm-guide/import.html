@@ -25,19 +25,21 @@
     debugger
     let nextmatch = text.matchAll(/<(\/?\w+).*?>/g)
     let match = nextmatch.next()
-    console.log(match)
     while(!match.done && match.value[0] != '<td align="left">')
       match = nextmatch.next()
-    console.log(match)
     let tagdump = []
     let h2index = []
+    let bodytxt = []
     for (match of nextmatch) {
       tagdump.push(paragraph(match[0]))
       if(match[1] == 'h2') starts.h2 = match.index + match[0].length
       if(match[1] == '/h2') h2index.push(paragraph(`[[${text.slice(starts.h2, match.index)}]]`))
+      if(match[1] == 'p') starts.p = match.index + match[0].length
+      if(match[1] == '/p') bodytxt.push(paragraph(`[[${text.slice(starts.p, match.index)}]]`))
     }
     pages['tag-dump'] = {title:'Tag Dump', story:tagdump}
     pages['h2-index'] = {title:'H2 Index', story:h2index}
+    pages['body-text'] = {title:'Body Text', story:bodytxt}
     return pages
   }
 
