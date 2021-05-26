@@ -8,21 +8,26 @@
 
 <script type=module>
 
-  import { model } from "./model.js"
+  import { parse } from "./parse.js"
+  let model = null
+  let dot = []
+  start()
 
   const quote = label => `"${label.split(/ /).join('\\n')}"`
   diagram.addEventListener("click", reroot)
 
 
-  let dot = []
-  context('Student achievement')
-  draw()
+  async function start() {
+    model = await parse()
+    context('Student achievement')
+    draw()
+  }
 
   function reroot(event) {
     let node = event.target.closest('.node')
     let titles = node?.getElementsByTagName('title')
     if (!titles) return
-    let text = titles[0].innerHTML.replace(/\\n/g, ' ')
+    let text = titles[0].innerHTML.replace(/\\n/g, ' ').replace(/&amp;/g, '&')
     dot = []
     context(text)
     draw()
