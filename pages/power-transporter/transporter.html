@@ -12,7 +12,7 @@
 </style>
 
 <center>
-  <p id=output>ready</p>
+  <p id=output>waiting</p>
   <p id=dropzone ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">drop here</p>
 </center>
 
@@ -20,6 +20,27 @@
 
   // https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API
   // https://github.com/fedwiki/wiki-plugin-transport/blob/master/client/transport.coffee
+
+  let endpoint = "http://home.c2.com:4010/image"
+
+  window.addEventListener("message", context)
+  let message = { action:"sendFrameContext" }
+  window.parent.postMessage(message, "*")
+
+  function context ({data}) {
+    if (data.action == "frameContext") {
+      window.removeEventListener("message", context)
+      const {site, slug, item, page} = data
+      let codes = page.story.filter(item => item.type == 'code')
+      if (codes && codes[0] && codes[0].text.match(/^http/)) {
+        endpoint = codes[0].text
+        output.innerHTML = 'ready'
+      } else {
+        output.innerHTML = 'Expected url in Code item'
+      }
+
+    }
+  }
 
   function over(event) {
     event.preventDefault();
@@ -39,7 +60,7 @@
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(data)
     }
-    let response = await fetch("http://home.c2.com:4010/image", options)
+    let response = await fetch(endpoint, options)
     output.innerHTML += "<br>" + response.statusText
     let page = await response.json()
     output.innerHTML += "<br>" + page.title
