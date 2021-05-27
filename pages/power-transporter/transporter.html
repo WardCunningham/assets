@@ -1,0 +1,54 @@
+<style>
+  p {
+    font-family:"Helvetica Neue",Verdana,helvetica,Arial,Sans;
+  }
+  #dropzone {
+    height:100px;
+    width:400px;
+    background-color:#ddd;
+    display: table-cell;
+    vertical-align: middle;
+  }
+</style>
+
+<center>
+  <p id=output>ready</p>
+  <p id=dropzone ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">drop here</p>
+</center>
+
+<script>
+
+  // https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API
+  // https://github.com/fedwiki/wiki-plugin-transport/blob/master/client/transport.coffee
+
+  function over(event) {
+    event.preventDefault();
+    return false
+  }
+
+  async function drop(event) {
+    event.preventDefault();
+    let dt = event.dataTransfer
+    output.innerHTML = dt.types.join(", ")
+    let text = dt.getData("text")
+    let html = dt.getData("text/html")
+    let url = dt.getData("URL")
+    let data = {text, html, url}
+    let options = {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    }
+    let response = await fetch("http://home.c2.com:4010/image", options)
+    output.innerHTML += "<br>" + response.statusText
+    let page = await response.json()
+    output.innerHTML += "<br>" + page.title
+    let message = {
+      action: "showResult",
+      page,
+      keepLineup: event.shiftKey
+    }
+    window.parent.postMessage(message, "*");
+  }
+
+</script>
