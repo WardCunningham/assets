@@ -25,7 +25,7 @@ async function handler ({data}) {
     let url = `//${site}/plugin/assets/list?assets=${markup}`
     let list = await fetch(url).then(res=>res.json())
     if(list.error != null) return report.text = 'need files in this Assets folder'
-    let files = list.files.filter(name => name.match(/^\w+\.(jpg|jpeg)$/)).sort().slice(-(params['recent']||12))
+    let files = list.files.filter(name => name.match(/^[\w-]+\.(jpg|jpeg)$/i)).sort().slice(-(params['recent']||12))
     if(!files.length) return report.text = 'need jpg image files to continue'
     report.innerHTML = files.map(file => `<img width=45% src="//${site}/assets/${markup}/${file}" onclick="pick(event)">`).join(" ")
   }
@@ -63,7 +63,7 @@ function build(img) {
       // report.innerText = JSON.stringify({make, model, date, lat, lon}, null, 2)
       // google.innerHTML=`<a href="${map}" target=_blank>google map</a>`
 
-      let page = {title:"Page Template",story:[]}
+      let page = {title:"Photo with Map Template",story:[]}
       page.story.push({type:'paragraph',text:"describe this trail",id:id()})
       page.story.push({type:'html',text:`<img width=100% src=${img.src}>`,id:id()})
       page.story.push({type:'paragraph',text:daydate(date),id:id()})
