@@ -70,13 +70,15 @@
       'Environmental', 'Garden Home Junction', 'Heritage', 'Historic',
       'Incremental', 'Iron Mountain', 'Jeffries Creek', 'Kalama', 'King\'s North', 'Marshall Proposed',
       'Movable', 'Navigate', 'Near', 'Pandemic', 'Places', 'Portland', 'Red Electric Trail System', 'Round',
-      'Sisters', 'Sleeping', 'Southwest', 'Terminal', 'Things', 'Topo', 'Trail', 'Trees', 'Tryon Creek Trail System', 'Tuning',
+      'Sisters', 'Sleeping', 'Southwest', 'Spark',
+      'Terminal', 'Things', 'Topo', 'Trail', 'Trees', 'Tryon Creek Trail System', 'Tuning',
       'Wandering', 'Ward', 'Wider', 'Workflow', 'Welcome', 'West',
       'Spring 20', 'Summer 20', 'Fall 20', 'Winter 20'
     ]
     for (stop of stops) {
       if (title.startsWith(stop)) return false
     }
+    if (title.includes('Nina')) return false
     return true
   }
 
