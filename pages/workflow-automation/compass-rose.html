@@ -30,8 +30,11 @@
       .then(res => res.json())
       .then(sitemap => crosscheck(sitemap))
     for (line of markup.split(/\r?\n/)) {
-      let [all,lat,lon,link] = line.match(/(\d+\.\d+), (-\d+\.\d+) *\[\[(.*?)\]\]/)
-      trails.push({lat:+lat, lon:+lon, link})
+      let m = line.match(/(\d+\.\d+), (-\d+\.\d+) *\[\[(.*?)\]\]/)
+      if (m) {
+        let [all,lat,lon,link] = m
+        trails.push({lat:+lat, lon:+lon, link})
+      }
     }
     draw(home)
   }

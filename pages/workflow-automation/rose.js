@@ -13,8 +13,11 @@ fetch('http://trails.ward.asia.wiki.org/places-i-have-been.json')
 
 function parse(markup) {
   for (let line of markup.split(/\r?\n/)) {
-    let [all,lat,lon,link] = line.match(/(\d+\.\d+), (-\d+\.\d+) *\[\[(.*?)\]\]/)
-    trails.push({lat:+lat, lon:+lon, link})
+    let m = line.match(/(\d+\.\d+), (-\d+\.\d+) *\[\[(.*?)\]\]/)
+    if (m) {
+      let [all,lat,lon,link] = m
+      trails.push({lat:+lat, lon:+lon, link})
+    }
   }
   for (let trail of trails) {
     draw(trail)
