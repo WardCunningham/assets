@@ -17,6 +17,7 @@
   main()
 
   async function main() {
+    let names = await crossed()
     let slug = location.search || 'chronological-destinations'
     let index = await fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
     let work = []
@@ -33,9 +34,19 @@
     await Promise.all(work)
     const chronological = (a,b) => new Date(a.dates[0]) < new Date(b.dates[0]) ? -1 : 1
     const link = (text) => `<span onclick=dolink(event)>${text}</span>`
-    result.innerHTML = Object.keys(creeks).sort().map(creek => 
-      `<p><b>${creek} Creek</b><br>
+    const sect = (creek) => `<b>${creek} Creek</b>${names.includes(creek) ? ' ✔︎' : ''}`
+    result.innerHTML = Object.keys(creeks).sort().map(creek =>
+      `<p>${sect(creek)}<br>
         ${creeks[creek].filter(uniq).sort().map(link).join("<br>")}`).join("\n")
+  }
+
+  async function crossed() {
+    const fold = item => item.type == 'pagefold'
+    let page = await fetch(`${site}/creeks-i-have-crossed.json`).then(res => res.json())
+    let story = page.story
+    story = story.slice(story.findIndex(fold)+1)
+    story = story.slice(0,story.findIndex(fold))
+    return story.map(item => item.text.replace(/\[\[Crossing (.*?) Creek\]\]/,'$1')).join("<br>")
   }
 
   async function trail(title, slug) {
