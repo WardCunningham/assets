@@ -111,7 +111,7 @@ function emit(pages) {
           html.push(`<p>${resolve(item.text)}</p>`)
           break
         case 'image':
-          html.push(`<p><img width=100% src="${item.url}"><center>${resolve(item.text || item.caption)}</center></p>`)
+          html.push(`<p><img width=100% src="${item.source || item.url}"><center>${resolve(item.text || item.caption)}</center></p>`)
           break
         case 'html':
           let div = document.createElement('div')
