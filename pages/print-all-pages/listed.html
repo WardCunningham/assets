@@ -1,0 +1,122 @@
+<html>
+<body>
+
+<style>
+  body {font-family:
+    "Helvetica Neue",
+    Verdana,
+    helvetica,
+    Arial,
+    Sans;
+  }
+</style>
+
+<button onclick="doopen(event)">download</button>
+<h3>Contents</h3>
+<pre id=contents onclick="doclick(event)"></pre>
+<h3>Reference</h3>
+<pre id=reference onclick="doclick(event)"></pre>
+
+<script>
+
+let here
+const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+const isjson = res => res.ok ? res.json() : {}
+const getpage = title => fetch(`//${here}/${asSlug(title)}.json`).then(isjson)
+
+window.addEventListener("message", handler)
+let message = { action:"sendFrameContext" }
+window.parent.postMessage(message, "*")
+
+let titles = []
+let refs = []
+
+let html = [`
+  <style>
+    body {
+      font-family:helvetica;
+      width:550px;
+    }
+  </style>
+`]
+
+function handler ({data}) {
+  if (data.action == "frameContext") {
+    window.removeEventListener("message", handler)
+    const {site, slug, item, page} = data
+    here = site
+    visit(page)
+    contents.innerHTML = titles.map(title => `<span>${title}</span>`).join("\n")
+  }
+}
+
+function visit(page) {
+  const link = /\[\[(.*?)\]\]/g
+  for (let item of page.story) {
+    let text = item.text
+    while (match = link.exec(text)) {
+      titles.push(match[1])
+    }
+  }
+}
+
+function doclick(event) {
+  let title = event.target.innerText
+  console.log(title)
+}
+
+async function doopen(event) {
+  let pages = await Promise.all(titles.map(title => getpage(title)))
+  emit(pages)
+
+  reference.innerHTML += refs.map(title => `<span>${title}</span>\n`).join("")+"\n"
+  pages = await Promise.all(refs.map(title => getpage(title)))
+  titles.push(...refs)
+  refs = []
+  emit(pages)
+
+  reference.innerHTML += refs.map(title => `<span>${title}</span>\n`).join("")+"\n"
+  pages = await Promise.all(refs.map(title => getpage(title)))
+  titles.push(...refs)
+  refs = []
+  emit(pages)
+
+  download(html.join("\n"),'linear-pages.html')
+}
+
+function emit(pages) {
+  for (let page of pages) {
+    if (!page || !page.title) continue
+    html.push(`<h3 id="${asSlug(page.title)}">${page.title}</h3>`)
+    for (let item of page.story) {
+      if(item.text) html.push(`<p>${resolve(item.text)}</p>`)
+    }    
+  }
+}
+
+function resolve(text) {
+  console.log('resolving', text)
+  const link = /\[\[(.*?)\]\]/g
+  return text.replace(link, (match, title) => {
+    console.log('resolve', title)
+    if (!titles.includes(title) && !refs.includes(title)) {
+      refs.push(title)
+    }
+    return `<a href=#${asSlug(title)}>${title}</a>`
+  })
+}
+
+function download(string, file) {
+  var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+  var anchor = document.createElement('a');
+  anchor.setAttribute("href",     data);
+  anchor.setAttribute("download", file);
+  document.body.appendChild(anchor); // required for firefox
+  anchor.click();
+  anchor.remove();
+}
+
+</script>
+
+</body>
+</html>
