@@ -2,13 +2,7 @@
 <body>
 
 <style>
-  body {font-family:
-    "Helvetica Neue",
-    Verdana,
-    helvetica,
-    Arial,
-    Sans;
-  }
+  body {font-family:helvetica;}
 </style>
 
 <button onclick="doopen(event)">download</button>
@@ -42,12 +36,13 @@ const trouble = (prob, title) => {
 
 let html = [`
   <meta charset="utf-8"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟢</text></svg>">
   <style>
-    body {
-      font-family:helvetica;
-      width:550px;
-    }
+    body { font-family:helvetica; width:550px; }
+    h2 { page-break-before:always; }
+    a { text-decoration:none; }
   </style>
+
 `]
 
 async function handler ({data}) {
@@ -92,7 +87,7 @@ async function doopen(event) {
 
   download(html.join("\n"),'draft-pages.html')
 
-  let story = Object.keys(troubles).map(key => ({
+  let story = Object.keys(troubles).sort().map(key => ({
     type:'paragraph',
     text:`${key} ⇒ ${troubles[key].map(title => `[[${title}]]`).join(', ')}`
   }))
@@ -108,7 +103,8 @@ async function doopen(event) {
 function emit(pages) {
   for (let page of pages) {
     if (!page || !page.title) continue
-    html.push(`<h3 id="${asSlug(page.title)}">${page.title}</h3>`)
+    let slug = asSlug(page.title)
+    html.push(`<h2 id="${slug}">${page.title}<a href="http://${context.site}/${slug}.html" target=_blank> ⬀ </a></h2>`)
     for (let item of page.story) {
       switch (item.type) {
         case 'paragraph':
@@ -121,6 +117,22 @@ function emit(pages) {
           let div = document.createElement('div')
           div.innerHTML = item.text
           html.push(`<div>${resolve(div.innerHTML)}</div>`)
+          break
+        case 'markdown':
+          let text = item.text
+          text = text.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
+          text = text.replace(/\*(.+?)\*/g,"<b>$1</b>")
+          text = text.replace(/_(.+?)_/g,"<i>$1</i>")
+          if (text.match(/^[*+-]/) || ((text.match(/[*]/g)||[]).length%2))
+            trouble('This markdown too hard', page.title)
+          html.push(`<p>${resolve(text)}</p>`)
+          break
+        case 'pagefold':
+          html.push(`<div style="height: 10px; border-top: 2px solid lightgray; margin-top: 24px; text-align: center; position: relative; clear: both;">
+              <span style="position: relative; top: -.8em; background: white; display: inline-block; color: gray; ">
+                &nbsp; ${item.text} &nbsp;
+              </span>
+            </div>`)
           break
         default:
           trouble(`Can't yet print ${item.type}`, page.title)
