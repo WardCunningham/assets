@@ -1,0 +1,124 @@
+
+<style>
+  td { width:3em; }
+</style>
+
+<div id=result></div>
+
+<script>
+
+  let markers = {}
+  let latlons = []
+  let squares = {}
+  let site = 'http://trails.ward.asia.wiki.org'
+
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const id = () => `${Math.floor(Math.random()*100000000000)}`
+
+  scan()
+
+  async function scan() {
+    let slug = location.search || 'chronological-destinations'
+    let index = await fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
+    let work = []
+    for (let item of index.story) {
+      if (item.type == 'paragraph') {
+        let m = item.text.match(/^\[\[(.+?)\]\]/)
+        if (m) {
+          let title = m[1]
+          let slug = asSlug(title)
+          work.push(trail(title, slug))
+        }
+      }
+    }
+    await Promise.all(work)
+
+    let latm = Math.min(...(latlons.map(latlon => latlon[0])))
+    let latx = Math.max(...(latlons.map(latlon => latlon[0])))
+    let lonm = Math.min(...(latlons.map(latlon => latlon[1])))
+    let lonx = Math.max(...(latlons.map(latlon => latlon[1])))
+    let dlat = latx - latm
+    let dlon = lonx - lonm
+
+    for (trail in markers) {
+      for (latlon of markers[trail]) {
+        let y = Math.floor((latlon[0]-latm) / dlat * 9.99999)
+        let x = Math.floor((latlon[1]-lonm) / dlon * 9.99999)
+        let xy = `${x} ${y}`
+        let square = squares[xy] = squares[xy] || []
+        if(!square.includes(trail)) square.push(trail)
+      }
+    }
+
+    let iota = [0,1,2,3,4,5,6,7,8,9]
+    let cells = iota.slice().reverse().map(y => {
+      let row = iota.map(x => {
+        let xy = `${x} ${y}`
+        return `<td id="${xy}")">${squares[xy] ? squares[xy].length : '.'}`
+      })
+      return `<tr>${row.join("")}`
+    }).join("")
+    result.innerHTML = `<table id=table onclick="show(event)">${cells}</table>`
+
+    const place = (z, zm, dz) => zm + (z+0.5)/10 * dz
+    let text = 'Places where we can construct composit surveys of photographs. See [[Places Detailed]]'
+    let want = iota.map(x => iota.map(y => ({x,y,s:squares[`${x} ${y}`]}))).flat().filter(a => a.s)
+    let markup = want.map(a => `${place(a.y,latm,dlat)}, ${place(a.x,lonm,dlon)} ${a.s.length} (${a.x}, ${a.y})`).join("\n")
+    let page = {
+      title: 'Detail Square Centers',
+      story: [{type:'paragraph', text},{type:'map', text:markup}]
+    }
+    open(page)
+  }
+
+  function show(event) {
+    event.target.style.color = "#a00"
+    event.target.style.fontWeight = 'bold'
+    let xy = event.target.id
+    let markup = []
+    for (let trail of squares[xy]) {
+      for (let mark of markers[trail]) {
+        markup.push(`${mark.join(',')} [[${trail}]]`)
+      }
+    }
+    let title = `Map Square ${xy}`
+    let text = `Trails with markers in this square. Click a marker to identify which trail. See [[Places Detailed]]`
+    let story = [
+      {type:'paragraph', text, id:id()},
+      {type:'markdown', text:squares[xy].map(trail => `- [[${trail}]]`).join("\n")},
+      {type:'map', text:markup.join("\n"), id:id()},
+      {type:'paragraph', text:'See [[Street Map]] or [[Aerial Map]] or [[Topo Map]] tiles.'}
+    ]
+    open({title,story}, event.shiftKey)
+  }
+
+  function open(page, keepLineup=false) {
+    for (let item of page.story) item.id = id()
+    page.journal = [{type:'create', date:Date.now(), item:JSON.parse(JSON.stringify(page))}]
+    let message = {
+      action: "showResult",
+      page,
+      keepLineup
+    }
+    window.parent.postMessage(message, "*");    
+  }
+
+  async function trail(title, slug) {
+    let page = await fetch(`${site}/${slug}.json`).then(res => res.json())
+    result.innerText += ' .'
+    let story = page.story || []
+    let latlon = []
+    for (let item of story) {
+      if (item.type == 'map') {
+        for (let line of item.text.split(/\n/)) {
+          let m = line.match(/^(\d+\.\d+), *(-\d+\.\d+)\b/)
+          if (m) latlon.push([+m[1], +m[2]])
+        }
+      }
+    }
+    markers[title] = latlon
+    latlons.push(...latlon)
+  }
+
+
+</script>
