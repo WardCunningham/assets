@@ -59,6 +59,15 @@
     }).join("")
     result.innerHTML = `<table id=table onclick="show(event)">${cells}</table>`
 
+    let base = {
+      url: `${site}/assets/pages/pandemic-wandering/fanno-creek-watershed.jpg`,
+      sw: [45.4003109, -122.8674870],
+      ne: [45.5128174, -122.6499923]
+    }
+    document.body.style.backgroundImage = `url(${base.url}`
+    document.body.style.backgroundSize = `390px 238px`
+    document.body.style.backgroundPosition = `0px 0px`
+
     const place = (z, zm, dz) => zm + (z+0.5)/10 * dz
     let text = 'Places where we can construct composit surveys of photographs. See [[Places Detailed]]'
     let want = iota.map(x => iota.map(y => ({x,y,s:squares[`${x} ${y}`]}))).flat().filter(a => a.s)
