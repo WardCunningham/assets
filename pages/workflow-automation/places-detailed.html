@@ -13,7 +13,6 @@
   let site = 'http://trails.ward.asia.wiki.org'
 
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
-  const id = () => `${Math.floor(Math.random()*100000000000)}`
 
   scan()
 
@@ -84,23 +83,23 @@
     let title = `Map Square ${xy}`
     let text = `Trails with markers in this square. Click a marker to identify which trail. See [[Places Detailed]]`
     let story = [
-      {type:'paragraph', text, id:id()},
+      {type:'paragraph', text},
       {type:'markdown', text:squares[xy].map(trail => `- [[${trail}]]`).join("\n")},
-      {type:'map', text:markup.join("\n"), id:id()},
+      {type:'map', text:markup.join("\n")},
       {type:'paragraph', text:'See [[Street Map]] or [[Aerial Map]] or [[Topo Map]] tiles.'}
     ]
     open({title,story}, event.shiftKey)
   }
 
   function open(page, keepLineup=false) {
-    for (let item of page.story) item.id = id()
+    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
     page.journal = [{type:'create', date:Date.now(), item:JSON.parse(JSON.stringify(page))}]
     let message = {
       action: "showResult",
       page,
       keepLineup
     }
-    window.parent.postMessage(message, "*");    
+    window.parent.postMessage(message, "*")
   }
 
   async function trail(title, slug) {
