@@ -34,6 +34,16 @@ const trouble = (prob, title) => {
   if(!list.includes(title)) list.push(title)
 }
 
+let counters = {}
+const count = (counter, count=1) => {
+  counters[counter] = counters[counter] || 0
+  counters[counter] += count
+}
+const counts = () => `
+  <table border=1 cellpadding=8>
+    ${Object.entries(counters).map(e => `<tr><td>${e[1]}<td>${e[0]}`).join("")}
+  </table>`
+
 let html = [`
   <meta charset="utf-8"/>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟢</text></svg>">
@@ -76,13 +86,16 @@ async function doopen(event) {
   let pages = await Promise.all(titles.filter(ispresent).map(title => getpage(title)))
   emit(pages)
 
+  let tier = 1
   while(refs.length) {
+    count(`tier ${tier} titles referenced`, refs.length)
     reference.innerHTML += refs.map(line).join("")+"\n"
     reference.scrollIntoView(false)
     pages = await Promise.all(refs.filter(ispresent).map(title => getpage(title)))
     titles.push(...refs)
     refs = []
     emit(pages)
+    tier += 1
   }
 
   download(html.join("\n"),'draft-pages.html')
@@ -92,33 +105,48 @@ async function doopen(event) {
     text:`${key} ⇒ ${troubles[key].map(title => `[[${title}]]`).join(', ')}`
   }))
   if(!story.length) story = [{type:'paragraph', text:'No problems encountered.'}]
+  story.unshift({type:'html',text:counts()})
+  story.unshift({type:'paragraph',text:'Problems and other statistics found while printing.'})
   let message = {
     action: "showResult",
-    page: {title:'Trouble', story},
+    page: {title:'Print Statistics', story},
     keepLineup: event.shiftKey
   }
   window.parent.postMessage(message, "*");
 }
 
 function emit(pages) {
+  const words = text => text.split(/\W+/).length
   for (let page of pages) {
     if (!page || !page.title) continue
+    count('pages encountered')
     let slug = asSlug(page.title)
     html.push(`<h2 id="${slug}">${page.title}<a href="http://${context.site}/${slug}.html" target=_blank> ⬀ </a></h2>`)
     for (let item of page.story) {
+      count('items encountered')
       switch (item.type) {
+
         case 'paragraph':
+          count('paragraph words',words(item.text))
           html.push(`<p>${resolve(item.text)}</p>`)
           break
+
         case 'image':
           html.push(`<p><img width=100% src="${item.source || item.url}"><center>${resolve(item.text || item.caption)}</center></p>`)
           break
+
+        case 'reference':
+          html.push(`<p>${resolve(`[[${item.title}]]`)} — ${resolve(item.text)}<p>`)
+          break
+
         case 'html':
           let div = document.createElement('div')
           div.innerHTML = item.text
           html.push(`<div>${resolve(div.innerHTML)}</div>`)
           break
+
         case 'markdown':
+          count('markdown words',words(item.text))
           let text = item.text
           text = text.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
           text = text.replace(/\*(.+?)\*/g,"<b>$1</b>")
@@ -127,6 +155,7 @@ function emit(pages) {
             trouble('This markdown too hard', page.title)
           html.push(`<p>${resolve(text)}</p>`)
           break
+
         case 'pagefold':
           html.push(`<div style="height: 10px; border-top: 2px solid lightgray; margin-top: 24px; text-align: center; position: relative; clear: both;">
               <span style="position: relative; top: -.8em; background: white; display: inline-block; color: gray; ">
@@ -134,6 +163,11 @@ function emit(pages) {
               </span>
             </div>`)
           break
+
+        case 'graphviz':
+          count('graphviz diagrams omitted')
+          break
+
         default:
           trouble(`Can't yet print ${item.type}`, page.title)
       }
