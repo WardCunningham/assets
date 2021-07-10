@@ -39,8 +39,8 @@ const count = (counter, count=1) => {
 }
 const counts = () => `
   <table border=1 cellpadding=8>
-    ${Object.entries(counters).map(e =>
-      `<tr><td style="text-align:right">${e[1].toLocaleString()}<td>${e[0]}`).join("")}
+    ${Object.keys(counters).sort().map(k =>
+      `<tr><td style="text-align:right">${counters[k].toLocaleString()}<td>${k}`).join("\n")}
   </table>`
 
 let troubles = {}
@@ -99,7 +99,7 @@ async function doopen(event) {
 
   reference.scrollIntoView(false)
   let pages = await Promise.all(titles.filter(ispresent).map(title => getpage(title)))
-  emit(pages)
+  emit(pages, 'sequenced')
   count(`tier 1 titles sequenced`, titles.length)
 
   tier = 2
@@ -111,7 +111,7 @@ async function doopen(event) {
     pages = await Promise.all(refs.filter(ispresent).map(title => getpage(title)))
     titles.push(...refs)
     refs = []
-    emit(pages)
+    emit(pages, disposition)
     tier += 1
   }
 
@@ -132,22 +132,21 @@ async function doopen(event) {
   window.parent.postMessage(message, "*");
 }
 
-function emit(pages) {
+function emit(pages, disposition) {
   const words = text => text.split(/\W+/).length
   for (let page of pages) {
     if (!page || !page.title) continue
     count('pages encountered')
-    // let age = (Date.now() - page.journal.slice(-1)[0].date) / (24*60*60*1000)
-    // let when = age<7 ? 'week' : age<30 ? 'month' : age<365 ? 'year' : 'years'
-    // count(`pages revised within ${when}`)
+    let age = (Date.now() - page.journal.slice(-1)[0].date) / (24*60*60*1000)
+    let when = age < 1 ? 'today' : age<7 ? 'this week' : age<30 ? 'this month' : age<365 ? 'this year' : 'years ago'
+    count(`pages revised ${when}`)
     let slug = asSlug(page.title)
     html.push(`<h2 id="${slug}">${page.title}<a href="http://${context.site}/${slug}.html" target=_blank> ⬀ </a></h2>`)
     for (let item of page.story) {
-      count('items encountered')
       switch (item.type) {
 
         case 'paragraph':
-          count('paragraph words',words(item.text))
+          count(`words ${disposition}` ,words(item.text))
           html.push(`<p>${resolve(item.text)}</p>`)
           break
 
@@ -166,7 +165,7 @@ function emit(pages) {
           break
 
         case 'markdown':
-          count('markdown words',words(item.text))
+          count(`words ${disposition}`,words(item.text))
           let text = item.text
           text = text.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
           text = text.replace(/\*(.+?)\*/g,"<b>$1</b>")
