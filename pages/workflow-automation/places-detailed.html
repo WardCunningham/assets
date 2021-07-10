@@ -57,7 +57,7 @@
       })
       return `<tr>${row.join("")}`
     }).join("")
-    result.innerHTML = `<table id=table onclick="show(event)">${cells}</table>`
+    result.innerHTML = `<table id=table onclick="click(event)" onmousedown="down(event)" onmouseup="up(event)">${cells}</table>`
 
     let base = {
       url: `${site}/assets/pages/pandemic-wandering/fanno-creek-watershed.jpg`,
@@ -79,10 +79,15 @@
     open(page)
   }
 
-  function show(event) {
+  function click(event) {
     event.target.style.color = "#a00"
     event.target.style.fontWeight = 'bold'
     let xy = event.target.id
+    show(xy,event.shiftKey)
+  }
+
+  function show(xy, keepLineup=false) {
+    if (!squares[xy]) return
     let markup = []
     for (let trail of squares[xy]) {
       for (let mark of markers[trail]) {
@@ -97,7 +102,36 @@
       {type:'map', text:markup.join("\n")},
       {type:'paragraph', text:'See [[Street Map]] or [[Aerial Map]] or [[Topo Map]] tiles.'}
     ]
-    open({title,story}, event.shiftKey)
+    open({title,story}, keepLineup)
+  }
+
+  let downxy = null
+  function down(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    downxy = event.target.id
+  }
+
+  function up(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!downxy) return
+    let [dx, dy] = downxy.split(/ /).map(v => +v)
+    let [ux, uy] = event.target.id.split(/ /).map(v => +v)
+    for (let y of order(dy,uy))
+      for(let x of order(dx,ux))
+        show(`${x} ${y}`,true)
+  }
+
+  function order (start, finish) {
+    let list = []
+    if (finish >= start)
+      for (let i = start; i <= finish; i++)
+        list.push(i)
+    else
+      for (let i = start; i >= finish; i--)
+        list.push(i)
+    return list
   }
 
   function open(page, keepLineup=false) {
