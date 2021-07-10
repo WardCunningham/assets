@@ -13,6 +13,10 @@
 
 <script>
 
+const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+const sequential = params.sequential ?? 1
+const alphabetical = params.alphabetical ?? 1
+
 let context, present
 const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 const isjson = res => res.ok ? res.json() : {}
@@ -28,12 +32,6 @@ window.parent.postMessage(message, "*")
 let titles = []
 let refs = []
 
-let troubles = {}
-const trouble = (prob, title) => {
-  let list = troubles[prob] = troubles[prob] || []
-  if(!list.includes(title)) list.push(title)
-}
-
 let counters = {}
 const count = (counter, count=1) => {
   counters[counter] = counters[counter] || 0
@@ -41,8 +39,16 @@ const count = (counter, count=1) => {
 }
 const counts = () => `
   <table border=1 cellpadding=8>
-    ${Object.entries(counters).map(e => `<tr><td>${e[1]}<td>${e[0]}`).join("")}
+    ${Object.entries(counters).map(e =>
+      `<tr><td style="text-align:right">${e[1].toLocaleString()}<td>${e[0]}`).join("")}
   </table>`
+
+let troubles = {}
+const trouble = (prob, title) => {
+  count('troubles reported')
+  let list = troubles[prob] = troubles[prob] || []
+  if(!list.includes(title)) list.push(title)
+}
 
 let html = [`
   <meta charset="utf-8"/>
@@ -82,6 +88,15 @@ function doclick(event) {
 }
 
 async function doopen(event) {
+
+  titles = []
+  refs = []
+  troubles = {}
+  counters = {}
+  visit(context.page)
+  html = html.slice(0,1)
+  reference.innerText = ''
+
   reference.scrollIntoView(false)
   let pages = await Promise.all(titles.filter(ispresent).map(title => getpage(title)))
   emit(pages)
@@ -189,6 +204,7 @@ function resolve(text) {
 }
 
 function download(string, file) {
+  count('bytes downloaded', string.length)
   var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
   var anchor = document.createElement('a');
   anchor.setAttribute("href",     data);
