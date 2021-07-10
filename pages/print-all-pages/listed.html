@@ -14,8 +14,8 @@
 <script>
 
 const params = Object.fromEntries(new URLSearchParams(location.search).entries())
-const sequential = params.sequential ?? 1
-const alphabetical = params.alphabetical ?? 1
+const sequential = +(params.sequential ?? 1)
+const alphabetical = +(params.alphabetical ?? 1)
 
 let context, present
 const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
@@ -100,10 +100,12 @@ async function doopen(event) {
   reference.scrollIntoView(false)
   let pages = await Promise.all(titles.filter(ispresent).map(title => getpage(title)))
   emit(pages)
+  count(`tier 1 titles sequenced`, titles.length)
 
-  let tier = 1
+  tier = 2
   while(refs.length) {
-    count(`tier ${tier} titles referenced`, refs.length)
+    let disposition = tier <= sequential ? 'sequenced' : tier <= sequential+alphabetical ? 'alphabetized' : 'omitted'
+    count(`tier ${tier} titles ${disposition}`, refs.length)
     reference.innerHTML += refs.map(line).join("")+"\n"
     reference.scrollIntoView(false)
     pages = await Promise.all(refs.filter(ispresent).map(title => getpage(title)))
@@ -135,6 +137,9 @@ function emit(pages) {
   for (let page of pages) {
     if (!page || !page.title) continue
     count('pages encountered')
+    // let age = (Date.now() - page.journal.slice(-1)[0].date) / (24*60*60*1000)
+    // let when = age<7 ? 'week' : age<30 ? 'month' : age<365 ? 'year' : 'years'
+    // count(`pages revised within ${when}`)
     let slug = asSlug(page.title)
     html.push(`<h2 id="${slug}">${page.title}<a href="http://${context.site}/${slug}.html" target=_blank> ⬀ </a></h2>`)
     for (let item of page.story) {
