@@ -18,9 +18,10 @@ const sequential = +(params.sequential ?? 1)
 const alphabetical = +(params.alphabetical ?? 1)
 
 let context, present
+let neighborhood = {}
+
 const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 const isjson = res => res.ok ? res.json() : {}
-const getpage = title => fetch(`//${context.site}/${asSlug(title)}.json`).then(isjson)
 const ispresent = title => present.includes(asSlug(title))
 const absent = title => ispresent(title) ? '' : ' <font color=red>✘</font>'
 const line = title => `<span>${title}</span>${absent(title)}\n`
@@ -65,8 +66,12 @@ async function handler ({data}) {
   if (data.action == "frameContext") {
     window.removeEventListener("message", handler)
     context = data
-    let sitemap = await fetch(`//${context.site}/system/sitemap.json`).then(res => res.json())
-    present = sitemap.map(info => info.slug)
+    let roster = context.page.story.find(item => item.type == 'roster') || {text:context.site}
+    let sites = roster.text.split(/ *\n */).filter(line => /[\w-]+\.[\w-]+/.test(line))
+    let flights = await Promise.all(sites.map(site => fetch(`//${site}/system/sitemap.json`).then(res => res.json())))
+    neighborhood = {}
+    for (let i = 0; i<sites.length; i++) neighborhood[sites[i]] = flights[i]
+    present = Object.values(neighborhood).map(sitemap => sitemap.map(info => info.slug)).flat()
     visit(context.page)
     contents.innerHTML = titles.map(line).join("")
   }
@@ -103,12 +108,12 @@ async function doopen(event) {
   count(`tier 1 titles sequenced`, titles.length)
 
   tier = 2
-  while(refs.length) {
+  while(refs.length && tier <= sequential+alphabetical+1) {
     let disposition = tier <= sequential ? 'sequenced' : tier <= sequential+alphabetical ? 'alphabetized' : 'omitted'
-    count(`tier ${tier} titles ${disposition}`, refs.length)
     reference.innerHTML += refs.map(line).join("")+"\n"
     reference.scrollIntoView(false)
     pages = await Promise.all(refs.filter(ispresent).map(title => getpage(title)))
+    count(`tier ${tier} titles ${disposition}`, pages.length)
     titles.push(...refs)
     refs = []
     emit(pages, disposition)
@@ -124,12 +129,30 @@ async function doopen(event) {
   if(!story.length) story = [{type:'paragraph', text:'No problems encountered.'}]
   story.unshift({type:'html',text:counts()})
   story.unshift({type:'paragraph',text:'Problems and other statistics found while printing.'})
+  let journal = [
+    {type:'create',date:Date.now(),item:JSON.parse(JSON.stringify(story))},
+    ...Object.keys(neighborhood).map(site => ({type:'fork',date:Date.now(),site}))
+  ]
   let message = {
     action: "showResult",
-    page: {title:'Print Statistics', story},
+    page: {title:'Print Statistics', story, journal},
     keepLineup: event.shiftKey
   }
   window.parent.postMessage(message, "*");
+}
+
+// const getpage = title => fetch(`//${context.site}/${asSlug(title)}.json`).then(isjson)
+function getpage(title) {
+  let slug = asSlug(title)
+  let candidates = []
+  for (let site in neighborhood) {
+    let info = neighborhood[site].find(info => info.slug == slug)
+    if (info) candidates.push([site, info.date])
+  }
+  candidates.sort((a,b) => b[1]-a[1])
+  let site = candidates[0][0]
+  count(`pages from ${site}`)
+  return fetch(`//${site}/${asSlug(title)}.json`).then(isjson)
 }
 
 function emit(pages, disposition) {
@@ -170,7 +193,7 @@ function emit(pages, disposition) {
           text = text.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
           text = text.replace(/\*(.+?)\*/g,"<b>$1</b>")
           text = text.replace(/_(.+?)_/g,"<i>$1</i>")
-          if (text.match(/^[*+-]/) || ((text.match(/[*]/g)||[]).length%2))
+          if (text.match(/^[*+#-]/) || ((text.match(/[*]/g)||[]).length%2))
             trouble('This markdown too hard', page.title)
           html.push(`<p>${resolve(text)}</p>`)
           break
