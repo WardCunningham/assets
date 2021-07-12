@@ -4,17 +4,39 @@
 </style>
 
 <div id=result></div>
+<p><button onclick=scan(event)>scan</button> <button onclick=grid(event)>grid</button></p>
 
 <script>
 
+  let ctrails = []
   let markers = {}
   let latlons = []
   let squares = {}
   let site = 'http://trails.ward.asia.wiki.org'
 
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const uniq = (value, index, self) => self.indexOf(value) === index
 
-  scan()
+  situation()
+
+  async function situation() {
+    let slug = location.search || 'chronological-destinations'
+    let index = await fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
+    let list = []
+    for (let item of index.story) {
+      if (item.type == 'paragraph') {
+        let m = item.text.match(/^\[\[(.+?)\]\]/)
+        if (m) list.push(m[1])
+      }
+    }
+    ctrails = list.filter(uniq)
+    result.innerHTML = `${ctrails.length} trail pages can be scanned<br>`
+
+    markers = await fetch(`${site}/assets/pages/places-detailed/markers.json`).then(res => res.json())
+    latlons = Object.values(markers).flat()
+    result.innerHTML += `${Object.keys(markers).length} cached markers from previous scans<br>`
+
+  }
 
   async function scan() {
     let slug = location.search || 'chronological-destinations'
@@ -31,6 +53,10 @@
       }
     }
     await Promise.all(work)
+    download(JSON.stringify(markers,null,2),'markers.json')
+  }
+
+  function grid() {
 
     let latm = Math.min(...(latlons.map(latlon => latlon[0])))
     let latx = Math.max(...(latlons.map(latlon => latlon[0])))
@@ -39,8 +65,8 @@
     let dlat = latx - latm
     let dlon = lonx - lonm
 
-    for (trail in markers) {
-      for (latlon of markers[trail]) {
+    for (let trail in markers) {
+      for (let latlon of markers[trail]) {
         let y = Math.floor((latlon[0]-latm) / dlat * 9.99999)
         let x = Math.floor((latlon[1]-lonm) / dlon * 9.99999)
         let xy = `${x} ${y}`
@@ -160,6 +186,16 @@
     }
     markers[title] = latlon
     latlons.push(...latlon)
+  }
+
+  function download(string, file) {
+    var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+    var anchor = document.createElement('a');
+    anchor.setAttribute("href",     data);
+    anchor.setAttribute("download", file);
+    document.body.appendChild(anchor); // required for firefox
+    anchor.click();
+    anchor.remove();
   }
 
 
