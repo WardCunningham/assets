@@ -13,8 +13,8 @@
 </table>
 <p>
   <button onclick="reopen(event)">reopen</button> &nbsp;
+  <span id=lastupdate>waiting</span>
   <span id=skunked onclick="locals(event)">no new locals</span>
-
 <div id=show><p>waiting</div>
 
 
@@ -116,7 +116,8 @@ function tock() {
   if (now > minute) {
     minute = now
     let row = blank.slice()
-    row[0] =`<b>${('0000'+(now%60)).slice(-2)}</b>`
+    let hover = new Date().toLocaleString()
+    row[0] =`<b title="${hover}">${('0000'+(now%60)).slice(-2)}</b>`
     ticks.push(row)
     if (ticks.length > 4) ticks.splice(0,1)
   }
@@ -151,6 +152,7 @@ function reopen() {
   socket.addEventListener('message', (event) => {
       let msg = JSON.parse(event.data)
       if (!msg.spots) return
+      lastupdate.innerText = new Date().toLocaleString()
       tally(msg.spots)
       expire()
       render()
