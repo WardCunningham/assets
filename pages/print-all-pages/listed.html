@@ -163,6 +163,24 @@ function emit(panels, disposition) {
     let {site, page} = panel
     if (!page || !page.title) continue
     count('pages encountered')
+
+    function resolve(text) {
+      const link = /\[\[(.*?)\]\]/g
+      return text.replace(link, (match, title) => {
+        console.log('resolve', title)
+        if (!titles.includes(title) && !refs.includes(title)) {
+          refs.push(title)
+        }
+        if (ispresent(title)) {
+          return `<a href=#${asSlug(title)}>${title}</a>`
+        }
+        else {
+          trouble(`Can't link to ${title}`, page.title)
+          return `<font color=gray>${title}</font>`
+        }
+      }).replace(/\[(https?:.*?) (.*?)\]/g,'<a href="$1">$2</a> '+linkmark())
+    }
+
     let age = (Date.now() - page.journal.slice(-1)[0].date) / (24*60*60*1000)
     let when = age < 1 ? 'today' : age<7 ? 'this week' : age<30 ? 'this month' : age<365 ? 'this year' : 'years ago'
     count(`pages revised ${when}`)
@@ -196,7 +214,10 @@ function emit(panels, disposition) {
           text = text.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
           text = text.replace(/\*(.+?)\*/g,"<b>$1</b>")
           text = text.replace(/_(.+?)_/g,"<i>$1</i>")
-          if (text.match(/^[*+#-]/) || ((text.match(/[*]/g)||[]).length%2))
+          text = text.replace(/(\n|^)- /g,"$1● ")
+          text = text.replace(/\n/g,"<br>\n")
+          text = text.replace(/# (.*?)<br>/g,"<h3>$1</h3>")
+          if (text.match(/^[*+]/) || ((text.match(/[*]/g)||[]).length%2))
             trouble('This markdown too hard', page.title)
           html.push(`<p>${resolve(text)}</p>`)
           break
@@ -218,19 +239,6 @@ function emit(panels, disposition) {
       }
     }    
   }
-}
-
-function resolve(text) {
-  const link = /\[\[(.*?)\]\]/g
-  return text.replace(link, (match, title) => {
-    console.log('resolve', title)
-    if (!titles.includes(title) && !refs.includes(title)) {
-      refs.push(title)
-    }
-    return ispresent(title)
-      ? `<a href=#${asSlug(title)}>${title}</a>`
-      : `<font color=gray>${title}</font>`
-  }).replace(/\[(https?:.*?) (.*?)\]/g,'<a href="$1">$2</a> '+linkmark())
 }
 
 function download(string, file) {
