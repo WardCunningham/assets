@@ -1,0 +1,37 @@
+<html>
+<body>
+  <div id=diagram onclick="poke(event)">working</div>
+  <script>
+
+    main()
+
+    const dup = obj => JSON.parse(JSON.stringify(obj))
+
+    async function main() {
+      let svg = await fetch(`http://ward.dojo.fed.wiki/assets/pages/clickable-svg/graph.svg`).then(res => res.text())
+      diagram.innerHTML = svg
+    }
+
+    function poke(event) {
+      let target = event.target
+      let parent = target.parentElement
+      let elements = parent.outerHTML
+      console.log(elements)
+      let title = "Detail from SVG Diagram"
+      let text = "We pull these elements out of the svg by finding the parent of the element clicked."
+      let story = [{type:'paragraph', text}]
+      for (let line of elements.split(/\n/))
+        story.push({type:'paragraph', text:line})
+      open({title, story}, event.shiftKey)
+    }
+
+    function open(page, keepLineup) {
+      let date = Date.now()
+      for (let item in page.story) item.id = (Math.random()*10^20).toFixed(0)
+      page.journal = [{type:'create', date, item:dup(page)}]
+      let message = {action: "showResult", page, keepLineup}
+      window.parent.postMessage(message, "*");
+    }
+
+  </script>
+</body>
