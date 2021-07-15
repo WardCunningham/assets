@@ -51,7 +51,10 @@ const trouble = (prob, title) => {
   if(!list.includes(title)) list.push(title)
 }
 
-let html = [`
+let preferred = {} // slug => title
+const prefer = title => preferred[asSlug(title)] || (preferred[asSlug(title)] = title)
+
+let prolog = `
   <meta charset="utf-8"/>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟢</text></svg>">
   <style>
@@ -60,7 +63,9 @@ let html = [`
     a { text-decoration:none; }
   </style>
 
-`]
+`
+
+let sections = {}
 
 async function handler ({data}) {
   if (data.action == "frameContext") {
@@ -99,8 +104,17 @@ async function doopen(event) {
   troubles = {}
   counters = {}
   visit(context.page)
-  html = html.slice(0,1)
+  // html = html.slice(0,1)
+  sections = {
+    sequenced: [],
+    alphabetized: [],
+    omitted: []
+  }
+
   reference.innerText = ''
+  count(`argument for sequential`, sequential)
+  count(`argument for alphabetical`, alphabetical)
+
 
   reference.scrollIntoView(false)
   let panels = await Promise.all(titles.filter(ispresent).map(title => getpanel(title)))
@@ -120,6 +134,25 @@ async function doopen(event) {
     tier += 1
   }
 
+  function contents(list, title) {
+    return `
+      <h2>${title} Contents</h2>
+      ${list.map(body => {
+        let head = body[0]
+        let m = head.match(/>(.+?)</)
+        return `<li><a href="#${asSlug(m[1])}">${m[1]}</a></li>`
+      }).join("\n")}
+    `
+  }
+
+  sections.alphabetized.sort((a,b) => a[0] < b[0] ? -1 : 1)
+  let html = [
+    prolog,
+    contents(sections.sequenced,"Story"),
+    ...sections.sequenced,
+    contents(sections.alphabetized,"Garden"),
+    ...sections.alphabetized
+  ].flat()
   download(html.join("\n"),'draft-pages.html')
 
   let story = Object.keys(troubles).sort().map(key => ({
@@ -149,7 +182,7 @@ function getpanel(title) {
     let info = neighborhood[site].find(info => info.slug == slug)
     if (info) candidates.push([site, info.date])
   }
-  candidates.sort((a,b) => b[1]-a[1])
+  candidates.sort((a,b) => a[1]-b[1])
   let site = candidates[0][0]
   count(`pages from ${site}`)
   return new Promise(async response => {
@@ -162,12 +195,14 @@ function emit(panels, disposition) {
   for (let panel of panels) {
     let {site, page} = panel
     if (!page || !page.title) continue
+    let html = []
+    sections[disposition].push(html)
     count('pages encountered')
 
     function resolve(text) {
       const link = /\[\[(.*?)\]\]/g
-      return text.replace(link, (match, title) => {
-        console.log('resolve', title)
+      return text.replace(link, (match, word) => {
+        let title = prefer(word)
         if (!titles.includes(title) && !refs.includes(title)) {
           refs.push(title)
         }
