@@ -1,0 +1,64 @@
+<div id=result></div>
+<p><button onclick=find(event)>find</button>
+  <button onclick=map(event)>map</button></p>
+
+<script>
+
+  const dup = obj => JSON.parse(JSON.stringify(obj))
+  
+  let site = 'http://trails.ward.asia.wiki.org'
+  let markers, latlons, region, trails
+
+  main()
+
+  async function main() {
+    markers = await fetch(`${site}/assets/pages/places-detailed/markers.json`).then(res => res.json())
+    latlons = Object.values(markers).flat()
+    result.innerHTML += `${Object.keys(markers).length} cached markers from previous scans<br>`
+  }
+
+
+// BOUNDARY 45.4488002, -122.6808071
+// BOUNDARY 45.4649353, -122.6488781
+
+  function find(event) {
+    region = {
+      north:45.4649353,
+      south:45.4488002,
+      east:-122.6488781,
+      west:-122.6808071
+    }
+
+    trails = []
+    for (let trail in markers) {
+      for (let latlon of markers[trail]) {
+        let [lat, lon] = latlon
+        if (lat > region.south && lat < region.north && lon > region.west && lon < region.east)
+          if (!trails.includes(trail)) trails.push(trail)
+      }
+    }
+    result.innerHTML += `${trails.length} trails in region.`
+  }
+
+  function map(event) {
+    let markup = []
+    for (let trail of trails) {
+      for (let latlon of markers[trail])
+        markup.push(`${latlon} [[${trail}]]`)
+    }
+    let story = [
+      {type:'map', text:markup.join("\n")}
+    ]
+    open({title:`Trails Within This Region`,story})
+  }
+
+
+  function open(page, keepLineup) {
+    let date = Date.now()
+    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+    page.journal = [{type:'create', date, item:dup(page)}]
+    let message = {action: "showResult", page, keepLineup}
+    window.parent.postMessage(message, "*");
+  }
+
+</script>
