@@ -15,11 +15,15 @@
     function poke(event) {
       let target = event.target
       let parent = target.parentElement
+      let kind = parent.getAttribute('class')
+      let id = parent.getAttribute('id')
+      let title = parent.getElementsByTagName('title')[0].textContent
+      let label = [...parent.getElementsByTagName('text')].map(elem => elem.textContent).join(" ")
       let elements = parent.outerHTML
       console.log(elements)
-      let title = "Detail from SVG Diagram"
       let text = "We pull these elements out of the svg by finding the parent of the element clicked."
-      let story = [{type:'paragraph', text}]
+      let json = JSON.stringify({title,kind,id,label},null,2)
+      let story = [{type:'paragraph', text}, {type:'code',text:json}]
       for (let line of elements.split(/\n/))
         story.push({type:'paragraph', text:line})
       open({title, story}, event.shiftKey)
