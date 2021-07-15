@@ -1,29 +1,39 @@
 // Listen to SparkSDR and report payloads heard.
-// usage: deno run --allow-net console.js
+// usage: deno run --allow-net console.js frequency msg
 
-// call: "N0PUI"
-// color: 0
-// distance: null
-// drift: 0
-// dt: 0.2
-// frequency: 1280
-// locator: "EN34"
-// mode: "FT8"
-// msg: "E72X N0PUI EN34"
-// power: 0
-// snr: -17
-// time: "2020-11-14T04:43:45Z"
-// tunedfrequency: 3573000
-// valid: true
+// {
+//   "cmd": "spotResponse",
+//   "spots": [
+//     {
+//       "time": "2021-06-29T21:14:00Z",
+//       "frequency": 14076666,
+//       "tunedfrequency": 14074303,
+//       "power": 0,
+//       "drift": 0,
+//       "snr": 11,
+//       "dt": 0.2,
+//       "msg": "CQ K7REK CN85",
+//       "mode": "FT8",
+//       "distance": 22.8393423022036,
+//       "call": "K7REK",
+//       "color": 1,
+//       "locator": "CN85",
+//       "valid": true,
+//       "offsetFrequency": 2363,
+//       "rxid": 1
+//     }, ...
+
 
 const socket = new WebSocket('ws://localhost:4649/Spark')
-const handle = (event) => console.log(`handle ${event.type} at ${new Date().toLocaleTimeString()}`)
 
-socket.addEventListener('open', (event) => {
-  handle(event)
+socket.addEventListener('open', event =>
   socket.send('{"cmd":"subscribeToSpots","Enable":true}')
-})
+)
 
-socket.addEventListener('message', handle)
-socket.addEventListener('error', handle)
-socket.addEventListener('close', handle)
+socket.addEventListener('message', event => {
+  let payload = JSON.parse(event.data)
+  for (let spot of payload.spots ?? []) {
+    let columns = Deno.args.map( field => spot[field] )
+    console.log(columns.join("\t"))
+  }
+})
