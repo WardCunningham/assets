@@ -5,7 +5,7 @@
 <script>
 
   const dup = obj => JSON.parse(JSON.stringify(obj))
-  
+
   let site = 'http://trails.ward.asia.wiki.org'
   let markers, latlons, region, trails
 
@@ -14,21 +14,18 @@
   async function main() {
     markers = await fetch(`${site}/assets/pages/places-detailed/markers.json`).then(res => res.json())
     latlons = Object.values(markers).flat()
-    result.innerHTML += `${Object.keys(markers).length} cached markers from previous scans<br>`
+    result.innerHTML += `${Object.keys(markers).length} trails cached from previous scan<br>`
+    result.innerHTML += `${latlons.length} locations identified in these trails<br>`
   }
 
-
-// BOUNDARY 45.4488002, -122.6808071
-// BOUNDARY 45.4649353, -122.6488781
-
-  function find(event) {
+  async function find(event) {
     region = {
       north:45.4649353,
       south:45.4488002,
       east:-122.6488781,
       west:-122.6808071
     }
-
+    // region = await source('region')
     trails = []
     for (let trail in markers) {
       for (let latlon of markers[trail]) {
@@ -37,21 +34,48 @@
           if (!trails.includes(trail)) trails.push(trail)
       }
     }
-    result.innerHTML += `${trails.length} trails in region.`
+    result.innerHTML += `${trails.length} trails in this ${area()} square mile region<br>`
   }
 
   function map(event) {
+    if(!trails) return
     let markup = []
     for (let trail of trails) {
       for (let latlon of markers[trail])
         markup.push(`${latlon} [[${trail}]]`)
     }
     let story = [
-      {type:'map', text:markup.join("\n")}
+      {type:'paragraph', text:`We found ${trails.length} trails in a ${area()} square mile region`},
+      {type:'map', text:markup.join("\n")},
+      {type:'markdown',text:trails.map(trail => `- [[${trail}]]`).join("\n")}
     ]
     open({title:`Trails Within This Region`,story})
   }
 
+
+  function source(topic) {
+    return new Promise(resolve => {
+      let handler = event => {
+        let {data} = event
+        if (!data.action == 'sourceData') return
+        window.parent.removeEventListener(handler)
+        resolve(data[topic])
+      }
+      let message = {action:'requestSourceData', topic}
+      window.parent.addEventListener('message',handler)
+    })
+  }
+
+  function area() {
+    const pi = Math.PI
+    const radius = 3958.8
+    const dlat = 2 * pi * radius / 360 // e.g. 69.44
+    const lat = (region.north + region.south) / 2
+    const dlon = 2 * pi * radius * Math.cos(lat * pi/180) / 360 // e.g. 53.5
+    let width = dlon * (region.east - region.west)
+    let height = dlat * (region.north - region.south)
+    return (width * height).toFixed(2)
+  }
 
   function open(page, keepLineup) {
     let date = Date.now()
