@@ -4,7 +4,9 @@
 </style>
 
 <div id=result></div>
-<p><button onclick=scan(event)>scan</button> <button onclick=grid(event)>grid</button></p>
+<p><button onclick=scan(event)>scan</button>
+  <button onclick=grid(event)>grid</button>
+  <button onclick=allx(event)>all</button></p>
 
 <script>
 
@@ -103,6 +105,23 @@
       story: [{type:'paragraph', text},{type:'map', text:markup}]
     }
     open(page)
+  }
+
+  function allx(event) {
+    let markup = [
+      `WEBLINK https://www.google.com/search?q={LAT},%20{LON}`,
+      `double-click marker for google map`]
+    for (let trail in markers)
+      for (let latlon of markers[trail])
+        markup.push(`${latlon[0]},${latlon[1]} [[${trail}]]`)
+    let story = [
+        {type:'paragraph',text:`
+          As a commuter I traveled through neighborhoods with one place in mind, my destination.
+          Now as a wanderer I stop to look around and where I stop becomes a place of note.`},
+        {type:'map',text:markup.join("\n")},
+        {type:'paragraph',text:'See [[Aerial Map]] or [[Topo Map]] tiles.'},
+        {type:'paragraph',text:'See [[Places to Consider]] on future weekends.'}]
+    open({title:`Places with Trails and Photos`,story}, event.shiftKey)
   }
 
   function click(event) {
