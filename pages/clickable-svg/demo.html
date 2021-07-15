@@ -27,7 +27,7 @@
 
     function open(page, keepLineup) {
       let date = Date.now()
-      for (let item in page.story) item.id = (Math.random()*10**20).toFixed(0)
+      for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
       page.journal = [{type:'create', date, item:dup(page)}]
       let message = {action: "showResult", page, keepLineup}
       window.parent.postMessage(message, "*");
