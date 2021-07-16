@@ -1,0 +1,61 @@
+<div id=result>working</div>
+<p><button onclick="find(event)">find</button>
+  <button onclick="map(event)">map</button></p>
+
+<script>
+
+  const dup = obj => JSON.parse(JSON.stringify(obj))
+  const quote = text => `"${text.replace(/([a-z]) ([A-Z])/g,'$1\n$2')}"`
+
+  let graph = {}
+
+  main()
+
+  async function main() {
+    result.innerHTML = `ready`
+  }
+
+  async function find(event) {
+    graph = await source('graph')
+    result.innerHTML += `<pre>${JSON.stringify(graph,null,2)}`
+  }
+
+  function map(event) {
+    if(!Object.keys(graph).length) return
+    let markup = []
+    for (let root in graph) {
+      for (let point of graph[root])
+        markup.push(`${quote(root)} -> ${quote(point)}`)
+    }
+    let text = `digraph { node[shape=box style=filled fillcolor=palegreen]\n${markup.join("\n")}\n}`
+    let story = [
+      {type:'paragraph', text:`We found ${Object.keys(graph).length} roots in the lineup`},
+      {type:'graphviz', text}
+    ]
+    open({title:`Merged Graphs from Lineup`,story},event.shiftKey)
+  }
+
+
+  function source(topic) {
+    const action = 'requestSourceData'
+    return new Promise(resolve => {
+      let handler = event => {
+        let {data} = event
+        if (!data.action == action) return
+        window.removeEventListener('message',handler)
+        resolve(data.sourceData)
+      }
+      window.addEventListener('message',handler)
+      window.parent.postMessage({action, topic})
+    })
+  }
+
+  function open(page, keepLineup) {
+    let date = Date.now()
+    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+    page.journal = [{type:'create', date, item:dup(page)}]
+    let message = {action: "showResult", page, keepLineup}
+    window.parent.postMessage(message, "*");
+  }
+
+</script>
