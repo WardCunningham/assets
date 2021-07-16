@@ -59,10 +59,10 @@
       let handler = event => {
         let {data} = event
         if (!data.action == action) return
-        window.parent.removeEventListener('message',handler)
-        resolve(data.data)
+        window.removeEventListener('message',handler)
+        resolve(data.sourceData)
       }
-      window.parent.addEventListener('message',handler)
+      window.addEventListener('message',handler)
       window.parent.postMessage({action, topic})
     })
   }
@@ -71,8 +71,8 @@
     const pi = Math.PI
     const radius = 3958.8
     const dlat = 2 * pi * radius / 360 // e.g. 69.44
-    const lat = (region.north + region.south) / 2
-    const dlon = 2 * pi * radius * Math.cos(lat * pi/180) / 360 // e.g. 53.5
+    let lat = (region.north + region.south) / 2
+    let dlon = 2 * pi * radius * Math.cos(lat * pi/180) / 360 // e.g. 53.5
     let width = dlon * (region.east - region.west)
     let height = dlat * (region.north - region.south)
     return (width * height).toFixed(2)
