@@ -25,7 +25,7 @@
       east:-122.6488781,
       west:-122.6808071
     }
-    // region = await source('region')
+    region = await source('region')
     trails = []
     for (let trail in markers) {
       for (let latlon of markers[trail]) {
@@ -54,15 +54,16 @@
 
 
   function source(topic) {
+    const action = 'requestSourceData'
     return new Promise(resolve => {
       let handler = event => {
         let {data} = event
-        if (!data.action == 'sourceData') return
-        window.parent.removeEventListener(handler)
-        resolve(data[topic])
+        if (!data.action == action) return
+        window.parent.removeEventListener('message',handler)
+        resolve(data.data)
       }
-      let message = {action:'requestSourceData', topic}
       window.parent.addEventListener('message',handler)
+      window.parent.postMessage({action, topic})
     })
   }
 
