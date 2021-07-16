@@ -1,6 +1,6 @@
 <div id=result>working</div>
 <p><button onclick="find(event)">find</button>
-  <button onclick="map(event)">map</button></p>
+  <button onclick="draw(event)">draw</button></p>
 
 <script>
 
@@ -20,7 +20,7 @@
     result.innerHTML += `<pre>${JSON.stringify(graph,null,2)}`
   }
 
-  function map(event) {
+  function draw(event) {
     if(!Object.keys(graph).length) return
     let markup = []
     for (let root in graph) {
@@ -46,7 +46,7 @@
         resolve(data.sourceData)
       }
       window.addEventListener('message',handler)
-      window.parent.postMessage({action, topic})
+      window.parent.postMessage({action, topic},"*")
     })
   }
 
@@ -55,7 +55,7 @@
     for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
     page.journal = [{type:'create', date, item:dup(page)}]
     let message = {action: "showResult", page, keepLineup}
-    window.parent.postMessage(message, "*");
+    window.parent.postMessage(message, "*")
   }
 
 </script>
