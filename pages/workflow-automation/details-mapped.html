@@ -63,7 +63,7 @@
         resolve(data.sourceData)
       }
       window.addEventListener('message',handler)
-      window.parent.postMessage({action, topic})
+      window.parent.postMessage({action, topic},"*")
     })
   }
 
