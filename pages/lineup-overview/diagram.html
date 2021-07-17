@@ -1,13 +1,17 @@
-<div id=result>working</div>
 <p><button onclick="find(event)">find</button>
   <button onclick="draw(event)">draw</button></p>
+<div id=result>working</div>
+
+<style>
+  th, td { padding:6px; text-align:center; }
+</style>
 
 <script>
 
   const dup = obj => JSON.parse(JSON.stringify(obj))
   const quote = text => `"${text.replace(/([a-z]) ([A-Z])/g,'$1\n$2')}"`
 
-  let graph = {}
+  let graph = {} // root => [point]
 
   main()
 
@@ -16,8 +20,23 @@
   }
 
   async function find(event) {
-    graph = await source('graph')
-    result.innerHTML += `<pre>${JSON.stringify(graph,null,2)}`
+    let lineup = await sources('graph')
+    for (let spot of lineup)
+      for (let root in spot.graphData) {
+        let points = graph[root] ||= []
+        for (let point of spot.graphData[root])
+          if (!points.includes(point)) points.push(point)
+      }
+   result.innerHTML = stats()
+  }
+
+  function stats() {
+    let rows = Object.keys(graph).map(root => {
+      let inputs = Object.values(graph).flat().filter(point => point==root).length
+      let outputs = graph[root].length
+      return `<tr><td>${root}<td>${inputs}<td>${outputs}`
+    })
+    return `<table><tr><th>node<th>inputs<th>outputs</tr>${rows.join("\n")}`
   }
 
   function draw(event) {
@@ -36,14 +55,14 @@
   }
 
 
-  function source(topic) {
+  function sources(topic) {
     const action = 'requestSourceData'
     return new Promise(resolve => {
       let handler = event => {
         let {data} = event
         if (!data.action == action) return
         window.removeEventListener('message',handler)
-        resolve(data.sourceData)
+        resolve(data.sources)
       }
       window.addEventListener('message',handler)
       window.parent.postMessage({action, topic},"*")
