@@ -6,13 +6,13 @@
 
   const dup = obj => JSON.parse(JSON.stringify(obj))
 
-  let site = 'http://trails.ward.asia.wiki.org'
+  let site = 'trails.ward.asia.wiki.org'
   let markers, latlons, region, trails
 
   main()
 
   async function main() {
-    markers = await fetch(`${site}/assets/pages/places-detailed/markers.json`).then(res => res.json())
+    markers = await fetch(`http://${site}/assets/pages/places-detailed/markers.json`).then(res => res.json())
     latlons = Object.values(markers).flat()
     result.innerHTML += `${Object.keys(markers).length} trails cached from previous scan<br>`
     result.innerHTML += `${latlons.length} locations identified in these trails<br>`
@@ -25,7 +25,8 @@
       east:-122.6488781,
       west:-122.6808071
     }
-    region = await source('region')
+    let lineup = await sources('region')
+    region = lineup[0].regionData
     trails = []
     for (let trail in markers) {
       for (let latlon of markers[trail]) {
@@ -49,18 +50,17 @@
       {type:'map', text:markup.join("\n")},
       {type:'markdown',text:trails.map(trail => `- [[${trail}]]`).join("\n")}
     ]
-    open({title:`Trails Within This Region`,story})
+    open({title:`Trails Within This Region`,story}, event.shiftKey, [site])
   }
 
-
-  function source(topic) {
+  function sources(topic) {
     const action = 'requestSourceData'
     return new Promise(resolve => {
       let handler = event => {
         let {data} = event
         if (!data.action == action) return
         window.removeEventListener('message',handler)
-        resolve(data.sourceData)
+        resolve(data.sources)
       }
       window.addEventListener('message',handler)
       window.parent.postMessage({action, topic},"*")
@@ -78,10 +78,10 @@
     return (width * height).toFixed(2)
   }
 
-  function open(page, keepLineup) {
+  function open(page, keepLineup=false, forks=[]) {
     let date = Date.now()
     for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
-    page.journal = [{type:'create', date, item:dup(page)}]
+    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
     let message = {action: "showResult", page, keepLineup}
     window.parent.postMessage(message, "*");
   }
