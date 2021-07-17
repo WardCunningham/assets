@@ -12,6 +12,7 @@
   const quote = text => `"${text.replace(/([a-z]) ([A-Z])/g,'$1\n$2')}"`
 
   let graph = {} // root => [point]
+  let forks = new Set()
 
   main()
 
@@ -21,12 +22,14 @@
 
   async function find(event) {
     let lineup = await sources('graph')
-    for (let spot of lineup)
+    for (let spot of lineup) {
+      forks.add(spot.panel.site)
       for (let root in spot.graphData) {
         let points = graph[root] ||= []
         for (let point of spot.graphData[root])
           if (!points.includes(point)) points.push(point)
       }
+    }
    result.innerHTML = stats()
   }
 
@@ -51,7 +54,7 @@
       {type:'paragraph', text:`We found ${Object.keys(graph).length} roots in the lineup`},
       {type:'graphviz', text}
     ]
-    open({title:`Merged Graphs from Lineup`,story},event.shiftKey)
+    open({title:`Merged Graphs from Lineup`,story},event.shiftKey,[...forks])
   }
 
 
@@ -69,10 +72,10 @@
     })
   }
 
-  function open(page, keepLineup) {
+  function open(page, keepLineup=false, forks=[]) {
     let date = Date.now()
     for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
-    page.journal = [{type:'create', date, item:dup(page)}]
+    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
     let message = {action: "showResult", page, keepLineup}
     window.parent.postMessage(message, "*")
   }
