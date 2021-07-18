@@ -10,15 +10,13 @@
 
 const params = Object.fromEntries(new URLSearchParams(location.search).entries())
 
-// http://js.ward.asia.wiki.org/frame-plugin-integrations.html
+start()
 
-window.addEventListener("message", handler)
-window.parent.postMessage({ action:"sendFrameContext" }, "*")
 
-async function handler ({data}) {
-  if (data.action == "frameContext") {
-    window.removeEventListener("message", handler)
-    const {site, slug, item, page} = data
+// A P P L I C A T I O N
+
+async function start () {
+    const {site, slug, item, page} = await frameContext()
     let assets = page.story.filter(item => item.type == 'assets')
     if (!assets.length) return report.text = 'need Assets plugin on this page'
     let markup = assets[0].text
@@ -27,30 +25,58 @@ async function handler ({data}) {
     if(list.error != null) return report.text = 'need files in this Assets folder'
     let files = list.files.filter(name => name.match(/^[\w-]+\.(jpg|jpeg)$/i)).sort().slice(-(params['recent']||12))
     if(!files.length) return report.text = 'need jpg image files to continue'
-    report.innerHTML = files.map(file => `<img width=45% src="//${site}/assets/${markup}/${file}" onclick="pick(event)">`).join(" ")
-  }
-}
-
-function show(stuff) {
-  report.innerHTML = `<pre>${JSON.stringify(stuff,null,2)}</pre>`
+    const thumbnail = file => `<img width=45% src="//${site}/assets/${markup}/${file}" onclick="pick(event)">`
+    report.innerHTML = files.map(thumbnail).join(" ")
 }
 
 async function pick(event) {
-  // let src = event.target.src
-  // let story = [{type:'html',text:`<img width=100% src="${src}">`}]
-  // let page = {title:'Page Template', story}
   let page = await build(event.target)
-  let message = {
-    action: "showResult",
-    page,
-    keepLineup: event.shiftKey
-  }
-  window.parent.postMessage(message, "*");
+  open(page,event.shiftKey)
+}
+
+async function build(img){
+  let {date, lat, lon} = await exif(img)
+  let map = `https://www.google.com/search?q=${lat},%20${lon}`
+  let page = {title:"Photo with Map Template",story:[]}
+  page.story.push({type:'paragraph',text:"describe this trail"})
+  page.story.push({type:'html',text:`<img width=100% src=${img.src}>`})
+  page.story.push({type:'paragraph',text:daydate(date)})
+  page.story.push({type:'map',text:`${lat}, ${lon}\n[${map} google map]`})
+  return page
+}
+
+
+// U T I L T I E S
+
+function frameContext() {
+  return new Promise(resolve => {
+    let handler = event => {
+      let {data} = event
+      if (!data.action == "frameContext") return
+      window.removeEventListener('message',handler)
+      resolve(data)
+    }
+    window.addEventListener('message',handler)
+    window.parent.postMessage({action:"sendFrameContext"},"*")
+  })
+}
+
+function open(page, keepLineup=false, forks=[]) {
+  const dup = (obj) => JSON.parse(JSON.stringify(obj))
+  let date = Date.now()
+  for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+  page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+  let message = {action: "showResult", page, keepLineup}
+  window.parent.postMessage(message, "*")
 }
 
 // https://github.com/exif-js/exif-js
 
-function build(img) {
+function exif(img) {
+  const latlon = exif => {
+    let deg = exif[0] + exif[1]/60 + exif[2]/60/60
+    return 'NE'.includes(exif[3]) ? deg : -deg
+  }
   return new Promise((resolve, reject) => {
     EXIF.getData(img, function() {
       let file = img.src.split('/').pop()
@@ -59,24 +85,10 @@ function build(img) {
       let date = EXIF.getTag(this, "DateTimeOriginal")
       let lat = latlon([...EXIF.getTag(this, "GPSLatitude"), EXIF.getTag(this, "GPSLatitudeRef")])
       let lon = latlon([...EXIF.getTag(this, "GPSLongitude"), EXIF.getTag(this, "GPSLongitudeRef")])
-      let map = `https://www.google.com/search?q=${lat},%20${lon}`
-      // report.innerText = JSON.stringify({make, model, date, lat, lon}, null, 2)
-      // google.innerHTML=`<a href="${map}" target=_blank>google map</a>`
-
-      let page = {title:"Photo with Map Template",story:[]}
-      page.story.push({type:'paragraph',text:"describe this trail",id:id()})
-      page.story.push({type:'html',text:`<img width=100% src=${img.src}>`,id:id()})
-      page.story.push({type:'paragraph',text:daydate(date),id:id()})
-      page.story.push({type:'map',text:`${lat}, ${lon}\n[${map} google map]`,id:id()})
-      page.journal=[{type:'create',item:deepcopy(page),date:Date.now()},{type:'fork'}] 
-      resolve(page)  
+      resolve({file,make,model,date,lat,lon})
     })
   })
 }
-
-
-const id = () => Math.trunc(Math.random()*1000000000000).toString()
-const deepcopy = (obj) => JSON.parse(JSON.stringify(obj))
 
 function daydate (exif) {
   let str = exif.split(" ");
@@ -87,10 +99,6 @@ function daydate (exif) {
   return `${day}, ${month} ${date.getDate()}, ${date.getYear()+1900}`
 }
 
-function latlon (exif) {
-  // let max = 'NS'.includes(exif[3]) ? 90 : 180
-  let deg = exif[0] + exif[1]/60 + exif[2]/60/60
-  return 'NE'.includes(exif[3]) ? deg : -deg
-}
+
 
 </script>
