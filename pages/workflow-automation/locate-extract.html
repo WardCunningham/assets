@@ -37,12 +37,15 @@ async function pick(event) {
 async function build(img){
   let {date, lat, lon} = await exif(img)
   let map = `https://www.google.com/search?q=${lat},%20${lon}`
-  let page = {title:"Photo with Map Template",story:[]}
-  page.story.push({type:'paragraph',text:"describe this trail"})
-  page.story.push({type:'html',text:`<img width=100% src=${img.src}>`})
-  page.story.push({type:'paragraph',text:daydate(date)})
-  page.story.push({type:'map',text:`${lat}, ${lon}\n[${map} google map]`})
-  return page
+  let day = date.toLocaleString('en-us', {weekday:'long'})
+  let month = date.toLocaleString('en-us', {month:'long'})
+  let daydate = `${day}, ${month} ${date.getDate()}, ${date.getYear()+1900}`
+  return  {title:"Photo with Map Template", story:[
+    {type:'paragraph',text:"describe this trail"},
+    {type:'html',text:`<img width=100% src=${img.src}>`},
+    {type:'paragraph',text:daydate},
+    {type:'map',text:`${lat}, ${lon}\n[${map} google map]`}
+  ]}
 }
 
 
@@ -82,23 +85,15 @@ function exif(img) {
       let file = img.src.split('/').pop()
       let make = EXIF.getTag(this, "Make");
       let model = EXIF.getTag(this, "Model");
-      let date = EXIF.getTag(this, "DateTimeOriginal")
+      let clock = EXIF.getTag(this, "DateTimeOriginal")
+      let str = clock.split(" ");
+      let iso = str[0].replace(/:/g, "-");
+      let date = new Date(iso + " " +str[1]);
       let lat = latlon([...EXIF.getTag(this, "GPSLatitude"), EXIF.getTag(this, "GPSLatitudeRef")])
       let lon = latlon([...EXIF.getTag(this, "GPSLongitude"), EXIF.getTag(this, "GPSLongitudeRef")])
       resolve({file,make,model,date,lat,lon})
     })
   })
 }
-
-function daydate (exif) {
-  let str = exif.split(" ");
-  let iso = str[0].replace(/:/g, "-");
-  let date = new Date(iso + " " +str[1]);
-  let day = date.toLocaleString('en-us', {weekday:'long'})
-  let month = date.toLocaleString('en-us', {month:'long'})
-  return `${day}, ${month} ${date.getDate()}, ${date.getYear()+1900}`
-}
-
-
 
 </script>
