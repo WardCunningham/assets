@@ -1,9 +1,9 @@
-<p><button onclick="find(event)">find</button>
-  <button onclick="draw(event)">draw</button></p>
+<p><button onclick="draw(event)">draw</button> <span id=counts></span></p>
 <div id=result>working</div>
 
 <style>
-  th, td { padding:6px; text-align:center; }
+  th, td, span { text-align:center; font-family: verdana, helvetica, sans; font-size: smaller; }
+}
 </style>
 
 <script>
@@ -14,7 +14,7 @@
   let graph = {} // root => [point]
   let forks = new Set()
 
-  main()
+  find()
 
   async function main() {
     result.innerHTML = `ready`
@@ -30,7 +30,8 @@
           if (!points.includes(point)) points.push(point)
       }
     }
-   result.innerHTML = stats()
+    counts.innerHTML = `${Object.keys(graph).length} nodes`
+    stats()
   }
 
   function stats() {
@@ -39,7 +40,7 @@
       let outputs = graph[root].length
       return `<tr><td>${root}<td>${inputs}<td>${outputs}`
     })
-    return `<table><tr><th>node<th>inputs<th>outputs</tr>${rows.join("\n")}`
+    result.innerHTML = `<table><tr><th>node<th>in<th>out</tr>${rows.join("\n")}`
   }
 
   function draw(event) {
@@ -51,7 +52,7 @@
     }
     let text = `digraph { node[shape=box style=filled fillcolor=palegreen]\n${markup.join("\n")}\n}`
     let story = [
-      {type:'paragraph', text:`We found ${Object.keys(graph).length} roots in the lineup`},
+      {type:'paragraph', text:`We found ${Object.keys(graph).length} nodes in the lineup`},
       {type:'graphviz', text}
     ]
     open({title:`Merged Graphs from Lineup`,story},event.shiftKey,[...forks])
