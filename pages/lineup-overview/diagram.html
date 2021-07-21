@@ -10,9 +10,13 @@
 
   const dup = obj => JSON.parse(JSON.stringify(obj))
   const quote = text => `"${text.replace(/([a-z]) ([A-Z])/g,'$1\n$2')}"`
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 
   let graph = {} // root => [point]
   let forks = new Set()
+
+  let sitemap
+  let colored = new Set()
 
   find()
 
@@ -21,7 +25,11 @@
   }
 
   async function find(event) {
+    let {site} = await frameContext()
+    console.log({site})
+    sitemap = fetch(`//${site}/system/sitemap.json`).then(res => res.json())
     let lineup = await sources('graph')
+    sitemap = await sitemap
     for (let spot of lineup) {
       forks.add(spot.panel.site)
       for (let root in spot.graphData) {
@@ -44,13 +52,22 @@
   }
 
   function draw(event) {
+    console.log('sitemap',sitemap)
     if(!Object.keys(graph).length) return
     let markup = []
+    markup.push("node [fillcolor=lightblue]")
+    for (let root in graph) {
+      let slug = asSlug(root)
+      if (!colored.has(root) && sitemap.find(info => info.slug == slug)) {
+        markup.push(quote(root))
+      }
+    }
+    markup.push("node [fillcolor=palegreen]")
     for (let root in graph) {
       for (let point of graph[root])
         markup.push(`${quote(root)} -> ${quote(point)}`)
     }
-    let text = `digraph { node[shape=box style=filled fillcolor=palegreen]\n${markup.join("\n")}\n}`
+    let text = `digraph { node[shape=box style=filled]\n${markup.join("\n")}\n}`
     let story = [
       {type:'paragraph', text:`We found ${Object.keys(graph).length} nodes in the lineup`},
       {type:'graphviz', text}
@@ -58,6 +75,8 @@
     open({title:`Merged Graphs from Lineup`,story},event.shiftKey,[...forks])
   }
 
+
+  // U T I L I T I E S
 
   function sources(topic) {
     const action = 'requestSourceData'
@@ -70,6 +89,19 @@
       }
       window.addEventListener('message',handler)
       window.parent.postMessage({action, topic},"*")
+    })
+  }
+
+  function frameContext() {
+    return new Promise(resolve => {
+      let handler = event => {
+        let {data} = event
+        if (!data.action == "frameContext") return
+        window.removeEventListener('message',handler)
+        resolve(data)
+      }
+      window.addEventListener('message',handler)
+      window.parent.postMessage({action:"sendFrameContext"},"*")
     })
   }
 
