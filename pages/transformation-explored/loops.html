@@ -1,8 +1,30 @@
 <meta charset="utf-8"/>
+<button onclick=vars(event)>vars</button>
+<button onclick=loops(event)>loops</button>
 <div id=result></div>
 <script type=module>
 
-  let date = Date.now() - 2000
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  let date = Date.now()
+
+  window.vars = event => {
+    let pages = {}
+    for (let title in model) {
+      let markup = []
+      for (let upstream of model[title].upstream) markup.push(`${upstream} --> HERE`)
+      for (let downstream of model[title].downstream) markup.push(`HERE --> ${downstream}`)
+      let story = [{type:'graph',text:markup.join("\n")}]
+      pages[asSlug(title)] = page(title, story)
+    }
+    let message = { action:"importer", pages, keepLineup: event.shiftKey}
+    window.parent.postMessage(message, "*")
+  }
+
+  window.loops = event => {
+    let message = { action:"importer", pages:wiki, keepLineup: event.shiftKey}
+    window.parent.postMessage(message, "*")
+  }
+
   import { parse } from "./parse.js"
 
   const result = document.getElementById('result')
@@ -11,7 +33,7 @@
   let done = new Set()  // relations a -> b
   let wiki = {}         // slug => page
 
-  let context = await frameContext() 
+  let context = await frameContext()
   let m = context?.page?.story[0].text.match(/\[(.+?) mdl\]/) || []
   console.log(context, m)
   let model = await parse(m[1])
@@ -19,34 +41,14 @@
     enumerate(root)
 
   for (let rank of Object.keys(tiers).sort((a,b) => (+a) - (+b))){
-    const bold = node => {let result = seen.has(node) ? node : `<b>${node}</b>`; seen.add(node); return result}
     result.innerHTML += `<h3>tier ${rank}</h3>`
     let tier = tiers[rank]
     for (let row of tier) {
       let path = row.split(/, /)
       generate(path)
-      let print = []
-      for (let i = 0; i < path.length; i++) {
-        let rel = `${path[i]}, ${path[(i+1)%path.length]}`
-        if (!done.has(rel)) {
-          print.push(`${bold(path[i])} ➜`)
-          done.add(rel)
-        } else {
-          print.push(bold(path[i]))
-        }
-      }
-      print.push(path[0])
-      result.innerHTML += `${print.join(", ")}<br><br>`
+      report(path)
     }
   }
-
-  let message = {
-    action: "importer",
-    pages: wiki,
-    keepLineup: false
-  }
-  window.parent.postMessage(message, "*");
-
 
   function enumerate(root) {
     let many = []
@@ -61,7 +63,7 @@
           loops([...path, choice], choice)
         }
       }
-    }    
+    }
 
     loops([root], root)
     many.sort((a,b) => a.length - b.length)
@@ -72,8 +74,6 @@
       if (!touch.length) continue
       touched.push(...touch)
       tally(path)
-      // const bold = step => touch.includes(step) ? `<b>${step}</b>` : step
-      // result.innerHTML += `<ul>${path.map(step => `<li>${bold(step)}`).join("\n")}</ul>\n`
     }
   }
 
@@ -87,7 +87,6 @@
   }
 
   function generate(path) {
-    const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
     let start = path.find(node => !seen.has(node))
     if (!start) return
     while(path[0] != start) path.push(path.shift())
@@ -97,14 +96,34 @@
       {type:'graph',text:[...path, path[0]].join(" -->\n")},
       {type:'paragraph',text:'[[Lineup Viewer]]'}
     ]
-    for (let item of story) item.id = (Math.random()*2**20).toFixed(0)
-    let page = {title,story}
-    page.journal = [{type:'create',date,item:JSON.parse(JSON.stringify(page))},{type:'fork',date}]
-    wiki[asSlug(title)] = page
+    wiki[asSlug(title)] = page(title, story)
+  }
+
+  function report(path) {
+    const bold = node => {let result = seen.has(node) ? node : `<b>${node}</b>`; seen.add(node); return result}
+    let print = []
+    for (let i = 0; i < path.length; i++) {
+      let rel = `${path[i]}, ${path[(i+1)%path.length]}`
+      if (!done.has(rel)) {
+        print.push(`${bold(path[i])} ➜`)
+        done.add(rel)
+      } else {
+        print.push(bold(path[i]))
+      }
+    }
+    print.push(path[0])
+    result.innerHTML += `${print.join(", ")}<br><br>`
   }
 
 
   // U T I L I T I E S
+
+  function page(title, story) {
+    for (let item of story) item.id = (Math.random()*2**20).toFixed(0)
+    let page = {title,story}
+    page.journal = [{type:'create',date,item:JSON.parse(JSON.stringify(page))},{type:'fork',date}]
+    return page
+  }
 
   function frameContext() {
     return new Promise(resolve => {
