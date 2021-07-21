@@ -1,0 +1,123 @@
+<meta charset="utf-8"/>
+<div id=result></div>
+<script type=module>
+
+  let date = Date.now() - 2000
+  import { parse } from "./parse.js"
+
+  const result = document.getElementById('result')
+  let tiers = {}        // tier => Set of canonical loops
+  let seen = new Set()  // variable a
+  let done = new Set()  // relations a -> b
+  let wiki = {}         // slug => page
+
+  let context = await frameContext() 
+  let m = context?.page?.story[0].text.match(/\[(.+?) mdl\]/) || []
+  console.log(context, m)
+  let model = await parse(m[1])
+  for (let root in model)
+    enumerate(root)
+
+  for (let rank of Object.keys(tiers).sort((a,b) => (+a) - (+b))){
+    const bold = node => {let result = seen.has(node) ? node : `<b>${node}</b>`; seen.add(node); return result}
+    result.innerHTML += `<h3>tier ${rank}</h3>`
+    let tier = tiers[rank]
+    for (let row of tier) {
+      let path = row.split(/, /)
+      generate(path)
+      let print = []
+      for (let i = 0; i < path.length; i++) {
+        let rel = `${path[i]}, ${path[(i+1)%path.length]}`
+        if (!done.has(rel)) {
+          print.push(`${bold(path[i])} ➜`)
+          done.add(rel)
+        } else {
+          print.push(bold(path[i]))
+        }
+      }
+      print.push(path[0])
+      result.innerHTML += `${print.join(", ")}<br><br>`
+    }
+  }
+
+  let message = {
+    action: "importer",
+    pages: wiki,
+    keepLineup: false
+  }
+  window.parent.postMessage(message, "*");
+
+
+  function enumerate(root) {
+    let many = []
+
+    function loops(path, next) {
+      let choices = model[next].downstream
+      for (let choice of choices) {
+        if (choice == path[0]) {
+          many.push(path.slice())
+          // result.innerHTML += `<ul>${[...path, choice].map(step => `<li>${step}`).join("\n")}</ul>\n`
+        } else if (!path.includes(choice)) {
+          loops([...path, choice], choice)
+        }
+      }
+    }    
+
+    loops([root], root)
+    many.sort((a,b) => a.length - b.length)
+
+    let touched = []
+    for (let path of many) {
+      let touch = path.filter(variable => !touched.includes(variable))
+      if (!touch.length) continue
+      touched.push(...touch)
+      tally(path)
+      // const bold = step => touch.includes(step) ? `<b>${step}</b>` : step
+      // result.innerHTML += `<ul>${path.map(step => `<li>${bold(step)}`).join("\n")}</ul>\n`
+    }
+  }
+
+  function tally(path) {
+    let rank = path.length
+    if (rank > 20) return
+    let first = path.slice().sort()[0]
+    while(path[0] != first) path.push(path.shift())
+    let tier = tiers[rank] ||= new Set()
+    tier.add(path.join(", "))
+  }
+
+  function generate(path) {
+    const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+    let start = path.find(node => !seen.has(node))
+    if (!start) return
+    while(path[0] != start) path.push(path.shift())
+    let title = `${start} Loop`
+    let story = [
+      {type:'paragraph',text:'Explain why this loop is important.'},
+      {type:'graph',text:[...path, path[0]].join(" -->\n")},
+      {type:'paragraph',text:'[[Lineup Viewer]]'}
+    ]
+    for (let item of story) item.id = (Math.random()*2**20).toFixed(0)
+    let page = {title,story}
+    page.journal = [{type:'create',date,item:JSON.parse(JSON.stringify(page))},{type:'fork',date}]
+    wiki[asSlug(title)] = page
+  }
+
+
+  // U T I L I T I E S
+
+  function frameContext() {
+    return new Promise(resolve => {
+      let handler = event => {
+        let {data} = event
+        if (!data.action == "frameContext") return
+        window.removeEventListener('message',handler)
+        resolve(data)
+      }
+      window.addEventListener('message',handler)
+      window.parent.postMessage({action:"sendFrameContext"},"*")
+    })
+  }
+
+
+</script>
