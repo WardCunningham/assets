@@ -21,12 +21,16 @@ async function start () {
     if (!assets.length) return report.text = 'need Assets plugin on this page'
     let markup = assets[0].text
     let url = `//${site}/plugin/assets/list?assets=${markup}`
-    let list = await fetch(url).then(res=>res.json())
+    let list = await fetch(url).then(res => res.json())
     if(list.error != null) return report.text = 'need files in this Assets folder'
-    let files = list.files.filter(name => name.match(/^[\w-]+\.(jpg|jpeg)$/i)).sort().slice(-(params['recent']||12))
+    let files = list.files.filter(name => name.match(/^[\w-]+\.(jpg|jpeg)$/i)).sort()
     if(!files.length) return report.text = 'need jpg image files to continue'
+    report.innerHTML = `${files.length} files in this asset<br>`
+    let images = await fetch(`http://trails.ward.asia.wiki.org/assets/pages/chronological-wandering/images.json`).then(res => res.json())
+    let done = Object.values(images[slug]).flat()
+    report.innerHTML += `${done.length} of these in trail pages<br>`
     const thumbnail = file => `<img width=45% src="//${site}/assets/${markup}/${file}" onclick="pick(event)">`
-    report.innerHTML = files.map(thumbnail).join(" ")
+    report.innerHTML += files.filter(file => !done.includes(file)).map(thumbnail).join(" ")
 }
 
 async function pick(event) {
@@ -49,7 +53,7 @@ async function build(img){
 }
 
 
-// U T I L T I E S
+// U T I L I T I E S
 
 function frameContext() {
   return new Promise(resolve => {
