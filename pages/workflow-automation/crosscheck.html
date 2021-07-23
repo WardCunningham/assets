@@ -1,6 +1,6 @@
 <div id=result>working</div>
 <style>
-  body { font-family: Arial, Helvetica, sans-serif; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size=-1}
     td { vertical-align: text-top; }
     thead tr th { text-align: left; position: sticky; top: 0px; background-color: white}
 </style>
@@ -9,6 +9,7 @@
   const site = 'http://trails.ward.asia.wiki.org'
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
   const uniq = (value, index, self) => self.indexOf(value) === index
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
 
   cross(
   	fetch(`${site}/chronological-destinations.json`).then(res => res.json()),
@@ -26,8 +27,36 @@
     )
   }
 
-  function report (dest, been, sitemap) {
+  async function report (dest, been, sitemap) {
     console.log({dest, been, sitemap})
+
+    if (params['generate']) {
+      result.innerHTML = `<h3>New Chronological Destinations</h3>`
+      let newlinks = sitemap
+        .filter(trail => !dest.includes(trail))
+        .map(trail => `[[${trail}]]`)
+      result.innerHTML += newlinks.join("<br>\n")
+      result.innerHTML += `<h3>New Places I Have Been</h3>`
+      let newmarks = await Promise.all(sitemap
+        .filter(trail => !been.includes(trail))
+        .map(trail => fetch(`/${asSlug(trail)}.json`).then(res => res.json()).then(mark)))
+      result.innerHTML += newmarks.join("<br>\n")
+      return
+    }
+
+    function mark(page) {
+      let map = page.story
+        .find(item => item.type=='map')
+      let latlons = map.text
+        .split(/\n/)
+        .map(line => (line.match(/^\d+\.\d+, ?-\d+\.\d+\b/)))
+        .filter(match => match)
+        .map(match => match[0])
+      const avg = (i) => (latlons
+        .reduce((sum,each) => sum + +each.split(/, ?/)[i], 0) / latlons.length)
+        .toFixed(5)
+      return `${avg(0)}, ${avg(1)} [[${page.title}]]`
+    }
 
     function tr (regex) {
       const apply = (regex, list) => list.filter(each => regex.test(each))
