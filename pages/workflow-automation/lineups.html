@@ -10,6 +10,7 @@
   const uniq = (value, index, self) => self.indexOf(value) === index
 
   let history = {}
+  let images = {}
 
   main()
 
@@ -33,6 +34,7 @@
     const chronological = (a,b) => new Date(a) < new Date(b) ? -1 : 1
     let when = Object.keys(history).sort(chronological)
     result.innerHTML = when.map(lineup).join('<br>')
+    download(JSON.stringify(images,null,2),'images.json')
   }
 
   async function trail(title, slug) {
@@ -40,20 +42,21 @@
     result.innerText += ' .'
     let story = page.story || []
     let synopsis = story[0].text
-    let images = 0
-    let assets = []
+    let assets = new Set()
     for (let item of story) {
       if (item.type == 'html') {
-        images += 1
-        let m = item.text.match(/\bsrc=http:\/\/trails.ward.asia.wiki.org\/assets\/pages\/(.*?)\//)
-        if (m && !assets.includes(m[1])) {
-          assets.push(m[1])
+        let m = item.text.match(/\bsrc=http:\/\/trails.ward.asia.wiki.org\/assets\/pages\/(.*?)\/(.*)>/)
+        if (m) {
+          assets.add(m[1])
+          let season = images[m[1]] ||= {}
+          let list = season[title] ||= []
+          list.push(m[2])
         }
       }
     }
     let date = page.story.find(item => item.text.length<30 && !isNaN(new Date(item.text))).text
     let day = history[date] = history[date] || []
-    day.push({title, slug, synopsis, story, images, assets})
+    day.push({title, slug, synopsis, story, assets:[...assets]})
   }
 
   function lineup(date) {
@@ -136,7 +139,17 @@ function openpage(date, day) {
     }
     return markers
   }
+}
 
+
+function download(string, file) {
+  var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+  var anchor = document.createElement('a');
+  anchor.setAttribute("href",     data);
+  anchor.setAttribute("download", file);
+  document.body.appendChild(anchor); // required for firefox
+  anchor.click();
+  anchor.remove();
 }
 
 </script>
