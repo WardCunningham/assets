@@ -2,7 +2,7 @@
 // Usage: let model = await parse()
 
 let model = {} // variable => {upstream:[], downstream[]}
-let stop = word => ['of','in','to','as','and'].includes(word.toLowerCase()) ? word : null
+let stop = word => ['of','in','to','as','and','for'].includes(word.toLowerCase()) ? word : null
 
 export async function parse(url="http://code.fed.wiki/assets/pages/transformation-modeled/Woodcrest%20v7.mdl") {
   let text = await fetch(url).then(req => req.text())
