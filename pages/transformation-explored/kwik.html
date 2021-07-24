@@ -1,0 +1,51 @@
+<div id=report></div>
+<script type=module>
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  let texts = await scrape(params['texts']||'regenerate.ward.asia.wiki.org')
+  let titles = await scrape(params['titles']||'climate.ward.asia.wiki.org')
+
+  async function scrape(domain) {
+    let sitemap = await fetch (`http://${domain}/system/sitemap.json`).then(res => res.json())
+    return Promise.all(sitemap.map(info => 
+      bundle(info, fetch(`http://${domain}/${info.slug}.json`).then(res => res.json()))))
+
+    async function bundle(info,page) {
+      info.page = await page
+      window.report.innerHTML += ' .'
+      return info
+    }
+  }
+
+  const clean = obj => {for (let prop in obj) if(!Object.keys(obj[prop]).length) delete obj[prop]}
+  let kwik = {} // kvar => kpage => kitem => {hits}
+
+  for (let want of titles) {
+    let words = want.title.split(/ |\//).filter(word => /^[A-Z]/.test(word))
+    if (words[words.length-1] == 'Loop') continue
+    let kvar = kwik[want.title] ||= {}
+    let pattern = words.join('|')
+    console.log("\n>>> ",pattern, ' <<<')
+    let regex = new RegExp(`\\b(${pattern})\\b`,'ig')
+    for (let info of texts) {
+      let kpage = kvar[info.title] ||= {}
+      for (let item of info.page.story) {
+        if (!item.type == 'paragraph') continue
+        let kitem = kpage[item.id] ||= {}
+        let m = item.text.match(regex)
+        if (m) {
+          console.log('....', info.title, m.length, '...', item.text.substr(0,50),m)
+          kpage[item.id] = {hits:m, quote:item.text.substr(0,50)}
+        }
+      }
+      clean(kpage)
+    }
+    clean(kvar)
+  }
+  clean(kwik)
+
+  const things = obj => Object.keys(obj)
+  report.innerHTML = things(kwik).map(variable => 
+    `${variable}<ul>${things(kwik[variable]).map(title => 
+      `<li>${things(kwik[variable][title]).length} × ${title}`).join("\n")}</ul>`)
+  .join("<br>")
+</script>
