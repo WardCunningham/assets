@@ -13,7 +13,12 @@
       let markup = []
       for (let upstream of model[title].upstream) markup.push(`${upstream} --> HERE`)
       for (let downstream of model[title].downstream) markup.push(`HERE --> ${downstream}`)
-      let story = [{type:'graph',text:markup.join("\n")}]
+      let loops = members[title].map(loop => `- [[${loop}]]`)
+      let story = [
+        {type:'paragraph',text:'Explain what is measured by this variable.'},
+        {type:'graph',text:markup.join("\n")},
+        {type:'paragraph',text:'[[Lineup Viewer]]'},
+        {type:'markdown',text:loops.join("\n")}]
       pages[asSlug(title)] = page(title, story)
     }
     let message = { action:"importer", pages, keepLineup: event.shiftKey}
@@ -32,13 +37,16 @@
   let seen = new Set()  // variable a
   let done = new Set()  // relations a -> b
   let wiki = {}         // slug => page
+  let members = {}      // variable a -> [loops]
 
   let context = await frameContext()
   let m = context?.page?.story[0].text.match(/\[(.+?) mdl\]/) || []
   console.log(context, m)
   let model = await parse(m[1])
-  for (let root in model)
+  for (let root in model) {
     enumerate(root)
+    members[root] = []
+  }
 
   for (let rank of Object.keys(tiers).sort((a,b) => (+a) - (+b))){
     result.innerHTML += `<h3>tier ${rank}</h3>`
@@ -91,6 +99,7 @@
     if (!start) return
     while(path[0] != start) path.push(path.shift())
     let title = `${start} Loop`
+    for (let node of path) members[node].push(title)
     let story = [
       {type:'paragraph',text:'Explain why this loop is important.'},
       {type:'graph',text:[...path, path[0]].join(" -->\n")},
