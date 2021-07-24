@@ -17,11 +17,14 @@
   }
 
   const clean = obj => {for (let prop in obj) if(!Object.keys(obj[prop]).length) delete obj[prop]}
+  const last = array => array[array.length-1]
+  const hasgraph = page => page.story.find(item => item.type == 'graph')
   let kwik = {} // kvar => kpage => kitem => {hits}
 
   for (let want of titles) {
     let words = want.title.split(/ |\//).filter(word => /^[A-Z]/.test(word))
-    if (words[words.length-1] == 'Loop') continue
+    if (last(words) == 'Loop') continue
+    if (!hasgraph(want.page)) continue
     let kvar = kwik[want.title] ||= {}
     let pattern = words.join('|')
     console.log("\n>>> ",pattern, ' <<<')
@@ -34,7 +37,10 @@
         let m = item.text.match(regex)
         if (m) {
           console.log('....', info.title, m.length, '...', item.text.substr(0,50),m)
-          kpage[item.id] = {hits:m, quote:item.text.substr(0,50)}
+          kpage[item.id] = {
+            hits:m,
+            quote:`<blockquote>${item.text.replace(regex,'<font color=red>$1</font>')}</blockquote>`
+          }
         }
       }
       clean(kpage)
@@ -44,8 +50,33 @@
   clean(kwik)
 
   const things = obj => Object.keys(obj)
-  report.innerHTML = things(kwik).map(variable => 
-    `${variable}<ul>${things(kwik[variable]).map(title => 
-      `<li>${things(kwik[variable][title]).length} × ${title}`).join("\n")}</ul>`)
+  report.innerHTML = things(kwik).map(variable =>
+    `<div><b>${variable}</b><ul>${things(kwik[variable]).map(title =>
+      `<li>${things(kwik[variable][title]).length} × <span onclick=drill(event)>${title}</span>`).join("\n")}</ul></div>`)
   .join("<br>")
+
+  window.drill = function (event) {
+    let inner = event.target.innerText
+    let outer = event.target.closest("div").getElementsByTagName("b")[0].innerText
+    let items = kwik[outer][inner]
+    let title = `Kwik ${inner}`
+    let detail = Object.keys(items).map(item => ({type:'html', id:item, text:items[item].quote}))
+    let text = `Keyword search for variable [[${outer}]] found these items in [[${inner}]]. Shift hover quotes to scroll the source page.`
+    let story = [
+      {type:'paragraph', text},
+      ...detail
+    ]
+    open({title,story},event.shiftKey,['regenerate.ward.asia.wiki.org','climate.ward.asia.wiki.org'])
+  }
+
+  function open(page, keepLineup=false, forks=[]) {
+    const dup = obj => JSON.parse(JSON.stringify(obj))
+    let date = Date.now()
+    for (let item of page.story) item.id ||= (Math.random()*10**20).toFixed(0)
+    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+    let message = {action: "showResult", page, keepLineup}
+    window.parent.postMessage(message, "*")
+  }
+
+
 </script>
