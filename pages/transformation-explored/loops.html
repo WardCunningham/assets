@@ -1,5 +1,6 @@
 <meta charset="utf-8"/>
 <button onclick=vars(event)>vars</button>
+<button onclick=rels(event)>rels</button>
 <button onclick=loops(event)>loops</button>
 <div id=result></div>
 <script type=module>
@@ -19,6 +20,29 @@
         {type:'graph',text:markup.join("\n")},
         {type:'paragraph',text:'[[Lineup Viewer]]'},
         {type:'markdown',text:loops.join("\n")}]
+      pages[asSlug(title)] = page(title, story)
+    }
+    let message = { action:"importer", pages, keepLineup: event.shiftKey}
+    window.parent.postMessage(message, "*")
+  }
+
+  window.rels = event => {
+    const effects = ['Increases','Improves','Raises','Lifts','Expands','Decreases','Destroys','Lessens','Reduces','Contracts','Affects','Creates','Causes']
+    const hash = word => [...word].reduce((sum,ch) => sum+ch.charCodeAt(0),0)
+    const squeeze = phrase => phrase.split(' ')
+      .filter(word => /^[A-Z]/.test(word) && !['Amongst', 'School'].includes(word))
+      .map(word => word.slice(0,4))
+      .join('')
+    let pages = {}
+    for (let rel of [...done].sort()) {
+      let effect = effects[hash(rel) % effects.length]
+      let [above, below] = rel.split(', ')
+      let title = `${squeeze(above)} ${effect} ${squeeze(below)}`
+      let story = [
+        {type:'paragraph',text:'Explain nature of this relationship.'},
+        {type:'graph',text:`${above} -->\n${below}`},
+        {type:'paragraph',text:'[[Lineup Viewer]]'}
+      ]
       pages[asSlug(title)] = page(title, story)
     }
     let message = { action:"importer", pages, keepLineup: event.shiftKey}
