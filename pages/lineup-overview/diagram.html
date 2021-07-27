@@ -2,11 +2,12 @@
 <div id=result>working</div>
 
 <style>
-  th, td, span { text-align:center; font-family: verdana, helvetica, sans; font-size: smaller; }
+  body { font-family: verdana, helvetica, sans; font-size: smaller; }
+  th, td, span { text-align:center;  }
 }
 </style>
 
-<script>
+<script type=module>
 
   const dup = obj => JSON.parse(JSON.stringify(obj))
   const quote = text => `"${text.replace(/([a-z]) ([A-Z])/g,'$1\n$2')}"`
@@ -21,14 +22,15 @@
   find()
 
   async function main() {
-    result.innerHTML = `ready`
+    window.result.innerHTML = `ready`
   }
 
   async function find(event) {
-    let {site} = await frameContext()
+    let {site, page} = await frameContext()
     console.log({site})
     sitemap = fetch(`//${site}/system/sitemap.json`).then(res => res.json())
-    let lineup = await sources('graph')
+    let lineup = (await sources('graph'))
+    lineup.reverse()
     sitemap = await sitemap
     for (let spot of lineup) {
       forks.add(spot.panel.site)
@@ -38,8 +40,9 @@
           if (!points.includes(point)) points.push(point)
       }
     }
-    counts.innerHTML = `${Object.keys(graph).length} nodes`
+    window.counts.innerHTML = `${Object.keys(graph).length} nodes`
     stats()
+    loopsearch(page, lineup)
   }
 
   function stats() {
@@ -48,10 +51,10 @@
       let outputs = graph[root].length
       return `<tr><td>${root}<td>${inputs}<td>${outputs}`
     })
-    result.innerHTML = `<table><tr><th>node<th>in<th>out</tr>${rows.join("\n")}`
+    window.result.innerHTML = `<table><tr><th>node<th>in<th>out</tr>${rows.join("\n")}`
   }
 
-  function draw(event) {
+  window.draw = function draw(event) {
     console.log('sitemap',sitemap)
     if(!Object.keys(graph).length) return
     let markup = []
@@ -73,6 +76,51 @@
       {type:'graphviz', text}
     ]
     open({title:`Merged Graphs from Lineup`,story},event.shiftKey,[...forks])
+  }
+
+  import { parse } from "./parse.js"
+
+  async function loopsearch(page, lineup) {
+    let m = page.story[0].text.match(/\[(.+?) mdl\]/)
+    if (!m) return
+    let model = await parse(m[1])
+    let path = []
+    let last
+    for (let spot of lineup) {
+      let graph = spot.graphData
+      let keys = Object.keys(graph)
+      if (keys.length != 2) return
+      path.push(keys[0])
+      last = keys[1]
+    }
+    path.push(last)
+    let paths = enumerate(path, last)
+    window.result.innerHTML += `<hr><p><button onclick="drawloops(event)">draw</button> ${paths.length} loops</p>`
+    for (path of paths) {
+      window.result.innerHTML += `<p>${path.length} ► ${[...path,path[0]].join(' ⇒ ')}</p>\n`
+    }
+
+    window.drawloops = function drawloops (event) {
+      console.log('should draw now')
+    }
+
+    function enumerate(path, last) {
+      let many = []
+      loops(path, last)
+      many.sort((a,b) => a.length - b.length)
+      return many
+
+      function loops(path, next) {
+        let choices = model[next].downstream
+        for (let choice of choices) {
+          if (choice == path[0]) {
+            many.push(path.slice())
+          } else if (!path.includes(choice)) {
+            loops([...path, choice], choice)
+          }
+        }
+      }
+    }
   }
 
 
