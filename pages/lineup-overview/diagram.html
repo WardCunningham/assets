@@ -70,7 +70,7 @@
       for (let point of graph[root])
         markup.push(`${quote(root)} -> ${quote(point)}`)
     }
-    let text = `digraph { node[shape=box style=filled]\n${markup.join("\n")}\n}`
+    let text = `strict digraph { node[shape=box style=filled]\n${markup.join("\n")}\n}`
     let story = [
       {type:'paragraph', text:`We found ${Object.keys(graph).length} nodes in the lineup`},
       {type:'graphviz', text}
@@ -101,7 +101,14 @@
     }
 
     window.drawloops = function drawloops (event) {
-      console.log('should draw now')
+      graph = {}
+      for (path of paths) {
+        for (let i = 0; i<path.length; i++) {
+          let root = graph[path[i]] ||= []
+          root.push(path[(i+1)%path.length])
+        }
+      }
+      draw(event)
     }
 
     function enumerate(path, last) {
