@@ -1,0 +1,74 @@
+<head>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+  <h3>Millisecond Deviation from Expected Sample Interval</h3>
+  <pre id="arguments"></pre>
+  <div id="graph" style="width:100%;height:90%;"></div>
+
+  <script>
+
+  function hashed(hash, assign) {
+    op=assign.split(/=/)
+    if (op[1]) hash[op[0]]=op[1]
+    return hash
+  }
+ 
+  function msec (chunk, offset) {
+    const minute = 60000,
+      hour = 60*minute,
+      day = 24*hour,
+      month = 30*day,
+      year = 365*day
+    if (chunk == 'hour') return offset*hour
+    if (chunk == 'day') return offset*day
+    if (chunk == 'month') return offset*month
+    return offset*year
+  }
+
+  let query = window.location.href.split(/\?/)[1]||''
+  let args = query.split(/&/)
+  let params = args.reduce(hashed,{})
+  let slug = params.slug || 'testing-datalog'
+  let chunk = params.chunk || 'hour'
+  let samples = params.samples || 720
+  let keep = params.keep || 24
+  let interval = msec(chunk,1)/samples
+
+  arguments.innerHTML = JSON.stringify(params,null,2)
+
+
+  function offset(n) {
+    return fetch(`/plugin/datalog/${slug}/${chunk}/${n}`)
+      .then(response => response.ok ? response.text() : '')
+      .then(text => text.split(/\r?\n/).filter(line => line.length > 0).map(line => JSON.parse(line)))
+      .catch(error => console.log(error)||[])
+  }
+
+  function sample() {
+    let pages = []
+    for (let n = keep*1-1; n >= 0; n--) {
+      pages.push(offset(n))
+    }
+    Promise.all(pages)
+      .then(json => {
+        // result.innerHTML = JSON.stringify(json.flat(),null,2)
+        plot(json.flat())
+      })
+  }
+
+  function plot (logs) {
+    let trace = {x:[],y:[],type: 'scatter'}
+    for (var i=1; i<logs.length; i++) {
+      let log = logs[i]
+      let elapsed = (log.clock - logs[i-1].clock) - interval
+      trace.x.push(new Date(log.clock))
+      trace.y.push(elapsed)
+    }
+    Plotly.plot('graph', [trace])
+  }
+
+  sample()
+
+  </script>
+</body>
