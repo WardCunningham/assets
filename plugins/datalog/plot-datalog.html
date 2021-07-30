@@ -8,6 +8,8 @@
 
   <script>
 
+  // file:///Users/ward/FedWiki/assets/plugins/datalog/plot-datalog.html?protocol=http:&site=found.ward.bay.wiki.org&slug=esp8266-datalog&chunk=day&keep=3
+
   function hashed(hash, assign) {
     op=assign.split(/=/)
     if (op[1]) hash[op[0]]=op[1]
@@ -47,23 +49,53 @@
     return (9/5) * avg + 32
   }
 
+// [
+//   {
+//     "clock": 1627430400821,
+//     "result": [
+//       {
+//         "name": "desk",
+//         "data": {
+//           "28F0BAF6": 390,
+//           "28DE9AF6": 388,
+//           "2851B4F6": 391,
+//           "28CF99F6": 390
+//         }
+//       },
+//       {},
+//       {
+//         "name": "office",
+//         "data": {}
+//       }, ...
+//     ]
+//   }, ...
+// ]
+
   function plot (logs) {
     let traces = {}
     for (var i=0; i<logs.length; i++) {
       let log = logs[i]
       let date = new Date(log.clock)
       let results = log.result
+      let expect = Object.keys(traces)
+      let have = new Set()
       for (var j=0; j<results.length; j++) {
         let result = results[j]
         let name = result.name
         if (name) {
           let readings = Object.values(result.data)
           if (readings.length>0) {
+            have.add(name)
             trace = traces[name] = traces[name] || {x:[],y:[],name:name}
             trace.x.push(date)
             trace.y.push(fahrenheit(readings))
           }
         }
+      }
+      let missing = expect.filter(name => !have.has(name))
+      for (name of missing) {
+        traces[name].x.push(date)
+        traces[name].y.push(null)
       }
     }
     Plotly.plot('graph', Object.values(traces))
