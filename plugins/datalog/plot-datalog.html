@@ -3,7 +3,7 @@
 </head>
 <body>
   <h3>Plot Recent Data from Datalog</h3>
-  <!-- <pre id="result">working</pre> -->
+  <pre id="result">working</pre>
   <div id="graph" style="width:100%;height:90%;"></div>
 
   <script>
@@ -49,6 +49,14 @@
     return (9/5) * avg + 32
   }
 
+  function interval(logs) {
+    let sum = 0
+    let samples = logs.length-1
+    for (let i = 0; i < samples; i++)
+      sum += (logs[i+1].clock-logs[i].clock)
+    result.innerHTML = `Sample period ${(sum/samples/1000).toFixed(0)} seconds.`
+  }
+
 // [
 //   {
 //     "clock": 1627430400821,
@@ -72,6 +80,7 @@
 // ]
 
   function plot (logs) {
+    interval(logs.slice(-10))
     let traces = {}
     for (var i=0; i<logs.length; i++) {
       let log = logs[i]
