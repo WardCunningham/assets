@@ -16,11 +16,18 @@
   window.result.innerHTML += `<h3>Relations</h3>\n`
   window.result.innerHTML += links.map(info => `<span>${info.title}</span>`).join("<br>")
 
-  window.preview.onclick = function (event) {
+  window.preview.onclick = async function (event) {
+    let metadata = {name, day, site}
+    let [nodeStatus, edgeStatus] = await Promise.all([scrape(roles), scrape(links)])
+    let json = JSON.stringify({metadata, nodeStatus, edgeStatus},null,2)
+    console.log('data',btoa(json))
     let title = `Member ${name} as of ${day}`
+    let model = '//sofi.dojo.fed.wiki/assets/pages/member-assessment/model.html'
+    let text = `${model}?data=${btoa(json)}\nHEIGHT 600`
+    console.log('text',text)
     let story = [
       {type:'paragraph',text:'Preview of assessment visualized.'},
-      {type:'frame',text:`//sofi.dojo.fed.wiki/assets/pages/member-assessment/model.html`}
+      {type:'frame',text}
     ]
     open({title,story},event.shiftKey)
   }
@@ -44,7 +51,6 @@
     let pages = await Promise.all (sitemap.map(info => fetch(`//${site}/${info.slug}.json`).then(res => res.json())))
     let result = {}
     for (let page of pages) {
-      console.log({page})
       for (let item of page.story) {
         if (item.type != 'markdown') continue
         let m = item.text.match(/- \[x\] (\w+)\b/)
