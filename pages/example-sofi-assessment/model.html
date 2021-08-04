@@ -1,0 +1,102 @@
+<!doctype html>
+<title>Sofi Model</title>
+<script type="module">
+ import {Runtime, Inspector} from "https://cdn.jsdelivr.net/npm/@observablehq/runtime@4/dist/runtime.js";
+ import define from "https://api.observablehq.com/@dobbs/sofi-svg.js?v=3";
+
+ const runtime = new Runtime()
+ const notebook = runtime.module(define, name => {
+   if (name == "main") {
+     return new Inspector(document.body)
+   }
+ })
+
+ let assessment = window.assessment = await randomSofiStatus()
+ for(let key in assessment) {
+   notebook.redefine(key, () => assessment[key])
+   /* example calls of redefine()
+      notebook.redefine("edgeStatus", () => ({"1->2":"agree"}))
+      notebook.redefine("nodeStatus", () => ({"S-5":"agree"}))
+   */
+ }
+
+ await sendFrameContext().then(async ({page:{title}}) => {
+   let detail = title == "Assessment Template"
+     ? "8->10"
+     : title
+   notebook.redefine("detail", () => detail)
+ })
+
+ await notebook.value("main")
+ enableClicks()
+ resize()
+
+ async function randomSofiStatus() {
+   const [edges, nodeColor, edgeColor, nodeLabels] = await Promise.all([
+     "edges",
+     "nodeColor",
+     "edgeColor",
+     "nodeLabels"
+   ].map(v => notebook.value(v)))
+   const edgeStatus = Object.fromEntries(
+     edges.map(({tail, head}) => [`${tail}->${head}`, randomEdgeStatus()]))
+   const nodeStatus = Object.fromEntries(
+     Object.keys(nodeLabels).map(node => [node, randomNodeStatus()])
+   )
+   return {edgeStatus, nodeStatus}
+
+   function randomEdgeStatus() {
+     const array = Object.keys(edgeColor).filter(it => it != "default")
+     return array[Math.random()*array.length | 0]
+   }
+   function randomNodeStatus() {
+     const array = Object.keys(nodeColor).filter(it => it != "default")
+     return array[Math.random()*array.length | 0]
+   }
+ }
+
+
+ /* Utilities */
+ function enableClicks() {
+   document.body.addEventListener("click", event => {
+     let {target} = event
+     let el = target.closest("[data-id]")
+     if (! el) return
+
+     event.preventDefault()
+     event.stopPropagation()
+
+     let {id, description, type, site=null} = el.dataset
+     let title = description
+     window.parent.postMessage({
+       action:"doInternalLink",
+       title,
+       site,
+       keepLineup: event.shiftKey
+     }, "*")
+   })
+ }
+
+ function sendFrameContext() {
+   return new Promise((resolve, reject) => {
+     if (window == window.parent) {
+       return reject({error: "must be inside a wiki iframe to sendFrameContext()"})
+     }
+     window.addEventListener("message", function frameContext(event) {
+       const {data} = event
+       if (data.action == "frameContext") {
+         window.removeEventListener("message", frameContext)
+         resolve(data)
+       }
+     })
+     window.parent.postMessage({action: "sendFrameContext"}, "*")
+   })
+ }
+
+ function resize() {
+   window.parent.postMessage({
+     action: "resize",
+     height: document.body.offsetHeight
+   }, "*")
+ }
+</script>
