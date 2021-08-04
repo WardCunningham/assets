@@ -1,0 +1,93 @@
+<button id=preview>preview</button>
+<button id=download>download</button>
+<div id=result><p>working</p></div>
+
+<script type=module>
+  let {site} = await frameContext()
+  let member = site.split('.')[0]
+  let name = member.charAt(0).toUpperCase() + member.slice(1)
+  let day = new Date().toLocaleDateString()
+  let sitemap = await fetch(`//${site}/system/sitemap.json`).then(res => res.json())
+  let roles = sitemap.filter(info => /^S-\d+$/.test(info.title))
+  let links = sitemap.filter(info => /^\d+->\d+$/.test(info.title))
+  console.log({sitemap,roles,links})
+  window.result.innerHTML = `<h3>Roles</h3>\n`
+  window.result.innerHTML += roles.map(info => `<span>${info.title}</span>`).join("<br>")
+  window.result.innerHTML += `<h3>Relations</h3>\n`
+  window.result.innerHTML += links.map(info => `<span>${info.title}</span>`).join("<br>")
+
+  window.preview.onclick = function (event) {
+    let title = `Member ${name} as of ${day}`
+    let story = [
+      {type:'paragraph',text:'Preview of assessment visualized.'},
+      {type:'frame',text:`//sofi.dojo.fed.wiki/assets/pages/member-assessment/model.html`}
+    ]
+    open({title,story},event.shiftKey)
+  }
+
+  window.download.onclick = async function (event) {
+    let metadata = {name, day, site}
+    let [nodeStatus, edgeStatus] = await Promise.all([scrape(roles), scrape(links)])
+    let json = JSON.stringify({metadata, nodeStatus, edgeStatus},null,2)
+    download(json, `assessment.json`)
+  }
+
+  window.result.onclick = function (event) {
+    let target = event.target
+    if (target.nodeName != 'SPAN') return
+    let title = target.innerText
+    let message = { action:"doInternalLink", title, keepLineup: event.shiftKey }
+    window.parent.postMessage(message, "*")
+  }
+
+  async function scrape (sitemap) {
+    let pages = await Promise.all (sitemap.map(info => fetch(`//${site}/${info.slug}.json`).then(res => res.json())))
+    let result = {}
+    for (let page of pages) {
+      console.log({page})
+      for (let item of page.story) {
+        if (item.type != 'markdown') continue
+        let m = item.text.match(/- \[x\] (\w+)\b/)
+        if (!m) continue
+        result[page.title] = m[1].toLowerCase()        
+      }
+    }
+    return result
+  }
+
+
+// U T I L I T I E S
+
+function frameContext() {
+  return new Promise(resolve => {
+    let handler = event => {
+      let {data} = event
+      if (!data.action == "frameContext") return
+      window.removeEventListener('message',handler)
+      resolve(data)
+    }
+    window.addEventListener('message',handler)
+    window.parent.postMessage({action:"sendFrameContext"},"*")
+  })
+}
+
+function open(page, keepLineup=false, forks=[]) {
+  const dup = obj => JSON.parse(JSON.stringify(obj))
+  let date = Date.now()
+  for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+  page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+  let message = {action: "showResult", page, keepLineup}
+  window.parent.postMessage(message, "*");
+}
+
+function download(string, file) {
+  var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+  var anchor = document.createElement('a');
+  anchor.setAttribute("href",     data);
+  anchor.setAttribute("download", file);
+  document.body.appendChild(anchor); // required for firefox
+  anchor.click();
+  anchor.remove();
+}
+
+</script>
