@@ -14,7 +14,8 @@
 <p>
   <button onclick="reopen(event)">reopen</button> &nbsp;
   <span id=lastupdate>waiting</span>
-  <span id=skunked onclick="locals(event)">no new locals</span>
+<p>
+  <pre id=markup></pre>
 <div id=show><p>waiting</div>
 
 
@@ -57,7 +58,7 @@ console.table(params)
 // G E O G R A P H Y
 
 let crow = {}   // call => dist
-let skunk = {}  // call => time
+let callook = window.callook = {}  // call => info
 
 function maidenhead(grid) {
   // https://en.wikipedia.org/wiki/Maidenhead_Locator_System
@@ -88,8 +89,6 @@ function familiar() {
       let markers = map.text.split(/\n/).filter(mark => mark.match(/^\d/)).map(mark => mark.split(/[, ]+/))
       for (let [lat,lon,call] of markers) crow[call] = flies(params.here,[lat,lon]).toFixed(1)
     })
-  skunk = {}
-  skunked.innerText = `no new locals`
 }
 
 
@@ -194,15 +193,7 @@ function tally(spots) {
     op.last = now
     if(crow[spot.call]) op.dst = crow[spot.call]
     if(spot.distance && !op.dst) op.dst = Math.round(spot.distance*0.621371)
-    if(op.dst == 14) {
-      skunk[spot.call] = time
-      skunked.innerText = `${Object.keys(skunk).length} new locals`}
-    // if(spot.distance && spot.locator) console.log(
-    //   [spot.call,
-    //   spot.distance*0.621371,
-    //   spot.locator,
-    //   flies(maidenhead('CN85pl'),maidenhead(spot.locator+'mm')),
-    //   spot.distance*0.621371 - flies(maidenhead('CN85pl'),maidenhead(spot.locator+'mm'))])
+    if(op.dst == 14) local(spot,op)
   }
 }
 
@@ -239,6 +230,33 @@ function render() {
 function avg(list) {
   let sum = list.reduce((s,e)=>s+e, 0)
   return Math.round(100*sum/list.length)/100
+}
+
+function local(spot) {
+  if (callook[spot.call]) return
+  fetch(`https://callook.info/${spot.call}/json`)
+    .then(res => res.ok ? res.json() : {})
+    .then(json => {
+      callook[spot.call] = json
+      if(json.location) {
+        let there = [+json.location.latitude, +json.location.longitude]
+        let dist = crow[spot.call] = flies(params.here, there).toFixed(1)
+        callook[spot.call] = {
+          lat: +json.location.latitude,
+          lon: +json.location.longitude,
+          dist: +dist,
+          name: json.name,
+          street: json.address.line1,
+          city: json.address.line2,
+          day: new Date().toLocaleDateString(),
+          time: new Date().toLocaleTimeString(),
+        }
+      }
+      console.table(callook)
+      window.markup.innerHTML = Object.entries(callook)
+        .map(x => `${x[1].lat.toFixed(7)},${x[1].lon.toFixed(7)} ${x[0]}`)
+        .join("\n")
+    })
 }
 
 
@@ -288,12 +306,6 @@ function download(string, file) {
   document.body.appendChild(anchor); // required for firefox
   anchor.click();
   anchor.remove();
-}
-
-function locals() {
-  let arg = btoa(JSON.stringify(Object.keys(skunk)))
-  let url = `locals.html?skunk=${arg}`
-  window.open(url, '_blank').focus();
 }
 
 </script>
