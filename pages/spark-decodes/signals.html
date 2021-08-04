@@ -202,7 +202,7 @@ function expire() {
   for (let band in log) {
     let chan = log[band]
     let expired = Object.keys(chan).filter(call => chan[call].last < now-(10*60*1000))
-    if(expired.length) console.log(new Date().toLocaleTimeString(), band, '⇒', ...expired)
+    // if(expired.length) console.log(new Date().toLocaleTimeString(), band, '⇒', ...expired)
     for (let call of expired) delete chan[call]
     if(!Object.keys(chan).length) delete log[band]
   }
@@ -254,6 +254,7 @@ function local(spot) {
       }
       console.table(callook)
       window.markup.innerHTML = Object.entries(callook)
+        .filter(x => x[1].dist < 30)
         .map(x => `${x[1].lat.toFixed(7)},${x[1].lon.toFixed(7)} ${x[0]}`)
         .join("\n")
     })
