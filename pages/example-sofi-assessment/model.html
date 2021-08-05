@@ -11,8 +11,18 @@
    }
  })
 
- let assessment = window.assessment = await randomSofiStatus()
- for(let key in assessment) {
+    const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+    if (params['data']) {
+      window.assessment = JSON.parse(atob(params['data'].replace(/ /g,'+')))
+    } else if (params['config']) {
+      window.assessment = await fetch(params['config']).then(res => res.json())
+    } else {
+      window.assessment = await randomSofiStatus()
+    }
+    console.log('assessment', window.assessment)
+
+ for(let key in window.assessment) {
+   if (key == 'metadata') continue
    notebook.redefine(key, () => assessment[key])
    /* example calls of redefine()
       notebook.redefine("edgeStatus", () => ({"1->2":"agree"}))
