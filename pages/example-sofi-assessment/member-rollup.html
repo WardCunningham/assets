@@ -22,7 +22,7 @@
     let json = JSON.stringify({metadata, nodeStatus, edgeStatus},null,2)
     console.log('data',btoa(json))
     let title = `Member ${name} as of ${day}`
-    let model = '//sofi.dojo.fed.wiki/assets/pages/member-assessment/model.html'
+    let model = '//sofi.dojo.fed.wiki/assets/pages/sofi-scripts/model.html'
     let text = `${model}?data=${btoa(json)}\nHEIGHT 600`
     console.log('text',text)
     let story = [

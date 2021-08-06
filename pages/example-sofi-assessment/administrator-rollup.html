@@ -1,0 +1,109 @@
+<button id=preview>preview</button>
+<button id=download>download</button>
+<div id=result><p>waiting</p></div>
+
+<style>
+  td, th { border: 1px solid gray; padding: 8px; }
+  table { border-collapse: collapse; }
+</style>
+
+<script type=module>
+
+let count = status => Object.keys(status).length
+let hover = status => Object.entries(status).map(kv => kv.join(' ')).join("\n")
+
+let name = 'Admin'
+let day = new Date().toLocaleDateString()
+let {site, page} = await frameContext()
+let members = page.story
+  .find(item => item.type == 'roster').text.split(/\n/)
+  .filter(site => /^[a-z]+\.[a-z0-9\.-]+$/.test(site))
+let inputs = await Promise.all(members.map(site => report(site)))
+console.log(inputs)
+window.result.innerHTML = `<p><table>
+  <tr><th>member<th>report<th>roles<th>links
+  ${inputs.map(input => summary(input)).join("\n")}
+  </table></p>`
+let output = merge(inputs.filter(input => input.report))
+
+window.preview.onclick = event => {
+  let title = `Aggregated Status as of ${day}`
+  let model = '//sofi.dojo.fed.wiki/assets/pages/sofi-scripts/model.html'
+  let json = JSON.stringify({nodeStatus:output.nodeStatus, edgeStatus:output.edgeStatus},null,2)
+  let text = `${model}?data=${btoa(json)}\nHEIGHT 600`
+  let story = [
+    {type:'paragraph',text:`Preview of aggregated status for ${output.metadata.inputs.length} reporting members.`},
+    {type:'frame',text}
+  ]
+  open({title,story},event.shiftKey,members)
+}
+
+window.download.onclick = event => {
+  download(JSON.stringify(output,null,2), 'assessment.json')
+}
+
+async function report(site) {
+  let assessment = 'assets/pages/member-assessment/assessment.json'
+  return new Promise(async resolve => {
+    let report = await fetch(`//${site}/${assessment}`)
+      .then(res => res.ok ? res.json() : null)
+    resolve({site,report})
+  })
+}
+
+function summary(input) {
+  let report = input.report
+  if(!report) return `<tr><td colspan=4>Missing ${input.site}`
+  return `<tr>
+    <td title="${input.site}">${report.metadata.name}
+    <td>${report.metadata.day}
+    <td title="${hover(report.nodeStatus)}">${count(report.nodeStatus)}
+    <td title="${hover(report.edgeStatus)}">${count(report.edgeStatus)}`
+}
+
+function merge(inputs) {
+  let metadata = {name, day, site, inputs}
+  let nodeStatus = {}
+  let edgeStatus = {}
+  for (let input of inputs) {
+    Object.assign(nodeStatus, input.report.nodeStatus)
+    Object.assign(edgeStatus, input.report.edgeStatus)
+  }
+  return {metadata, nodeStatus, edgeStatus}
+}
+
+// U T I L I T I E S
+
+function frameContext() {
+  return new Promise(resolve => {
+    let handler = event => {
+      let {data} = event
+      if (!data.action == "frameContext") return
+      window.removeEventListener('message',handler)
+      resolve(data)
+    }
+    window.addEventListener('message',handler)
+    window.parent.postMessage({action:"sendFrameContext"},"*")
+  })
+}
+
+function open(page, keepLineup=false, forks=[]) {
+  const dup = obj => JSON.parse(JSON.stringify(obj))
+  let date = Date.now()
+  for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+  page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+  let message = {action: "showResult", page, keepLineup}
+  window.parent.postMessage(message, "*");
+}
+
+function download(string, file) {
+  var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+  var anchor = document.createElement('a');
+  anchor.setAttribute("href",     data);
+  anchor.setAttribute("download", file);
+  document.body.appendChild(anchor); // required for firefox
+  anchor.click();
+  anchor.remove();
+}
+
+</script>
