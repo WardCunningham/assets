@@ -1,0 +1,11 @@
+<div id=result></div>
+
+<script type=module>
+await import('/plugins/graphviz/graphviz-viewer.js');
+let el = document.createElement('graphviz-viewer')
+el.innerHTML = `digraph { rankdir=LR A->B->C->A }`
+await el.render()
+let svg = el.svg
+console.log(svg)
+window.result.innerHTML = svg
+</script>
