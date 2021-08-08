@@ -30,20 +30,7 @@
    */
  }
 
-    const nodeLabels = ({
-      "S-1": "CUSTOMER",
-      "S-2": "STAFFING",
-      "S-3": "STRUCTURE",
-      "S-4": "SALES",
-      "S-5": "DEVELOPMENT",
-      "S-6": "OPERATIONS",
-      "S-7": "RESOURCES\n(FINANCE)",
-      "S-8": "STRATEGY",
-      "S-9": "MARKETING",
-      "S-10": "LEADERSHIP",
-      "S-11": "CULTURE"
-    })
-
+ let nodeLabels = await notebook.value("nodeLabels")
  await sendFrameContext().then(async ({page:{title}}) => {
    let detail = title == "Assessment Template"
      ? "8->10"
