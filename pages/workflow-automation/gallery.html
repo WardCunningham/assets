@@ -12,15 +12,13 @@
 
 <script type=module>
 
-  const site = 'http://trails.ward.asia.wiki.org'
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 
   let year = 2020
   let months = `january,february,march,april,may,june,july,august,september,october,november,december`.split(',')
 
+  let site = 'http://trails.ward.asia.wiki.org'
   let slug = location.search || 'chronological-destinations'
-  let segments = {} // label => [trail]
-
   let [index,images] = await Promise.all([
     fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json()),
     fetch(`${site}/assets/pages/chronological-wandering/images.json`).then(res => res.json())
@@ -36,17 +34,13 @@
   //   }, ...
   // }
 
-  let segment = []
+  let segments = {} // label => [trail]
+  let segment = segments[''] = []
   for (let item of index.story) {
-    if (item.type == 'pagefold') {
+    if (item.type == 'pagefold')
       segment = segments[fold(item)] = []
-    }
-    else if (item.type == 'paragraph') {
-      let m = item.text.match(/^\[\[(.+?)\]\](.*)$/)
-      if (m) {
-        segment.push(m[1])
-      }
-    }
+    else if (item.type == 'paragraph' && link(item))
+      segment.push(link(item))
   }
 
   for (let fold in segments) {
@@ -68,6 +62,11 @@
     }
     html.push(`</table>`)
     window.gallery.innerHTML += html.join("\n")
+  }
+
+  function link (item) {
+    let m = item.text.match(/^\[\[(.+?)\]\](.*)$/)
+    return m && m[1]
   }
 
   function fold (item) {
