@@ -1,37 +1,83 @@
-<script>
+<div id=gallery></div>
+
+<style>
+  body {
+    background-color: lightgray;
+    font-family: Verdana, helvetica, Arial, Sans;
+  }
+  a {
+    text-decoration: none;
+  }
+</style>
+
+<script type=module>
 
   const site = 'http://trails.ward.asia.wiki.org'
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 
-  main()
+  let year = 2020
+  let months = `january,february,march,april,may,june,july,august,september,october,november,december`.split(',')
 
-  async function main() {
-    let slug = location.search || 'chronological-destinations'
-    let index = await fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
-    document.write('<div style="cell-padding: 8px; background-color: lightgray; padding:16px;">')
-    document.write('<table>')
-    for (item of index.story) {
-      if (item.type == 'pagefold')
-        document.write(`</table><h2>${item.text}</h2><table>`)
-      else if (item.type == 'paragraph') {
-        let m = item.text.match(/^\[\[(.+?)\]\](.*)$/)
-        if (m) {
-          let slug = asSlug(m[1])
-          document.write(`<tr><td colspan=2><a href=${site}/${slug}.html target=_blank>${m[1]}</a>${m[2]}`)
-          await trail(slug)
-        }
+  let slug = location.search || 'chronological-destinations'
+  let segments = {} // label => [trail]
+
+  let [index,images] = await Promise.all([
+    fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json()),
+    fetch(`${site}/assets/pages/chronological-wandering/images.json`).then(res => res.json())
+  ])
+
+  // {
+  //   "spring-2021": {
+  //     "SW Lowell Court": [
+  //       "IMG_5010.jpg",
+  //       "IMG_5077.jpg",
+  //       "IMG_5079.jpg"
+  //     ], ...
+  //   }, ...
+  // }
+
+  let segment = []
+  for (let item of index.story) {
+    if (item.type == 'pagefold') {
+      segment = segments[fold(item)] = []
+    }
+    else if (item.type == 'paragraph') {
+      let m = item.text.match(/^\[\[(.+?)\]\](.*)$/)
+      if (m) {
+        segment.push(m[1])
       }
     }
   }
 
-  async function trail(slug) {
-    let page = await fetch(`${site}/${slug}.json`).then(res => res.json())
-    document.write('<tr>')
-    for (item of page.story) {
-      if (item.type == 'html' && item.text.startsWith('<img width=100%')) {
-        document.write(`<td><div style="width:320px; margin:8px;">${item.text}</div>`)
+  for (let fold in segments) {
+    let html = [`<h2>${fold}</h2><table>`]
+    for (let trail of segments[fold]) {
+      let slug = asSlug(trail)
+      html.push(`<tr><td colspan=2><a href=${site}/${slug}.html target=_blank>${trail}</a>`)
+      html.push(`<tr>`)
+      for (let season in images) {
+        if (images[season][trail]) {
+          for (let image of images[season][trail]) {
+            html.push(`<td>
+              <div style="width:320px; margin:8px;">
+                <img width=320 height=240 src=${site}/assets/pages/${season}/${image}>
+              </div>`)
+          }
+        }
       }
     }
+    html.push(`</table>`)
+    window.gallery.innerHTML += html.join("\n")
+  }
+
+  function fold (item) {
+    let text = item.text
+    let month = months.find(name => name.startsWith(text))
+    if (month) {
+      if (month == 'january') year++
+      text = `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`
+    }
+    return text
   }
 
 </script>
