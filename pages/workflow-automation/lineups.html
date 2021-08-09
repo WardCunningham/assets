@@ -1,3 +1,4 @@
+<div id=buttons></div>
 <div id=result>working</div>
 <style>
   body { font-family: Arial, Helvetica, sans-serif; }
@@ -34,6 +35,11 @@
     const chronological = (a,b) => new Date(a) < new Date(b) ? -1 : 1
     let when = Object.keys(history).sort(chronological)
     result.innerHTML = when.map(lineup).join('<br>')
+    if (slug == 'chronological-destinations')
+      buttons.innerHTML = `<p><button onclick=dodownload()>download</button></p>`
+  }
+
+  function dodownload () {
     download(JSON.stringify(images,null,2),'images.json')
   }
 
@@ -50,6 +56,9 @@
           assets.add(m[1])
           let season = images[m[1]] ||= {}
           let list = season[title] ||= []
+          if(list.includes(m[2])) {
+            console.log('duplicate', {title,slug,season:m[1],image:m[2]})
+          }
           list.push(m[2])
         }
       }
