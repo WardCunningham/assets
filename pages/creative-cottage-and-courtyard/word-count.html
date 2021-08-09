@@ -1,0 +1,28 @@
+<p id=count></p>
+
+<script type=module>
+
+wordcount()
+window.count.onclick = wordcount
+
+async function wordcount () {
+  let {page:{story}} = await frameContext()
+  let texts = story.filter(item => item.type == 'paragraph').map(item => item.text)
+  let count = texts.join(' ').split(/ /).length
+  window.count.innerHTML = `${count} words, ${(count*5/750).toFixed(1)} minutes`
+}
+
+function frameContext() {
+  return new Promise(resolve => {
+    let handler = event => {
+      let {data} = event
+      if (!data.action == "frameContext") return
+      window.removeEventListener('message',handler)
+      resolve(data)
+    }
+    window.addEventListener('message',handler)
+    window.parent.postMessage({action:"sendFrameContext"},"*")
+  })
+}
+
+</script>
