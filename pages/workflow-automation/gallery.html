@@ -48,17 +48,7 @@
     for (let trail of segments[fold]) {
       let slug = asSlug(trail)
       html.push(`<tr><td colspan=2><a href=${site}/${slug}.html target=_blank>${trail}</a>`)
-      html.push(`<tr>`)
-      for (let season in images) {
-        if (images[season][trail]) {
-          for (let image of images[season][trail]) {
-            html.push(`<td>
-              <div style="width:320px; margin:8px;">
-                <img width=320 height=240 src=${site}/assets/pages/${season}/${image}>
-              </div>`)
-          }
-        }
-      }
+      html.push(`<tr>${row(trail)}`)
     }
     html.push(`</table>`)
     window.gallery.innerHTML += html.join("\n")
@@ -77,6 +67,20 @@
       text = `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`
     }
     return text
+  }
+
+  function row (trail) {
+    let uploads = {}
+    for (let season in images)
+      if (images[season][trail])
+        for (let image of images[season][trail])
+          uploads[image] = season
+    let html = []
+    for (let [image,season] of Object.entries(uploads).sort())
+      html.push(`<td>
+        <div style="width:320px; margin:8px;" title="${season}\n${image}">
+        <img width=320 height=240 src=${site}/assets/pages/${season}/${image}> </div>`)
+    return html.join("\n")
   }
 
 </script>
