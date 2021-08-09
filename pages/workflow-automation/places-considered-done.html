@@ -1,0 +1,38 @@
+<div id=report>working</div>
+<style>
+  body, td {font-size:small;}
+  th {text-align:left}
+</style>
+
+<script type=module>
+  let site = 'trails.ward.asia.wiki.org'
+  let markers = await fetch(`http://${site}/assets/pages/places-detailed/markers.json`).then(res => res.json())
+  let places = await fetch(`http://${site}/places-to-consider.json`).then(res => res.json())
+  let markup = places.story.find(item => item.type == 'map').text
+  let close = []
+  for (let line of markup.split(/\n/)) {
+    let best = {trail:'', dist:999999}
+    let m = line.match(/^(-?\d+\.\d+), ?(-?\d+\.\d+) (.*)$/)
+    if (!m) continue
+    for (let trail in markers) {
+      for (let latlon of markers[trail]) {
+        let dy = Math.abs(+m[1] - latlon[0]) * 69 * 5280
+        let dx = Math.abs(+m[2] - latlon[1]) * 49 * 5280
+        let dist = Math.sqrt(dy*dy + dx*dx)
+        if (dist < best.dist) best = {trail, dist, want:m[3]}
+      }
+    }
+    if (best.dist < 1000) close.push(best)
+  }
+  close.sort((a,b) => a.dist - b.dist)
+  window.report.innerHTML = `<table>
+    <th>marker<th>feet<th>trail
+    ${close.map(b => `<tr><td>${b.want}<td>${b.dist.toFixed(0)}<td onclick=trail(event)>${b.trail}`).join("\n")}
+    </table>`
+
+  window.trail = event => {
+    let title = event.target.innerText
+    let message = { action:"doInternalLink", title, keepLineup: event.shiftKey }
+    window.parent.postMessage(message, "*")
+  }
+</script>
