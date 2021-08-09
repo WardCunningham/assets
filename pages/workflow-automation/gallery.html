@@ -8,6 +8,7 @@
   async function main() {
     let slug = location.search || 'chronological-destinations'
     let index = await fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
+    document.write('<div style="cell-padding: 8px; background-color: lightgray; padding:16px;">')
     document.write('<table>')
     for (item of index.story) {
       if (item.type == 'pagefold')
