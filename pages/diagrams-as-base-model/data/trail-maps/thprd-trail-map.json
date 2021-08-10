@@ -1,0 +1,25 @@
+{
+  "things": {
+    "thing": null,
+    "Recycling Center": null,
+    "Park & Recreation HQ": {
+      "dot": [
+        1527,
+        1784
+      ],
+      "description": "",
+      "type": "place",
+      "scale": "3"
+    },
+    "Home": {
+      "dot": [
+        3111,
+        3105
+      ],
+      "description": "",
+      "type": "place",
+      "scale": "3"
+    }
+  },
+  "date": 1628632574452
+}

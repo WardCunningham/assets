@@ -2,48 +2,82 @@
   "data": {
     "seran-outpost": {
       "Outpost Thinking": {
+        "extension": "svg",
         "things": [
+          "Outpost Thinking",
+          "Sudokant",
+          "Sudoku Helper"
         ],
         "types": [
-          "page"
+          "any",
+          "tool"
         ],
-        "source": "http://ward.asia.wiki.org/outpost-thinking.html"
+        "date": 1596847095245
       },
       "One Wiki Hosting Guide": {
+        "extension": "svg",
         "things": [
-          "Alert",
-          "Application",
-          "Author",
-          "Backup",
-          "Browser",
-          "Build",
-          "Certificates",
-          "Compose",
-          "Core",
-          "Dns",
-          "Domain",
-          "Federation",
-          "Identity",
-          "Login",
-          "Modules",
-          "Outpost",
-          "Plugins",
-          "Proxy",
-          "Reload",
-          "Server",
-          "Source",
-          "Wiki"
+          "alert",
+          "application",
+          "author",
+          "backup",
+          "browser",
+          "build",
+          "certificates",
+          "compose",
+          "core",
+          "dns",
+          "domain",
+          "federation",
+          "identity",
+          "login",
+          "modules",
+          "outpost",
+          "plugins",
+          "proxy",
+          "reload",
+          "server",
+          "source",
+          "wiki"
         ],
         "types": [
-          "any"
+          "any",
+          "system"
         ],
-        "source": "http://host.fed.wiki/view/one-wiki-hosting-guide/view/block-diagram"
+        "date": 1597175939393
+      }
+    },
+    "trail-maps": {
+      "thprd-trail-map": {
+        "extension": "jpg",
+        "things": [
+          "Home",
+          "Park & Recreation HQ"
+        ],
+        "types": [
+          "place"
+        ],
+        "date": 1628632574452
+      },
+      "SW_BikeWalk_map_outside_2017_0519_final": {
+        "extension": "jpg",
+        "things": [
+          "Home"
+        ],
+        "types": [
+          "place"
+        ],
+        "date": 1628632434192
       }
     }
   },
   "metadata": {
     "types": [
-      "any"
+      "any",
+      "place",
+      "system",
+      "tool"
     ]
-  }
+  },
+  "version": "12"
 }

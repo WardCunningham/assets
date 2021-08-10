@@ -1,0 +1,164 @@
+{
+  "things": {
+    "alert": {
+      "type": "any",
+      "dot": [
+        312,
+        388
+      ]
+    },
+    "application": {
+      "type": "any",
+      "dot": [
+        123,
+        293
+      ],
+      "description": "Wiki runs as an Express application, often supervised by systemd or docker-compose."
+    },
+    "author": {
+      "type": "any",
+      "dot": [
+        512,
+        675
+      ]
+    },
+    "backup": {
+      "type": "any",
+      "dot": [
+        120,
+        484
+      ]
+    },
+    "browser": {
+      "type": "any",
+      "dot": [
+        549,
+        580
+      ]
+    },
+    "build": {
+      "type": "any",
+      "dot": [
+        320,
+        195
+      ]
+    },
+    "certificates": {
+      "type": "any",
+      "dot": [
+        225,
+        197
+      ]
+    },
+    "compose": {
+      "type": "any",
+      "dot": [
+        182,
+        410
+      ]
+    },
+    "core": {
+      "type": "any",
+      "dot": [
+        142,
+        100
+      ],
+      "description": "The core javascript includes the wiki-client, wiki-server and the wiki module that bundles them with a command line and farm launcher."
+    },
+    "dns": {
+      "type": "system",
+      "dot": [
+        408,
+        391
+      ],
+      "description": "We use wildcard dns entries to make families of wiki sites."
+    },
+    "domain": {
+      "type": "any",
+      "dot": [
+        427,
+        292
+      ]
+    },
+    "federation": {
+      "type": "any",
+      "dot": [
+        396,
+        580
+      ]
+    },
+    "identity": {
+      "type": "any",
+      "dot": [
+        529,
+        388
+      ]
+    },
+    "login": {
+      "type": "any",
+      "dot": [
+        512,
+        484
+      ]
+    },
+    "modules": {
+      "type": "any",
+      "dot": [
+        63,
+        200
+      ],
+      "description": "Modules are registered in and distributed with npm.\nConsult npm to find source code repos."
+    },
+    "outpost": {
+      "type": "any",
+      "dot": [
+        339,
+        3
+      ]
+    },
+    "plugins": {
+      "type": "any",
+      "dot": [
+        42,
+        100
+      ],
+      "description": "Required plugins are part of the wiki-client.\nBundled plugins are included in wiki install.\nOptional plugins can be installed with Plugmatic."
+    },
+    "proxy": {
+      "type": "any",
+      "dot": [
+        209,
+        294
+      ]
+    },
+    "reload": {
+      "type": "any",
+      "dot": [
+        313,
+        294
+      ]
+    },
+    "server": {
+      "type": "any",
+      "dot": [
+        408,
+        485
+      ]
+    },
+    "source": {
+      "type": "any",
+      "dot": [
+        317,
+        104
+      ]
+    },
+    "wiki": {
+      "type": "any",
+      "dot": [
+        126,
+        394
+      ]
+    }
+  },
+  "date": 1597175939393
+}

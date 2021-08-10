@@ -1,0 +1,29 @@
+{
+  "things": {
+    "Sudokant": {
+      "type": "any",
+      "dot": [
+        626,
+        332
+      ],
+      "description": "A Sudoku Assistant written in perl on a flight from MIT to home in Oregon.\n\nhttp://code.fed.wiki.org/view/sudokant"
+    },
+    "Outpost Thinking": {
+      "type": "any",
+      "dot": [
+        464,
+        406
+      ],
+      "description": "The vision that begot the Seran Outpost."
+    },
+    "Sudoku Helper": {
+      "dot": [
+        794,
+        359
+      ],
+      "description": "Sudokant rewritten in js as a module experiment.",
+      "type": "tool"
+    }
+  },
+  "date": 1596847095245
+}

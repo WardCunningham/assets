@@ -1,0 +1,14 @@
+{
+  "things": {
+    "Home": {
+      "dot": [
+        1009,
+        3048
+      ],
+      "description": "",
+      "type": "place",
+      "scale": "3"
+    }
+  },
+  "date": 1628632434192
+}
