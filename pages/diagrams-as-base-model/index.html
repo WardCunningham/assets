@@ -1,9 +1,10 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <link id='favicon' href='/favicon.png' rel='icon' type='image/png'>
+    <link rel="icon" type="image/png" sizes="16x16" href="data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEAAQAAARoABQAAAAEAAABKARsABQAAAAEAAABSASgAAwAAAAEAAgAAh2kABAAAAAEAAABaAAAAAAAAAJAAAAABAAAAkAAAAAEAA5KGAAcAAAASAAAAhKACAAQAAAABAAAAEKADAAQAAAABAAAAEAAAAABBU0NJSQAAAFNjcmVlbnNob3Ql0cL1AAACe0lEQVQ4y2NgQAINDQ1MIDo+Pt4uLStncnltQ39pVd2E1Mzs3oKCAk1kNVhBbu4kdhAdk5zee/je+//7brz8f+ju+/9bztz5H+DlGguSCw0NZcOqOZSBgRnGdnOyW9c6c+n/Scs3f5u8Yuu32r5Z/81lGZpAcv///2cEUozo+mHOYssuLt+14cSN/8cffv575sXv/2ee//p/9MGnv0t3n/wfF584DUkP3BBGqKkMmfnFm088/vb/+tf/P8+/+f//3Ku/YHzx7f9/1778/73r8pP/0ZGR7dCwYGFAZigzMHiuPnQRrBlo67+zL//ADQCxz778/ffKx///Jyxa9w+oXAEeoGkzZ7KCOCnZeTNPPfvx//L7/z+RNcMNAXrn6qf/P3dfffrfw940C6QnLS2NFe6hxu5J5869/vf/wtv/f7AaABS7/OH/L2B4/A8KC58KN2DVqlXg0C+qalgPUnTp3f9fuAwAeuHnwTtv//v7+1bDDUhLg3jB1cYoe+/1F/+vfv7/48yLXxgGnAbGBjAgfy3fe/o/ULkdNE0wI0chd2331CdAZ4Kc+gPk5zNI+Nrn/99BXswtq96DlB4gwMGBARwTwgwM5m3TF/0FOffqx/9/gBjk7P9XPv3/DYreyvb+x0BlEhDbEQkPaogD2BBVBgbNjMKKW5OWbfm/eOfJv4t3nvjTs2DN//jUzH1AaT70VIsCEhoaOEB0eGR0y6bTt/9vPHnjy5az974t2XXyv5MuTyhYTUICB87M1NCwH+yK8LjEyYfuvPt/4vHX/6ef/fy/+fSt/14OlukoKRAHAAdoQECAATBDVQR4OVf6e7pW+Xt7lmdkFChgy84AhwfDU0a/DEEAAAAASUVORK5CYII=" />
   </head>
-  <body onresize="resize()">
+  <body>
     <style>
 
       body, textarea {
@@ -24,7 +25,7 @@
       }
 
       td > div {
-        max-height: 200px;
+        max-height: 100px;
         overflow-y: scroll;
         overflow-x: hidden;
       }
@@ -44,23 +45,6 @@
         height:100%;
       }
 
-      dialog {
-        width:350px;
-      }
-
-      label {
-        color: gray;
-      }
-
-      input, textarea {
-        width:100%;
-        padding: 6px;
-      }
-
-      div.buttons {
-        float:right;
-      }
-
       span.todo {
         color:red;
       }
@@ -68,6 +52,12 @@
       span.download {
         color:red;
         cursor:pointer;
+      }
+
+      span.newish {
+        color:#c80;
+        cursor:default;
+        font-size:small;
       }
 
       span.erase {
@@ -87,28 +77,88 @@
     </table>
 
     <svg id="container">
-      <image id="draw"  x="10" y="10" height="70%" width="90%" href="#"/>
-      <circle id="dot" cx=300 cy=300 r=5 style="fill: red;", visibility=hidden />
-      <rect id="irect" x=100 y=100 width=200 height=200 fill=none stroke=green stroke-dasharray="10"/>
-      <rect id="srect" x=110 y=110 width=200 height=200 fill=none stroke=red stroke-dasharray="5"/>
+      <image id="draw"  x="0" y="0" width="100%" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E"/>
+      <circle id="dot" cx=300 cy=300 r=5 style="fill: red;" visibility="hidden" />
+      <line id="bolt" x1="0" y1="0" x2="100" y2="100" stroke="red" stroke-width="3" opacity=0.5 visibility="hidden" />
+      <g id="glow" style="fill: red;"> </g>
+      <rect id="irect" x=100 y=100 width=200 height=200 fill=none stroke=green stroke-dasharray="10" visibility="hidden" />
+      <rect id="srect" x=110 y=110 width=200 height=200 fill=none stroke=red stroke-dasharray="5" visibility="hidden" />
     </svg>
 
     <img id=test src="#" height=5px>
+
+    <style>
+
+      dialog {
+        width:350px;
+        opacity:0.9;
+      }
+
+      label {
+        color: gray;
+      }
+
+      input, textarea {
+        width:100%;
+        padding: 6px;
+      }
+
+      input.radio {
+        width:10%;
+      }
+
+      div.buttons {
+        float:right;
+      }
+
+      #sfield {
+        list-style-type: none;
+        font-size: smaller;
+        padding-left: 0px;
+        max-height:400px;
+        overflow:scroll;
+      }
+
+      #sfield li:hover {
+        background-color:#eee;
+      }
+
+    </style>
 
     <!--
       https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog
       https://developer.mozilla.org/en-US/docs/Web/HTML/Element/output
     -->
 
+    <datalist id="typelist">
+      <option value="limit">
+      <option value="process">
+      <option value="service">
+      <option value="system">
+      <option value="tool">
+      <option value="topic">
+      <option value="usage">
+    </datalist>
+
     <dialog id="describe">
       <form method="dialog">
+        <p><label>scale<br>
+          <input class="radio" type="radio" name="scale" value="1" checked>1x</input>
+          <input class="radio" type="radio" name="scale" value="2">2x</input>
+          <input class="radio" type="radio" name="scale" value="3">3x</input>
+          <input class="radio" type="radio" name="scale" value="4">4x</input>
+        </label></p>
         <p><label>thing<br>
           <input type="text" id="tfield" name="thing" autocomplete=off >
+        </label></p>
+        <p><label>type<br>
+          <input type="text" id="xfield" name="type" list="typelist" autocomplete=off placeholder="optional type of thing">
         </label></p>
         <p><label>description<br>
           <textarea id="dfield" name="description" rows=8></textarea>
         </label></p>
         <div class="buttons">
+          <button value="delete">delete</button>
           <button value="cancel">cancel</button>
           <button value="save">save</button>
         </div>
@@ -121,97 +171,229 @@
           <input type="text" id="ffield" name="find" autocomplete=off >
         </label></p>
         <p><label>search results<br>
-          <textarea id="sfield" rows=8></textarea>
+          <ul id="sfield"></ul>
         </label></p>
-        <!-- <p><button>save</button></p> -->
       </form>
     </dialog>
 
     <script>
 
+
+// S T A T E
+
+      const uniq = (value, index, self) => self.indexOf(value) === index
+      const sleep = async ms => await new Promise(resolve => setTimeout(resolve, ms))
+      const version = "12" // rebuild index.json because versions must agree
+
       let index = {}      // index.json
-      let specific = {}   // team/diagram.json
+      let metadetails     // team/diagram.json
       let updates = {}    // "[team,diagram]" => revised team/diagram.json
 
       let selection = {team:null, diagram:null, thing:null}
 
-      let db = location.href.replace('/index.html','')
-      if (db.startsWith('file')) db = 'https://source.datanerd.us/pages/architecture/otm/'
+      let [prefix, suffix] = location.href.split(location.pathname)
+      let db = prefix + location.pathname.replace('/index.html','')
+      if (db.startsWith('file')) db = 'https://source.datanerd.us/pages/architecture/otm'
+      index = fetch(`${db}/index.json`).then(res => res.json()).then(restore)
 
-      index = fetch(`${db}/index.json`).then(res => res.json()).then(json => {index = json; refresh('team')})
+      draw.setAttribute('href',`${db}/index.png`)
 
-      let welcome =  `${db}/index.png`
-      draw.setAttribute('href',welcome)
 
-      ibox = {width: 0, height: 0}
-      sbox = {x: 0, y:0, width: 0, height:0}
+// D E B U G G I N G
 
-      function boxes () {
+      // setInterval(() => console.log(Object.keys(updates).join(', ')), 1000)
+
+      // let mouselog = ['.', '.', '.', '.', '.', '.', '.', '.']
+      // let mousehit = x => {mouselog.shift(); mouselog.push(x); console.log(mouselog.join(' '))}
+      // setInterval(() => mousehit('.'), 500)
+      let mousehit = x => {}
+
+      function boxes (sbox, ibox) {
+        let svg_bb = container.getBoundingClientRect()
         let bb = draw.getBoundingClientRect()
-        sbox = {x:bb.x, y:bb.y, height:bb.height, width:bb.width}
-        ibox = {width:test.naturalWidth, height:test.naturalHeight}
+
         srect.setAttribute('x',sbox.x)
         srect.setAttribute('y',sbox.y)
         srect.setAttribute('width',sbox.width)
         srect.setAttribute('height',sbox.height)
-        let nw = image2screen([0,0])
         let se = image2screen([ibox.width, ibox.height])
-        irect.setAttribute('x',nw[0])
-        irect.setAttribute('y',nw[1])
+        irect.setAttribute('x',sbox.x)
+        irect.setAttribute('y',sbox.y)
         irect.setAttribute('width',se[0])
         irect.setAttribute('height',se[1])
-        console.log({sbox, ibox})
+
+        srect.setAttribute('visibility','visible')
+        irect.setAttribute('visibility','visible')
       }
 
+
+// T R A N S F O R M
+
+
       function screen2image (xy) {
-        boxes()
-        let x = Math.round((xy[0] - sbox.x) * ibox.width / sbox.width)
-        let y = Math.round((xy[1] - sbox.y) * ibox.height / sbox.height)
+        let svg_bb = container.getBoundingClientRect()
+        let bb = draw.getBoundingClientRect()
+        let sbox = {x:bb.x - svg_bb.x, y:bb.y - svg_bb.y, height:bb.height, width:bb.width}
+        let ibox = {width:test.naturalWidth, height:test.naturalHeight}
+
+        let x = Math.round((xy[0]-bb.x+svg_bb.x) * ibox.width / sbox.width)
+        let y = Math.round((xy[1]-bb.y+svg_bb.y) * ibox.height / sbox.height)
         return [x,y]
       }
 
       function image2screen (xy) {
-        let x = xy[0] * sbox.width / ibox.width + sbox.x
-        let y = xy[1] * sbox.height / ibox.height + sbox.y
+        let svg_bb = container.getBoundingClientRect()
+        let bb = draw.getBoundingClientRect()
+        let sbox = {x:bb.x - svg_bb.x, y:bb.y - svg_bb.y, height:bb.height, width:bb.width}
+        let ibox = {width:test.naturalWidth, height:test.naturalHeight}
+
+        let x = xy[0] * sbox.width / ibox.width + bb.x-svg_bb.x
+        let y = xy[1] * sbox.height / ibox.height + bb.y-svg_bb.y
         return [x,y]
       }
 
-      function resize () {
+      window.addEventListener('resize', (e) => {
+        setscale()
+        dot.setAttribute('visibility','hidden')
+        glow.innerHTML = ''
         if (selection.team && selection.diagram && selection.thing) {
-          let thing = specific.things[selection.thing]
+          let thing = metadetails.things[selection.thing]
           if (thing.dot) {
-            boxes()
             let screen = image2screen(thing.dot)
             dot.setAttribute('cx',screen[0])
             dot.setAttribute('cy',screen[1])
+            dot.setAttribute('visibility','visibile')
           }
+        }
+      })
+
+      let mouse = {down: false, moved: false, x:0, y:0}
+      draw.addEventListener("mousedown", e => {mouse.down = true; mouse.moved = false; mouse.x=e.screenX; mouse.y=e.screenY; mousehit('down')})
+      draw.addEventListener("mouseup", e => {mouse.down = false; mousehit('up')})
+      draw.addEventListener("mousemove", e => {
+        if(mouse.down) {
+          let dx = e.screenX - mouse.x
+          let dy = e.screenY - mouse.y
+          // console.log('drag',[dx, dy])
+          mouse.x += dx
+          mouse.y += dy
+          scroll(dx,dy)
+          mouse.moved = dx != 0 || dy != 0
+        }
+      })
+
+      function scroll (dx, dy) {
+        draw.setAttribute('x',draw.getAttribute('x')*1 + dx)
+        draw.setAttribute('y',draw.getAttribute('y')*1 + dy)
+        dot.setAttribute('cx', dot.getAttribute('cx')*1 + dx)
+        dot.setAttribute('cy', dot.getAttribute('cy')*1 + dy)
+      }
+
+
+// S E L E C T I O N
+
+      function restore (json) {
+        index = json
+        console.error('version',{json:index.version,html:version})
+        if (index.version && version != index.version) {
+          let ok = confirm(`Ready to reload for app version ${index.version}?`)
+          if (ok) location.reload(true)
+        }
+        li(Object.keys(index.data),'team')
+        gotohash()
+      }
+
+      async function getmetadata(team, diagram) {
+        let key = JSON.stringify([team,diagram])
+        if (updates[key]) return updates[key]
+        let local = window.localStorage.getItem(key) && JSON.parse(window.localStorage.getItem(key))
+        let remote = await fetch(`${db}/data/${team}/${diagram}.json`).then(res => {return res.ok? res.json() : null})
+        if (local) {
+          if (remote && remote.date && remote.date >= (local.date || 0)) {
+            window.localStorage.removeItem(key)
+            return remote
+          } else {
+            return local
+          }
+        }
+        let meta = index.data[selection.team][selection.diagram]
+        return remote || mkmetadata(meta.things || [])
+      }
+
+      function putmetadata(team, diagram) {
+        metadetails.date = Date.now()
+        let key = JSON.stringify([team,diagram])
+        let val = JSON.stringify(metadetails)
+        updates[key] = JSON.parse(val)
+        window.localStorage.setItem(key,val)
+      }
+
+      function mkmetadata(things) {
+        let meta = {things:{}}
+        for (let thing of things) {
+          meta.things[thing] = {type:'any'}
+        }
+        // console.log('mkmetadata',meta)
+        return meta
+      }
+
+      async function showimage (team, diagram) {
+        let meta = index.data[team][diagram]
+        let ext = meta.extension || 'svg'
+        await getimage(`${db}/data/${team}/${diagram}.${ext}`)
+        setscale()
+        dot.setAttribute('visibility','hidden')
+      }
+
+      function getimage(src) {
+        return new Promise((resolve, reject) => {
+          test.addEventListener("load", () => resolve());
+          test.addEventListener("error", err => reject(err));
+          draw.setAttribute('href', src)
+          test.setAttribute('src', src)
+        });
+      };
+
+      function urlhash() {
+        let hash = ''
+        if (selection.team) {
+          hash += `#${selection.team}`
+          if (selection.diagram) {
+            hash += `/${selection.diagram}`
+            if (selection.thing) {
+              hash += `/${selection.thing}`
+            }
+          }
+        }
+        return hash
+      }
+
+      async function gotohash() {
+        let want = {team:null, diagram:null, thing:null}
+        if (location.hash.match(/^#/)) {
+          let fields = location.hash.substr(1).split('/')
+          if (fields[0]) {
+            want.team = decodeURIComponent(fields.shift())
+            if (fields[0]) {
+              want.diagram = decodeURIComponent(fields.shift())
+              if (fields[0]) {
+                want.thing = decodeURIComponent(fields.shift())
+              }
+            }
+          }
+        }
+        if (selection.team != want.team ||
+            selection.diagram != want.diagram ||
+            selection.thing != want.thing) {
+          selection = want
+          await refresh()
         }
       }
 
-      function showdot(screen) {
-        dot.setAttribute('cx',screen[0])
-        dot.setAttribute('cy',screen[1])
-        // dot.setAttribute('visibility','hidden')
-        dot.setAttribute('visibility','visible')
-      }
+      window.onhashchange = gotohash
 
-      async function specifically(team, diagram) {
-        let key = JSON.stringify([team,diagram])
-        if (updates[key]) return updates[key]
-        if (window.localStorage.getItem(key)) return JSON.parse(window.localStorage.getItem(key))
-        let meta = index.data[selection.team][selection.diagram]
-        return await fetch(`${db}/data/${team}/${diagram}.json`)
-          .then(res => {return res.ok? res.json() : mkspecific(meta.things || [])})
-      }
 
-      function specified(team, diagram) {
-        let key = JSON.stringify([team,diagram])
-        let val = JSON.stringify(specific)
-        window.localStorage.setItem(key,val)
-        updates[key] = JSON.parse(val)
-      }
-
-      const clean = text => text.replace('⇩','').replace('🅇','').replace(/<span.*/,'').trim()
+// D O W N L O A D
 
       function modified(team, list) {
         return list.map(diagram => {
@@ -219,10 +401,25 @@
           if (updates[key]) {
             return `${diagram} <span class=download onclick="download('${diagram}')">⇩</span>`
           } else if (window.localStorage.getItem(key)) {
-            return `${diagram} <span class=erase style="font-size:small" onclick="erase('${diagram}')">🅇</span>`
+            return `${diagram} <span class=erase onclick="erase('${diagram}')">🅇</span>`
           } else {
-            return diagram
+            let date = index.data[team][diagram].date || 0
+            if (date && date > Date.now()-604800000) {
+              return `${diagram} <span class=newish>☼</span>`
+            }
           }
+          return diagram
+        })
+      }
+
+      function newish(list) {
+        return list.map(team => {
+          let diagrams = index.data[team]
+          let date = Object.keys(diagrams).reduce((s,e) => Math.max(s,diagrams[e].date||0), 0)
+          if (date > Date.now()-604800000) {
+            return `${team} <span class=newish>☼</span>`
+          }
+          return team
         })
       }
 
@@ -232,7 +429,7 @@
         let file = `${diagram}.json`
         emit(string,file)
         delete updates[key]
-        refreshall()
+        refresh()
         // event.stopPropagation()
 
         function emit(string, file) {
@@ -249,113 +446,134 @@
       function erase(diagram) {
         let key = JSON.stringify([selection.team, diagram])
         window.localStorage.removeItem(key)
-        refreshall()
+        refresh()
       }
 
-      function mkspecific(things) {
-        let meta = {things:{}}
-        for (let thing of things) {
-          meta.things[thing] = {type:'any'}
+
+// R E F R E S H
+
+      const td = panel => document.querySelector(`div[data=${panel}]`)
+      const li = (list,panel) => {
+        td(panel).innerHTML = (list||[]).map(t => `<li class="${clean(t) == selection[panel] ? 'dot' : ''}">${t}`).join('')
+        let wanted = [...td(panel).getElementsByClassName('dot')]
+        if (wanted.length) {
+          let w = wanted[0].getBoundingClientRect()
+          let p = td(panel).getBoundingClientRect()
+          if (w.top < p.top || w.bottom > p.bottom) wanted[0].scrollIntoView(false)
         }
-        return meta
       }
 
-      function refreshall() {
-        refresh('team')
-        refresh('diagram')
-        refresh('thing')
-        refresh('description')
-      }
-
-      function refresh(panel) {
-        const td = panel => document.querySelector(`div[data=${panel}]`)
-        const li = list => (list||[]).map(t => `<li class="${clean(t)==selection[panel] ? 'dot' : ''}">${t}`).join('')
-        let selected = index.data
-        switch (panel) {
-          case 'team':
-            td(panel).innerHTML = li(Object.keys(selected))
-            td('diagram').innerHTML = ''
-            td('thing').innerHTML = ''
-            td('description').innerHTML = ''
-            break
-          case 'diagram':
-            selected = index.data[selection.team]
-            td(panel).innerHTML = li(modified(selection.team, Object.keys(selected)))
-            td('thing').innerHTML = ''
-            td('description').innerHTML = ''
-            break
-          case 'thing':
-            selected = index.data[selection.team][selection.diagram].things
-            td(panel).innerHTML = li(selected)
-            td('description').innerHTML = ''
-            break
-          case 'description':
-            selected = specific.things[selection.thing]
-            if (selected && selected.dot) {
-              let screen = image2screen(selected.dot)
-              showdot(screen)
-              if (selected.description) {
-                td(panel).innerHTML = markup(selected.description)
-              } else {
-                td(panel).innerHTML = `<span class=todo>Click the dot to DESCRIBE this thing.</span>`
-              }
-            } else {
-              dot.setAttribute('visibility','hidden')
-              if (selected) {
-                td(panel).innerHTML = `<span class=todo>Click the diagram to LOCATE this thing.</span>`
-              }
+      async function current() {
+        let choices = {teams:[], diagrams:[], things:[], details:{}}
+        dot.setAttribute('visibility','hidden')
+        choices.teams = Object.keys(index.data)
+        if (selection.team) {
+          choices.diagrams = Object.keys(index.data[selection.team])
+          if (selection.diagram) {
+            metadetails = await getmetadata(selection.team, selection.diagram)
+            choices.things = Object.keys(metadetails.things).filter(t => metadetails.things[t])
+            if (selection.thing) {
+              choices.details = metadetails.things[selection.thing] || {}
             }
-            break
-          default:
-            console.error('cant refresh', panel)
+            setscale()
+          }
         }
+        return choices
       }
+
+      async function refresh() {
+        glow.innerHTML = ''
+        let choices = await current()
+        li(newish(choices.teams), 'team')
+        li(modified(selection.team,choices.diagrams), 'diagram')
+        if (selection.diagram) await showimage(selection.team, selection.diagram)
+        li(choices.things, 'thing')
+        td('description').innerHTML = markup(choices.details.description) || todo(choices.details)
+        if (choices.details.dot) showdot(choices.details.dot)
+      }
+
+    function todo(thing) {
+      if (!selection.diagram) return ''
+      let target = thing.dot ? 'dot' : 'diagram'
+      let todo = `<span class=todo>Click ${target} to edit.</span>`
+      if (Object.keys(metadetails.things).length) {
+        todo += `<br><span class=todo>Click ● here to see all things.</span>`
+      }
+      return todo
+    }
 
       function markup(text) {
+        if (!text) return text
         return text
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
-          .replace(/(https:\/\/source\.datanerd\.us\.*?)(\s|$)/g, '<a href="$1" target="_blank">GHE</a>$2')
-          .replace(/(https:\/\/el-dorado\.datanerd\.us\.*?)(\s|$)/g, '<a href="$1" target="_blank">El Dorado</a>$2')
-          .replace(/(https:\/\/(staging-)?one.newrelic.com.*?)(\s|$)/g, '<a href="$1" target="_blank">NR1</a>$2')
+          .replace(/(https:\/\/source\.datanerd\.us.*?)(\s|$)/g, '<a href="$1" target="_blank">GHE</a>$2')
+          .replace(/(https:\/\/el-dorado\.datanerd\.us.*?)(\s|$)/g, '<a href="$1" target="_blank">El Dorado</a>$2')
+          .replace(/(https:\/\/(staging-)?one\.newrelic\.com.*?)(\s|$)/g, '<a href="$1" target="_blank">NR1</a>$3')
           .replace(/(https:\/\/nerdlife\.datanerd\.us*?)(\s|$)/g, '<a href="$1" target="_blank">NerdLife</a>$2')
-          .replace(/(https:\/\/pages\.datanerd\.us\.*?)(\s|$)/g, '<a href="$1" target="_blank">pages</a>$2')
-          .replace(/(https:\/\/staging-api\.newrelic\.com\/graphiql\?*?)(\s|$)/g, '<a href="$1" target="_blank">graphiql</a>$2')
+          .replace(/(https:\/\/pages\.datanerd\.us.*?)(\s|$)/g, '<a href="$1" target="_blank">pages</a>$2')
+          .replace(/(https:\/\/staging-api\.newrelic\.com\/graphiql\?.*?)(\s|$)/g, '<a href="$1" target="_blank">graphiql</a>$2')
           .replace(/\n/g, '<br>')
       }
 
+
+// N A V I G A T E
+
+      const clean = text => text.replace('⇩','').replace('🅇','').replace('☼','').replace(/<span.*/,'').trim()
+
       metadata.onclick = async (e) => {
+        if(e.target.className == 'todo') return glowdots()
         if(e.target.tagName == 'SPAN') return // download button
         if(e.target.tagName == 'TH') return search(e.target.innerText)
         let panel = e.target.parentElement.getAttribute('data')
+        if (!panel) return
         let item = clean(e.target.innerText)
         selection[panel] = item
-        refresh(panel)
         switch (panel) {
           case 'team':
-            selection.diagram = selection.thing = null
-            draw.setAttribute('href',welcome)
-            refresh('diagram')
+            selection.diagram = null
+            selection.thing = null
             break
           case 'diagram':
             selection.thing = null
-            let meta = index.data[selection.team][item]
-            let ext = meta.extension || 'svg'
-            let href=`${db}/data/${selection.team}/${item}.${ext}`
-            draw.setAttribute('href', href)
-            test.setAttribute('src', href)
-            dot.setAttribute('visibility','hidden')
-            specific = await specifically(selection.team, item)
-            refresh('thing')
             break
           case 'thing':
-            boxes()
-            refresh('description')
             break
           default:
             console.error('cant dispatch', e.path[1])
         }
+        refresh()
+        window.location = urlhash()
       }
+
+      // window.addEventListener('keydown', (e) => {
+      //   if (e.key == 'Shift' && selection.diagram) glowdots()
+      // })
+
+      async function glowdots() {
+        selection.thing = null
+        await refresh()
+        td('description').innerHTML = `<span class=todo>Click dot to select.</span>`
+        for (let thing in metadetails.things) {
+          if (metadetails.things[thing]) {
+            let dot = metadetails.things[thing].dot
+            if (dot) {
+              let xy = image2screen(dot)
+              let el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+              el.setAttribute('r', '5');
+              el.setAttribute('cx', xy[0]);
+              el.setAttribute('cy', xy[1]);
+              el.onclick = (e) => {selection.thing = thing; refresh(); window.location = urlhash()}
+              glow.append(el)
+            }
+          }
+        }
+      }
+
+
+// S E A R C H
+
+      let just = []       // panels with search results
 
       function search(panel) {
         ffield.data = panel
@@ -365,50 +583,142 @@
         finder.showModal()
       }
 
-      ffield.addEventListener('keyup', e=> {
+      function found(hit) {
+        if (hit.thing) return `${hit.thing} (${hit.diagram})`
+        if (hit.diagram) return `${hit.diagram} (${hit.team})`
+        if (hit.team) return `${hit.team}`
+        return 'n/a'
+      }
+
+      ffield.addEventListener('keyup', async e => {
         let panel = ffield.data
         let want = e.target.value.toLowerCase()
-        let found = []
-        for (let team of Object.keys(index.data)) {
-          if (panel == 'team') {
-            if (team.toLowerCase().includes(want)) found.push({team, key:team})
-          } else {
-            for (let diagram of Object.keys(index.data[team])) {
-              if (panel == 'diagram') {
-                if (diagram.toLowerCase().includes(want)) found.push({team, diagram, key:`${diagram} (${team})`})
-              } else {
-                for (let thing of index.data[team][diagram].things) {
-                  if (thing.toLowerCase().includes(want)) found.push({team, diagram, thing, key:`${thing} (${diagram})`})
+        if (index.paths && index.paths[want]) {
+          just = index.paths[want]
+        } else {
+          just = []
+          for (let team of Object.keys(index.data)) {
+            if (panel == 'team') {
+              if (team.toLowerCase().includes(want)) {
+                just.push({team})
+              }
+            } else {
+              for (let diagram of Object.keys(index.data[team])) {
+                if (panel == 'diagram') {
+                  if (diagram.toLowerCase().includes(want)) {
+                    just.push({team,diagram})
+                  }
+                } else {
+                  for (let thing of index.data[team][diagram].things) {
+                    if (thing.toLowerCase().includes(want)) {
+                      just.push({team,diagram,thing})
+                    }
+                  }
                 }
               }
             }
           }
         }
-        sfield.innerHTML = found.map(s => s.key).join("\n")
+        sfield.innerHTML = just.map((hit,i) => `<li data=${i}>${found(hit)}</li>`).join("\n")
+        if (just.length) selection = just[0]
+        refresh()
       })
 
-    // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent
-    // https://stackoverflow.com/questions/29261304/how-to-get-the-click-coordinates-relative-to-svg-element-holding-the-onclick-lis
+      sfield.addEventListener('click', async e => {
+        selection = just[e.target.getAttribute('data')*1]
+        refresh()
+        finder.close()
+      })
+
+      sfield.addEventListener('mouseover', async e => {
+        selection = just[e.target.getAttribute('data')*1]
+        refresh()
+      })
+
+      finder.addEventListener('close', e => window.location.hash = urlhash())
+
+
+// E D I T
+
+      function showdot(xy) {
+        let x1 = dot.getAttribute('cx')
+        let y1 = dot.getAttribute('cy')
+        let screen = expose(image2screen(xy))
+        dot.setAttribute('cx',screen[0])
+        dot.setAttribute('cy',screen[1])
+        dot.setAttribute('visibility','visible')
+        let x2 = dot.getAttribute('cx')
+        let y2 = dot.getAttribute('cy')
+        flash(x1,y1,x2,y2)
+      }
+
+
+      function setscale() {
+        let svg_bb = container.getBoundingClientRect()
+        let aspect = svg_bb.width / (svg_bb.height-svg_bb.top)
+        let width =  100
+        if ((test.naturalWidth / test.naturalHeight) < aspect) {
+          width *= (test.naturalWidth / test.naturalHeight) / aspect
+        }
+        if (selection.thing) {
+          let details = metadetails.things[selection.thing] || {}
+          // width *= details.scale || 1
+        }
+        draw.setAttribute('x','0')
+        draw.setAttribute('y','0')
+        draw.setAttribute('width',`${width}%`)
+        dot.setAttribute('visibility','visable')
+      }
+
+      function expose(xy) {
+        if (((metadetails.things[selection.thing] || {}).scale || 1) == 1) return xy
+        const boundary = (t) => {let m = Math.round(t*0.1); return [m,t-m]}
+        let svg_bb = container.getBoundingClientRect()
+        let [l,r] = boundary(svg_bb.width)
+        let [t,b] = boundary(svg_bb.height-svg_bb.top)
+        let dx = dy = 0
+        if (xy[0]<l) dx = l-xy[0]
+        if (xy[0]>r) dx = r-xy[0]
+        if (xy[1]<t) dy = t-xy[1]
+        if (xy[1]>b) dy = b-xy[1]
+        scroll(dx, dy)
+        return [xy[0]+dx, xy[1]+dy]
+      }
+
+      async function flash(x1, y1, x2, y2) {
+        bolt.setAttribute('x1',x1)
+        bolt.setAttribute('y1',y1)
+        bolt.setAttribute('x2',x2)
+        bolt.setAttribute('y2',y2)
+        bolt.setAttribute('visibility','visible')
+        await sleep(600)
+        bolt.setAttribute('visibility','hidden')
+      }
 
       draw.onclick = (e) => {
+        mousehit('click-' + (mouse.moved ? 'move' : 'still'))
+        if (mouse.moved) return
         let x = e.offsetX
         let y = e.offsetY
         dot.setAttribute('cx',x)
         dot.setAttribute('cy',y)
         dot.setAttribute('visibility','visible')
-        boxes()
-        if (selection.team && selection.diagram && selection.thing) {
-          let thing = specific.things[selection.thing]
-          thing.dot = screen2image([x, y])
-          specified(selection.team, selection.diagram)
-          refreshall()
+        if (selection.thing) {
+          let thing = metadetails.things[selection.thing]
+          thing.dot = screen2image([x,y])
+          putmetadata(selection.team, selection.diagram)
+          refresh()
         }
       }
 
       dot.onclick = (e) => {
-        let thing = specific.things[selection.thing]
+        let thing = metadetails.things[selection.thing]
         tfield.value = selection.thing || ''
+        xfield.value = (thing && thing.type && thing.type!='any') ? thing.type : ''
         dfield.value = thing ? thing.description || '' : ''
+        // console.log('dot click', {thing})
+        let scale = (thing && thing.scale) ? thing.scale : "1"
+        describe.querySelector(`input[name="scale"][value="${scale}"]`).setAttribute('checked',true)
         dfield.placeholder = 'describe this thing'
         if (!selection.thing) {
           tfield.placeholder = 'name new thing'
@@ -419,20 +729,52 @@
 
       describe.addEventListener('close',e => {
         let button = e.target.returnValue
-        if (button == 'save') {
-          let thing = specific.things[selection.thing]
-          if (!thing) {
-            selection.thing = tfield.value
-            let xy = [dot.getAttribute('cx'), dot.getAttribute('cy')]
-            specific.things[selection.thing] = thing = {type: "any", dot:screen2image(xy)}
+        if (button == 'save') saveit()
+        if (button == 'delete') deleteit()
+        refresh()
+      })
+
+      function saveit() {
+        let thing = {}
+        if (!tfield.value) return
+        if (!selection.thing) {
+          selection.thing = tfield.value
+          if (metadetails.things[selection.thing]) {
+            thing = metadetails.things[selection.thing]
+          } else {
+            metadetails.things[selection.thing] = thing
             index.data[selection.team][selection.diagram].things.push(selection.thing)
           }
-          thing.description = dfield.value
-          specified(selection.team, selection.diagram)
-          refreshall()
+          // console.log('newthing',{selection,thing,metadetails})
+        } else {
+          thing = metadetails.things[selection.thing]
+          // console.log('oldthing',{selection, thing, metadetails})
         }
+        if (selection.thing != tfield.value) {
+          deleteit()
+          selection.thing = tfield.value
+          metadetails.things[selection.thing] = thing
+          index.data[selection.team][selection.diagram].things.push(selection.thing)
+        }
+        let xy = [dot.getAttribute('cx'), dot.getAttribute('cy')]
+        thing.dot = screen2image(xy)
+        thing.description = dfield.value
+        thing.type = xfield.value || 'any'
+        thing.scale = describe.querySelector('input[name="scale"]:checked').value
+        putmetadata(selection.team, selection.diagram)
+        selection.thing = null
+      }
 
-      })
+      function deleteit() {
+        let thing = metadetails.things[selection.thing]
+        if (thing) {
+           let names = index.data[selection.team][selection.diagram].things
+           names.splice(names.indexOf(selection.thing), 1)
+           metadetails.things[selection.thing] = null
+           selection.thing = null
+           putmetadata(selection.team, selection.diagram)
+        }
+      }
 
     </script>
   </body>
