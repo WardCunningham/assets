@@ -1,0 +1,156 @@
+<meta charset="utf-8"/>
+<div id=report><div>
+<script type=module>
+
+const uniq = (value, index, self) => self.indexOf(value) === index;
+let {page,site} = await frameContext()
+report('context',{page,site})
+
+let cd = 'http://simnet.ward.asia.wiki.org/assets/pages/diagrams-as-base-model'
+let rollup = await fetch(`${cd}/index.json`).then(res => res.json())
+report('rollup',rollup)
+let version = (await fetch(`${cd}/index.html`).then(res => res.text())).match(/const version = "(.+?)"/)[1]
+if (rollup.version != version) report('upgrading',{json:rollup.version,html:version})
+
+for (let teaminfo of await allteams()) {
+  if (!teaminfo.isDirectory) continue
+  let team = teaminfo.name
+  if (team[0] == '.') continue
+  if (!rollup.data[team]) {
+    report('new', {team})
+    rollup.data[team] = {}
+  }
+
+  // let files = Deno.readDirSync(`${cd}/data/${team}`).filter(d => d.isFile).map(d => d.name)
+  let files = []
+  for (let fileinfo of await allfiles(team)) {
+    if (!fileinfo.isFile) continue
+    let file = fileinfo.name
+    files.push(fileinfo.name)
+  }
+  let expected = Object.keys(rollup.data[team]).map(diagram => `${diagram}.${rollup.data[team][diagram].extension}`)
+  let missing = expected.filter(file => !files.includes(file))
+  if (missing.length) report('files',{team, missing})
+
+  for (let file of files) {
+    let parts = file.split('.')
+    let extension = parts.pop()
+    if (['svg','png','jpg','jpeg'].includes(extension)) {
+      let diagram = parts.join('.')
+      if (!rollup.data[team][diagram]) report('new', {team, diagram})
+      let meta = {extension}
+      if (files.includes(`${diagram}.json`)) {
+        meta = await readfile(team, `${diagram}.json`)
+        for (let thing of Object.keys(meta.things)) {
+          if (meta.things[thing] == null) {
+            if (spliceout(rollup.data[team][diagram].things, thing)) {
+              report('delete', {team, diagram, thing})
+            }
+          }
+        }
+      } else if (extension == 'svg') {
+        meta = {extension, things:svg2things(team,diagram)}
+      }
+      let things = Object.keys(meta.things || {}).filter(t => meta.things[t] != null).sort()
+      if (rollup.data[team][diagram]) {
+        let oldthings = rollup.data[team][diagram].things || []
+        let newthings = things.filter(t => !oldthings.includes(t))
+        if (newthings.length) report('new',{team, diagram, things:newthings})
+      }
+      let types = things.map(t => meta.things[t].type || 'any').filter(uniq).sort()
+      let metadata = {extension, things, types}
+      if (meta.date) metadata.date = meta.date
+      rollup.data[team][diagram] = metadata
+      rollup.metadata.types = rollup.metadata.types.concat(types).filter(uniq).sort()
+      rollup.version = version
+    }
+  }
+}
+report('download', rollup)
+
+
+function spliceout(array, element) {
+  let i = array.indexOf(element)
+  if (i >= 0) array.splice(i, 1)
+  return (i >= 0)
+}
+
+function svg2things(team, diagram) {
+  const titles = /<title>([\w\n]+?)<\/title>/g;
+  let svg = Deno.readTextFileSync(`${cd}/data/${team}/${diagram}.svg`)
+  let m, things = {}
+  while((m = titles.exec(svg)) !== null) {
+    things[m[1].replace(/\n/g,' ')] = {type:'any'}
+  }
+  return things
+}
+
+
+// B E   L I K E   C O M M A N D   L I N E
+
+async function allteams() {
+  return [{name:'trail-maps', isDirectory:true}]
+}
+
+async function allfiles(team) {
+  return [
+    {name:'SW_BikeWalk_map_outside_2017_0519_final.jpg', isFile:true},
+    {name:'SW_BikeWalk_map_outside_2017_0519_final.json', isFile:true},
+    {name:'thprd-trail-map.jpg', isFile:true},
+    {name:'thprd-trail-map.json', isFile:true}
+  ]
+}
+
+async function readfile(team, filename) {
+  let path = `data/${team}/${filename}`
+  report('fetch',{cd,path})
+  let isjson = filename.endsWith('.json')
+  let file = await fetch(`${cd}/${path}`).then(res => isjson ? res.json() : res.text())
+  report('result',file)
+  return file
+}
+
+function report(label, data) {
+  window.report.innerHTML += `
+    <details>
+      <summary>${label} — ${Object.keys(data).join(", ")}</summary>
+      <pre>${JSON.stringify(data,null,2)}</pre>
+    </details>\n`
+}
+
+
+// U T I L I T I E S
+
+function frameContext() {
+  return new Promise(resolve => {
+    let handler = event => {
+      let {data} = event
+      if (!data.action == "frameContext") return
+      window.removeEventListener('message',handler)
+      resolve(data)
+    }
+    window.addEventListener('message',handler)
+    window.parent.postMessage({action:"sendFrameContext"},"*")
+  })
+}
+
+function open(page, keepLineup=false, forks=[]) {
+  const dup = obj => JSON.parse(JSON.stringify(obj))
+  let date = Date.now()
+  for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+  page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+  let message = {action: "showResult", page, keepLineup}
+  window.parent.postMessage(message, "*");
+}
+
+function download(string, file) {
+  var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+  var anchor = document.createElement('a');
+  anchor.setAttribute("href",     data);
+  anchor.setAttribute("download", file);
+  document.body.appendChild(anchor); // required for firefox
+  anchor.click();
+  anchor.remove();
+}
+
+</script>
