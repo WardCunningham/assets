@@ -11,7 +11,7 @@ let testContext = {
 }
 
 let {page, site} = window == window.top ? testContext : await frameContext()
-let assets = page.story.filter(item => item.type='assets')
+let assets = page.story.filter(item => item.type == 'assets')
 let markup = assets[0].text
 let [,root,team] = markup.split(/\n/)[0].match(/pages\/(.+?)\/data\/(.+?)$/)
 // let root = m[1]
