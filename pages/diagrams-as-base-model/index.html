@@ -179,6 +179,9 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
     <script>
 
 
+// http://simnet.ward.asia.wiki.org/metadata-editor.html
+
+
 // S T A T E
 
       const uniq = (value, index, self) => self.indexOf(value) === index
@@ -193,7 +196,10 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
 
       let [prefix, suffix] = location.href.split(location.pathname)
       let db = prefix + location.pathname.replace('/index.html','')
-      if (db.startsWith('file')) db = 'https://source.datanerd.us/pages/architecture/otm'
+      if (db.startsWith('file')) {
+        db = 'https://source.datanerd.us/pages/architecture/otm'
+        db = 'http://simnet.ward.asia.wiki.org/assets/pages/diagrams-as-base-model'
+      }
       index = fetch(`${db}/index.json`).then(res => res.json()).then(restore)
 
       draw.setAttribute('href',`${db}/index.png`)
@@ -513,6 +519,7 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
           .replace(/(https:\/\/nerdlife\.datanerd\.us*?)(\s|$)/g, '<a href="$1" target="_blank">NerdLife</a>$2')
           .replace(/(https:\/\/pages\.datanerd\.us.*?)(\s|$)/g, '<a href="$1" target="_blank">pages</a>$2')
           .replace(/(https:\/\/staging-api\.newrelic\.com\/graphiql\?.*?)(\s|$)/g, '<a href="$1" target="_blank">graphiql</a>$2')
+          .replace(/(https?:\/\/.*?)(\s|$)/g, '<a href="$1" target="_blank">web</a>$2')
           .replace(/\n/g, '<br>')
       }
 

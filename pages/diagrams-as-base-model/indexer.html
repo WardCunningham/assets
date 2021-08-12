@@ -1,12 +1,24 @@
 <meta charset="utf-8"/>
+<p><button id=download>download</button></p>
 <div id=report><div>
 <script type=module>
 
 const uniq = (value, index, self) => self.indexOf(value) === index;
-let {page,site} = await frameContext()
-report('context',{page,site})
 
-let cd = 'http://simnet.ward.asia.wiki.org/assets/pages/diagrams-as-base-model'
+let testContext = {
+  site:'simnet.ward.asia.wiki.org',
+  page:{story:[{type:'assets',text:'pages/diagrams-as-base-model/data/trail-maps'}]}
+}
+
+let {page, site} = window == window.top ? testContext : await frameContext()
+let assets = page.story.filter(item => item.type='assets')
+let markup = assets[0].text
+let [,root,team] = markup.split(/\n/)[0].match(/pages\/(.+?)\/data\/(.+?)$/)
+// let root = m[1]
+// let team = m[2]
+report('context',{site,root,team})
+let cd = `http://${site}/assets/pages/${root}`
+
 let rollup = await fetch(`${cd}/index.json`).then(res => res.json())
 report('rollup',rollup)
 let version = (await fetch(`${cd}/index.html`).then(res => res.text())).match(/const version = "(.+?)"/)[1]
@@ -19,6 +31,8 @@ for (let teaminfo of await allteams()) {
   if (!rollup.data[team]) {
     report('new', {team})
     rollup.data[team] = {}
+  } else {
+    report('team', {data:rollup.data[team]})
   }
 
   // let files = Deno.readDirSync(`${cd}/data/${team}`).filter(d => d.isFile).map(d => d.name)
@@ -67,6 +81,7 @@ for (let teaminfo of await allteams()) {
   }
 }
 report('download', rollup)
+window.download.onclick = event => download(JSON.stringify(rollup,null,2), 'index.json')
 
 
 function spliceout(array, element) {
@@ -89,16 +104,19 @@ function svg2things(team, diagram) {
 // B E   L I K E   C O M M A N D   L I N E
 
 async function allteams() {
-  return [{name:'trail-maps', isDirectory:true}]
+  return [{name:team, isDirectory:true}]
 }
 
 async function allfiles(team) {
-  return [
-    {name:'SW_BikeWalk_map_outside_2017_0519_final.jpg', isFile:true},
-    {name:'SW_BikeWalk_map_outside_2017_0519_final.json', isFile:true},
-    {name:'thprd-trail-map.jpg', isFile:true},
-    {name:'thprd-trail-map.json', isFile:true}
-  ]
+  let assets = `pages/${root}/data/${team}`
+  let {error,files} = await fetch(`http://${site}/plugin/assets/list?assets=${assets}`).then(res => res.json())
+  report('assets',{root,team,error,files})
+  return files.map(filename => ({name:filename, isFile:true}))
+  // [
+  //   {name:'thprd-trail-map.jpg', isFile:true},
+  //   {name:'thprd-trail-map.json', isFile:true},
+  //   {name:'sw-portland-bike-trails.jpg', isFile:true}
+  // ]
 }
 
 async function readfile(team, filename) {
@@ -133,6 +151,7 @@ function frameContext() {
     window.parent.postMessage({action:"sendFrameContext"},"*")
   })
 }
+
 
 function open(page, keepLineup=false, forks=[]) {
   const dup = obj => JSON.parse(JSON.stringify(obj))
