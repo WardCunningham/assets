@@ -1,0 +1,134 @@
+<div id=menu></div>
+<style>
+  body {font-family: Verdana, helvetica, Sans; }
+  td, th { border: 1px solid lightgray; padding: 8px; }
+  table { border-collapse: collapse; }
+</style>
+<script type="module">
+  import {scaleLinear} from "https://cdn.skypack.dev/d3-scale@4";
+
+  let testContext = {
+    site:'simnet.ward.asia.wiki.org',
+    page:{story:[{type:'assets',text:'pages/diagrams-as-base-model/data/trail-maps'}]}
+  }
+
+  let {page, site} = window == window.top ? testContext : await frameContext()
+  let assets = page.story.filter(item => item.type == 'assets')[0].text.split(/\n/)[0]
+  let list = await fetch(`http://${site}/plugin/assets/list?assets=${assets}`).then(res => res.json())
+  let metas = list.files.filter(file => file.endsWith('.json'))
+  window.menu.innerHTML = menu(metas)
+
+  // let otm = `http://simnet.ward.asia.wiki.org/assets/pages/diagrams-as-base-model`
+  // let map = `trail-maps/thprd-trail-map`
+  // let meta = await fetch(`${otm}/data/${map}.json`).then(res => res.json())
+  // let have = Object.entries(meta.things).filter(kv => kv[1] && kv[1].type == 'latlon')
+  // let {horz,vert} = scale(have)
+
+  // console.log(horz.domain(), horz.range())
+  // console.log(vert.domain(), vert.range())
+
+  // let want = Object.entries(meta.things).filter(kv => kv[1] && (kv[1].type == 'place'))
+  // for (let [k,v] of want) {
+  //   console.log(k,v.dot)
+  //   window.result.innerHTML += `${vert(v.dot[1])},${horz(v.dot[0])} ${k}\n`
+  // }
+
+  function menu (metas) {
+    let html =['<table>']
+    for (let meta of metas) {
+      html.push(`<tr><td>${meta.replace(/\.json$/,'')}`)
+      html.push(`<td><button onclick="preview('${meta}')">preview</button>`)
+      html.push(`<td><button onclick="download('${meta}')">download</button>`)
+    }
+    return html.join("\n")
+  }
+
+  window.preview = async function (meta) {
+    let data = await fetch(`http://${site}/assets/${assets}/${meta}`).then(res => res.json())
+    let {horz,vert} = scale(data)
+
+    function markers(type) {
+      let markup = []
+      for (let thing in data.things) {
+        let details = data.things[thing]
+        if (details && details.type == type) {
+          let lon = horz(details.dot[0])
+          let lat = vert(details.dot[1])
+          console.log({thing, lat, lon})
+          markup.push(`${lat},${lon} ${thing}`)
+        }
+      }
+      return markup.join("\n")
+    }
+
+    let title = `Things of ${meta.replace(/\.json$/,'')}`
+    let story = [
+      {type:'paragraph', text:'Things of type latlon used for scale.'},
+      {type:'map', text:markers('latlon')},
+      {type:'paragraph', text:'Things of type place to which scale applies.'},
+      {type:'map', text:markers('place')}
+    ]
+    open({title, story})
+  }
+
+  function scale (data) {
+    let have = Object.entries(data.things).filter(kv => kv[1] && kv[1].type == 'latlon')
+    let things = []
+    for (let each of have) {
+      let name = each[0]
+      let dot = each[1].dot
+      let latlon = each[1].description.split(/\n/)[0].split(/,/).map(k => +k)
+      things.push({name,dot,latlon})
+    }
+    console.table(things)
+
+    const [one,two] = [0,1]
+    const [x, y] = [0,1]
+    const [lat, lon] = [0,1]
+
+    let horz = scaleLinear()
+      .range([things[one].latlon[lon], things[two].latlon[lon]])
+      .domain([things[one].dot[x], things[two].dot[x]])
+
+    let vert = scaleLinear()
+      .range([things[one].latlon[lat], things[two].latlon[lat]])
+      .domain([things[one].dot[y], things[two].dot[y]])
+
+    return {horz,vert}
+  }
+
+
+  // U T I L I T I E S
+
+  function frameContext() {
+    return new Promise(resolve => {
+      let handler = event => {
+        let {data} = event
+        if (!data.action == "frameContext") return
+        window.removeEventListener('message',handler)
+        resolve(data)
+      }
+      window.addEventListener('message',handler)
+      window.parent.postMessage({action:"sendFrameContext"},"*")
+    })
+  }
+
+  function open(page, keepLineup=false, forks=[]) {
+    const dup = obj => JSON.parse(JSON.stringify(obj))
+    let date = Date.now()
+    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+    let message = {action: "showResult", page, keepLineup}
+    window.parent.postMessage(message, "*");
+  }
+
+  function download(string, file) {
+    var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+    var anchor = document.createElement('a');
+    anchor.setAttribute("href",     data);
+    anchor.setAttribute("download", file);
+    document.body.appendChild(anchor); // required for firefox
+    anchor.click();
+    anchor.remove();
+  }
+</script>
