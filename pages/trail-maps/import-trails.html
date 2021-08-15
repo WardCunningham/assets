@@ -18,21 +18,6 @@
   let metas = list.files.filter(file => file.endsWith('.json'))
   window.menu.innerHTML = menu(metas)
 
-  // let otm = `http://simnet.ward.asia.wiki.org/assets/pages/diagrams-as-base-model`
-  // let map = `trail-maps/thprd-trail-map`
-  // let meta = await fetch(`${otm}/data/${map}.json`).then(res => res.json())
-  // let have = Object.entries(meta.things).filter(kv => kv[1] && kv[1].type == 'latlon')
-  // let {horz,vert} = scale(have)
-
-  // console.log(horz.domain(), horz.range())
-  // console.log(vert.domain(), vert.range())
-
-  // let want = Object.entries(meta.things).filter(kv => kv[1] && (kv[1].type == 'place'))
-  // for (let [k,v] of want) {
-  //   console.log(k,v.dot)
-  //   window.result.innerHTML += `${vert(v.dot[1])},${horz(v.dot[0])} ${k}\n`
-  // }
-
   function menu (metas) {
     let html =['<table>']
     for (let meta of metas) {
@@ -43,8 +28,13 @@
     return html.join("\n")
   }
 
+
+// P R E V I E W
+
   window.preview = async function (meta) {
     let data = await fetch(`http://${site}/assets/${assets}/${meta}`).then(res => res.json())
+    let diagram = meta.replace(/\.json$/,'')
+
     let {horz,vert} = scale(data)
 
     function markers(type) {
@@ -61,15 +51,42 @@
       return markup.join("\n")
     }
 
-    let title = `Things of ${meta.replace(/\.json$/,'')}`
+    let file = list.files.find(file => file.startsWith(diagram))
+    let src = `http://${site}/assets/${assets}/${file}`
+    let {width, height} = await getsize(src)
+    let region = { north:vert(0), south:vert(height), east:horz(width), west:horz(0)}
+
+    function boundary() {
+      let markup = []
+      let sw = `${region.south},${region.west}`
+      let ne = `${region.north},${region.east}`
+      markup.push(`${sw} SW`)
+      markup.push(`${ne} NE`)
+      markup.push(`OVERLAY ${src} ${sw} ${ne}`)
+      return markup.join("\n")
+    }
+
+    let trails = await places(region)
+
+    let title = `Things of ${diagram}`
+    let [root,team] = assets.split('/data/')
+    let otm = `http://${site}/assets/${root}/index.html#${team}/${diagram}`
     let story = [
-      {type:'paragraph', text:'Things of type latlon used for scale.'},
+      {type:'paragraph', text:`We show results from each step for selecting trails to be added to the image metadata. [${otm} otm]`},
+      {type:'paragraph', text:`Things of type 'latlon' used for scale.`},
       {type:'map', text:markers('latlon')},
-      {type:'paragraph', text:'Things of type place to which scale applies.'},
-      {type:'map', text:markers('place')}
+      {type:'paragraph', text:`Things of type 'place' to which scale applies.`},
+      {type:'map', text:markers('place')},
+      {type:'paragraph', text:'Boundary of visible image.'},
+      {type:'map', text:boundary()},
+      {type:'paragraph', text:`${trails.length} trails within the boundary.`},
+      {type:'map', text:trails.map(m => `${m[0]},${m[1]} [[${m[2]}]]`).join("\n")}
     ]
-    open({title, story})
+    open({title, story},null,['trails.ward.asia.wiki.org'])
   }
+
+
+// H E L P E R S
 
   function scale (data) {
     let have = Object.entries(data.things).filter(kv => kv[1] && kv[1].type == 'latlon')
@@ -95,6 +112,29 @@
       .domain([things[one].dot[y], things[two].dot[y]])
 
     return {horz,vert}
+  }
+
+  function getsize(src) {
+    return new Promise((resolve, reject) => {
+      let test = document.createElement('img')
+      test.addEventListener("load", () => {
+        let size = {width:test.naturalWidth, height:test.naturalHeight}
+        test.remove()
+        resolve(size)
+      })
+      test.addEventListener("error", err => reject(err));
+      test.setAttribute('src', src)
+    })
+  }
+
+  async function places(region) {
+    let page = await fetch(`http://trails.ward.asia.wiki.org/places-i-have-been.json`).then(res => res.json())
+    let markup = page.story.find(item => item.type == 'map').text.split(/\n/)
+    let places =  markup.map(line => line.match(/(-?\d+\.\d+), ?(-?\d+\.\d+) ?\[\[(.+?)\]\]/))
+    places = places.filter(place => place).map(place => place.slice(1))
+    places = places.filter(place => region.north>place[0] && region.south<place[0])
+    places = places.filter(place => region.east>place[1] && region.west<place[1])
+    return places
   }
 
 
