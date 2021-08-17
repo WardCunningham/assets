@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<div id=result></div>
+
+<style>
+  body {font-family: Verdana, helvetica, Sans;}
+  td, th { border: 1px solid lightgray; padding: 4px; font-size:9pt;}
+  table { border-collapse: collapse; }
+</style>
+
+<script type=module>
+
+  const rev = domain => domain.split(/\./).reverse()
+
+  let {page} = await frameContext()
+  let done = page.story.find(item => item.type == 'code').text.split(/\n/)
+
+  let endpoint = `http://search.fed.wiki.org:3030/logs`
+  let logs = await fetch(endpoint).then(res => res.text())
+  let latest = logs.split(/\n/)[0]
+  window.result.innerHTML = `<p>Scrape as of ${latest.replace(/\/logs/,`${endpoint}`)}</p>`
+
+  let [,href] = latest.match(/href="(.+?)"/)
+  let log = await fetch(`http://search.fed.wiki.org:3030${href}`).then(res => res.text())
+  log = log.split(/\n/)
+  log = log.filter(line => / pages$/.test(line))
+  log = log.map(line => line.match(/^(.*?), (\d+) pages$/).splice(1))
+  log.sort((a,b) => rev(a[0]).join('.').localeCompare (rev(b[0]).join('.')))
+  log.shift()
+
+  let table = []
+  let last = null
+  let count = null
+  let total = null
+  let all = null
+  for (let [site, pages] of log) {
+    let here = rev(site).slice(0,2).reverse().join('.')
+    if (here != last) {
+      if (last) table.push([last, count, total, all])
+      last = here
+      count = 1
+      total = +pages
+      all = [site]
+    }
+    else {
+      count += 1
+      total += +pages
+      all.push(site)
+    }
+  }
+  console.table(table)
+  for (let row of table) {
+    let addrs = dns(row[0])
+    row.push(addrs)
+  }
+  window.table = table
+  table = table.filter(row => !(row[4].length == 1 && done.includes(row[4][0])))
+
+  const detail = list => list.map(site => `<a href=//${site} target=_blank>${site}</a>`).join("<br>")
+  window.result.innerHTML += `<table><tr><th>site<th>sites<th>pages<th>ip</tr>
+    ${table.map(row =>`<tr>
+      <td><details><summary>${row[0]}</summary><p>${detail(row[3])}</p></details></td>
+      <td>${row[1]}
+      <td>${row[2]}
+      <td>${row[4].join("<br>")}`).join("\n")}
+    </table>`
+
+
+// copy(table.map(row => row[0]).join("\n"))
+// pbpaste | while read d; do echo $d; host $d >lookups/$d; sleep 1; done
+// cat lookups/* |  grep 'has address' | sort -k 2 | pbcopy
+
+  function dns(domain) {
+    const host =
+`feast.fm has address 104.198.14.52
+distributed.academy has address 104.21.44.78
+freedombone.net has address 147.148.109.2
+npl.wiki has address 159.203.254.26
+txtzyme.com has address 159.203.254.26
+xpdx.org has address 159.203.254.26
+andysylvester.com has address 162.241.224.128
+shll.wiki has address 162.255.119.240
+randombits.xyz has address 167.99.167.162
+distributed.academy has address 172.67.197.78
+rodwell.me has address 178.62.99.190
+sound.garden has address 184.72.19.87
+fed.wiki has address 188.166.198.19
+mmelcher.org has address 192.241.132.143
+nrn.io has address 198.211.103.94
+openlearning.cc has address 199.16.128.113
+coevolving.com has address 199.16.128.7
+mcmorgan.org has address 208.113.174.155
+chrisellis.me has address 217.8.252.179
+hashbase.io has address 35.193.163.202
+frankmcpherson.net has address 35.222.145.77
+bovill.me has address 46.101.23.193
+bullshido.academy has address 46.101.23.193
+c0de.academy has address 46.101.23.193
+commons.world has address 46.101.23.193
+conversation.live has address 46.101.23.193
+conversation.wiki has address 46.101.23.193
+cryptoacademy.org has address 46.101.23.193
+daisy.world has address 46.101.23.193
+dark.science has address 46.101.23.193
+democracy.garden has address 46.101.23.193
+emotional.wiki has address 46.101.23.193
+exponentiallyhuman.org has address 46.101.23.193
+federation.life has address 46.101.23.193
+fedwiki.org has address 46.101.23.193
+festivaljam.org has address 46.101.23.193
+festivaljam.xyz has address 46.101.23.193
+festivalofmint.org has address 46.101.23.193
+form.world has address 46.101.23.193
+future.football has address 46.101.23.193
+future.science has address 46.101.23.193
+futureperfect.world has address 46.101.23.193
+goaljam.org has address 46.101.23.193
+greendeal.wiki has address 46.101.23.193
+hood.wiki has address 46.101.23.193
+husbands.me has address 46.101.23.193
+ksenya.me has address 46.101.23.193
+lexon.wiki has address 46.101.23.193
+liquiddemocracy.org has address 46.101.23.193
+liquidlaw.org has address 46.101.23.193
+lisp.studio has address 46.101.23.193
+literate.wiki has address 46.101.23.193
+livecode.world has address 46.101.23.193
+mediagarden.org has address 46.101.23.193
+memebase.cc has address 46.101.23.193
+obeya.xyz has address 46.101.23.193
+offersandwants.me has address 46.101.23.193
+offersandwants.org has address 46.101.23.193
+oneworld.wiki has address 46.101.23.193
+outlandish.academy has address 46.101.23.193
+parliamentofthings.org has address 46.101.23.193
+pattern.club has address 46.101.23.193
+peoplepowered.money has address 46.101.23.193
+permanent.wiki has address 46.101.23.193
+plantoid.cc has address 46.101.23.193
+pod.club has address 46.101.23.193
+powerofsix.org has address 46.101.23.193
+progressive.earth has address 46.101.23.193
+proto.institute has address 46.101.23.193
+regovern.earth has address 46.101.23.193
+regovern.org has address 46.101.23.193
+spacenet.work has address 46.101.23.193
+thought.garden has address 46.101.23.193
+visualjam.org has address 46.101.23.193
+vox.money has address 46.101.23.193
+voz.money has address 46.101.23.193
+voz.network has address 46.101.23.193
+wikimentary.tv has address 46.101.23.193
+worldcitizen.institute has address 46.101.23.193
+worldscape.fm has address 46.101.23.193
+vincentvanderlubbe.com has address 50.87.249.11
+sound.garden has address 52.52.138.60
+glitch.me has address 54.192.73.18
+glitch.me has address 54.192.73.22
+glitch.me has address 54.192.73.5
+glitch.me has address 54.192.73.58
+innovateoregon.org has address 68.66.216.59
+uwiki.me has address 69.163.153.4
+c2.com has address 69.168.54.22
+wiki.org has address 69.168.54.22
+commoning.wiki has address 88.99.144.132
+federated.wiki has address 88.99.144.132`
+    return host.split(/\n/).filter(line => line.startsWith(domain)).map(line => line.split(/ has address /)[1])
+  }
+
+
+
+
+// U T I L I T I E S
+
+function frameContext() {
+  return new Promise(resolve => {
+    let handler = event => {
+      let {data} = event
+      if (!data.action == "frameContext") return
+      window.removeEventListener('message',handler)
+      resolve(data)
+    }
+    window.addEventListener('message',handler)
+    window.parent.postMessage({action:"sendFrameContext"},"*")
+  })
+}
+
+</script>
