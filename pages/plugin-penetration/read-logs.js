@@ -3,7 +3,7 @@
 
   import { Sha1 } from "https://deno.land/std/hash/sha1.ts"
   const rev = domain => domain.split(/\./).reverse()
-  const done = ['46.101.23.193']
+  const done = ['46.101.23.193', '159.203.254.26', '188.166.198.19', '46.101.237.224']
 
 
 // Find the most recent search scrape log
@@ -11,7 +11,6 @@
   let endpoint = `http://search.fed.wiki.org:3030/logs`
   let logs = await fetch(endpoint).then(res => res.text())
   let latest = logs.split(/\n/)[0].replace(/<.*?>/g,'')
-  console.log({latest})
 
 
 // Read sites exposing sitemaps, sort them by domain name sufix
@@ -51,15 +50,60 @@
 
 // Lookup ip address for each aggregate
 
+  let t = Date.now()
   for (let row of table) {
-    let addrs = dns(row[0])
+    let addrs = await dns(row[3][0])
     row.push(addrs)
+  }
+
+  async function dns(domain) {
+    let name = domain.split(/:/)[0]
+    let url = `https://cloudflare-dns.com/dns-query?name=${name}&type=A`
+    let record = await fetch(url,{headers: {accept: 'application/dns-json'}}).then(res => res.json())
+    if (record.Answer) {
+      let addrs = record.Answer.filter(addr => addr.type == 1).map(addr => addr.data)
+      console.log(Date.now()-t,{domain, addrs})
+      return addrs
+    } else {
+      console.log({record})
+      return []
+    }
   }
 
 
 // Ignore addresses considered "done"
 
-  table = table.filter(row => !(row[4].length == 1 && done.includes(row[4][0])))
+  table = table.filter(row => !(row[4]?.length == 1 && done.includes(row[4][0])))
+
+
+// Record sha1 hash for each version
+
+// plugin=frame
+// curl -s http://asia.wiki.org/plugin/plugmatic/view/$plugin |\
+// jq -r '.versions[]' |\
+// while read v; do
+//   npm i wiki-plugin-$plugin@$v
+//   sum=`sha1sum node_modules/wiki-plugin-$plugin/client/$plugin.js`
+//   echo \[\"$v\",\"$sum\"\],
+// done | pbcopy
+
+  let versions = [
+    ['0.8.7','368c07f096c73a15454e4dd6a3bdf7d3723a5f23'],
+    ['0.8.6','add9b2be8510a85c3f51db25ec0b4c143dbdf3cb'],
+    ['0.8.5','f6225e5a1cbcb3b5ec26cf90d2eb9d5fd8f3e1bd'],
+    ['0.8.4','e6ba4da85d2b3b98d4204d6df9abcefcbeec6836'],
+    ['0.8.3','9c74300e0605f38e7a6be008be195a102d228f5a'],
+    ['0.8.2','b9f13652a43a0c2e3aada81c44ca44fcaac090ba'],
+    ['0.8.1','d2f61161fa875181ee5837bcf3b2cdd4c3b7d5b9'],
+    ['0.8.0','37d0594e7c1da8d3cd1871d53ad17ac323e44e71'],
+    ['0.7.0','a7a5cffecddf8ecdb71a1dc058e80f2435dad6a9'],
+    ['0.3.0','2670896e64aef6945d9afe5eb6f2dd976372c13d'],
+    ['0.2.2','50d1dbdd26801837d42000703cfbc3193c53378e'],
+    ['0.2.0','b4283e1e19a6f616bd3598671bdfe79bd19afdeb'],
+    ['0.1.3','ca8a991c3d09faf2187ab178f638b3fc08fe46f9'],
+    ['0.1.2','ca8a991c3d09faf2187ab178f638b3fc08fe46f9'],
+    ['0.1.1','ca8a991c3d09faf2187ab178f638b3fc08fe46f9']
+  ]
 
 
 // Fetch plugin info for each aggregate
@@ -69,7 +113,13 @@
     let site = rows[3][0]
     if (rows[4].length) {
       let plugin = await fetch(`http://${site}/plugins/frame/frame.js`).then(res => res.ok ? res.text() : res.status)
-      rows.push(plugin.toString().length > 5 ? new Sha1().update(plugin.toString()).toString().slice(0,8) : plugin)      
+      if (plugin.toString().length < 5) {
+        rows.push(plugin)
+      } else {
+        let sha1 = new Sha1().update(plugin.toString()).toString()
+        let vers = versions.find(vers => vers[1] == sha1) || [sha1.slice(0,11)]
+        rows.push(vers[0])
+      }
     } else {
       // rows.push(null)
     }
@@ -82,110 +132,9 @@
 
 // Report most fields with headings
 
+  console.log({latest})
   let summary = table.map(row => {
     let [site, sites, pages, list, addrs, plugin] = row;
-    return {site, sites, pages, addrs, plugin}})
+    return {site, sites, pages, plugin, addrs}})
+  summary.sort((a,b) => a.addrs[0].localeCompare(b.addrs[0]))
   console.table(summary)
-
-
-
-
-
-
-  function dns(domain) {
-    const host =
-`feast.fm has address 104.198.14.52
-distributed.academy has address 104.21.44.78
-freedombone.net has address 147.148.109.2
-npl.wiki has address 159.203.254.26
-txtzyme.com has address 159.203.254.26
-xpdx.org has address 159.203.254.26
-andysylvester.com has address 162.241.224.128
-shll.wiki has address 162.255.119.240
-randombits.xyz has address 167.99.167.162
-distributed.academy has address 172.67.197.78
-rodwell.me has address 178.62.99.190
-sound.garden has address 184.72.19.87
-fed.wiki has address 188.166.198.19
-mmelcher.org has address 192.241.132.143
-nrn.io has address 198.211.103.94
-openlearning.cc has address 199.16.128.113
-coevolving.com has address 199.16.128.7
-mcmorgan.org has address 208.113.174.155
-chrisellis.me has address 217.8.252.179
-hashbase.io has address 35.193.163.202
-frankmcpherson.net has address 35.222.145.77
-bovill.me has address 46.101.23.193
-bullshido.academy has address 46.101.23.193
-c0de.academy has address 46.101.23.193
-commons.world has address 46.101.23.193
-conversation.live has address 46.101.23.193
-conversation.wiki has address 46.101.23.193
-cryptoacademy.org has address 46.101.23.193
-daisy.world has address 46.101.23.193
-dark.science has address 46.101.23.193
-democracy.garden has address 46.101.23.193
-emotional.wiki has address 46.101.23.193
-exponentiallyhuman.org has address 46.101.23.193
-federation.life has address 46.101.23.193
-fedwiki.org has address 46.101.23.193
-festivaljam.org has address 46.101.23.193
-festivaljam.xyz has address 46.101.23.193
-festivalofmint.org has address 46.101.23.193
-form.world has address 46.101.23.193
-future.football has address 46.101.23.193
-future.science has address 46.101.23.193
-futureperfect.world has address 46.101.23.193
-goaljam.org has address 46.101.23.193
-greendeal.wiki has address 46.101.23.193
-hood.wiki has address 46.101.23.193
-husbands.me has address 46.101.23.193
-ksenya.me has address 46.101.23.193
-lexon.wiki has address 46.101.23.193
-liquiddemocracy.org has address 46.101.23.193
-liquidlaw.org has address 46.101.23.193
-lisp.studio has address 46.101.23.193
-literate.wiki has address 46.101.23.193
-livecode.world has address 46.101.23.193
-mediagarden.org has address 46.101.23.193
-memebase.cc has address 46.101.23.193
-obeya.xyz has address 46.101.23.193
-offersandwants.me has address 46.101.23.193
-offersandwants.org has address 46.101.23.193
-oneworld.wiki has address 46.101.23.193
-outlandish.academy has address 46.101.23.193
-parliamentofthings.org has address 46.101.23.193
-pattern.club has address 46.101.23.193
-peoplepowered.money has address 46.101.23.193
-permanent.wiki has address 46.101.23.193
-plantoid.cc has address 46.101.23.193
-pod.club has address 46.101.23.193
-powerofsix.org has address 46.101.23.193
-progressive.earth has address 46.101.23.193
-proto.institute has address 46.101.23.193
-regovern.earth has address 46.101.23.193
-regovern.org has address 46.101.23.193
-spacenet.work has address 46.101.23.193
-thought.garden has address 46.101.23.193
-visualjam.org has address 46.101.23.193
-vox.money has address 46.101.23.193
-voz.money has address 46.101.23.193
-voz.network has address 46.101.23.193
-wikimentary.tv has address 46.101.23.193
-worldcitizen.institute has address 46.101.23.193
-worldscape.fm has address 46.101.23.193
-vincentvanderlubbe.com has address 50.87.249.11
-sound.garden has address 52.52.138.60
-glitch.me has address 54.192.73.18
-glitch.me has address 54.192.73.22
-glitch.me has address 54.192.73.5
-glitch.me has address 54.192.73.58
-innovateoregon.org has address 68.66.216.59
-uwiki.me has address 69.163.153.4
-c2.com has address 69.168.54.22
-wiki.org has address 69.168.54.22
-commoning.wiki has address 88.99.144.132
-federated.wiki has address 88.99.144.132`
-  return host.split(/\n/).filter(line => line.startsWith(domain)).map(line => line.split(/ has address /)[1])
-}
-
