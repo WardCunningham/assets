@@ -1,5 +1,5 @@
 // read a recent search log and inspect active sites for installed plugin version
-// usage: deno run --allow-net read-logs.js
+// usage: deno run --allow-net --unstable read-logs.js
 
   import { Sha1 } from "https://deno.land/std/hash/sha1.ts"
   const rev = domain => domain.split(/\./).reverse()
@@ -51,23 +51,13 @@
 // Lookup ip address for each aggregate
 
   let t = Date.now()
-  for (let row of table) {
-    let addrs = await dns(row[3][0])
-    row.push(addrs)
-  }
+  await Promise.all(table.map(dns))
 
-  async function dns(domain) {
-    let name = domain.split(/:/)[0]
-    let url = `https://cloudflare-dns.com/dns-query?name=${name}&type=A`
-    let record = await fetch(url,{headers: {accept: 'application/dns-json'}}).then(res => res.json())
-    if (record.Answer) {
-      let addrs = record.Answer.filter(addr => addr.type == 1).map(addr => addr.data)
-      console.log(Date.now()-t,{domain, addrs})
-      return addrs
-    } else {
-      console.log({record})
-      return []
-    }
+  async function dns(row) {
+    let name = row[3][0].split(/:/)[0]
+    let addrs = await Deno.resolveDns(name,"A")
+    console.log(Date.now()-t, {name,addrs})
+    row.push(addrs)
   }
 
 
