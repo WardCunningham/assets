@@ -490,9 +490,11 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
       async function refresh() {
         glow.innerHTML = ''
         let choices = await current()
+        console.log(selection, choices)
         li(newish(choices.teams), 'team')
         li(modified(selection.team,choices.diagrams), 'diagram')
         if (selection.diagram) await showimage(selection.team, selection.diagram)
+        else draw.setAttribute('href',`${db}/index.png`)
         li(choices.things, 'thing')
         td('description').innerHTML = markup(choices.details.description) || todo(choices.details)
         if (choices.details.dot) showdot(choices.details.dot)
@@ -669,7 +671,7 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
         }
         if (selection.thing) {
           let details = metadetails.things[selection.thing] || {}
-          // width *= details.scale || 1
+          width *= details.scale || 1
         }
         draw.setAttribute('x','0')
         draw.setAttribute('y','0')
