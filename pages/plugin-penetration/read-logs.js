@@ -3,7 +3,6 @@
 
   import { Sha1 } from "https://deno.land/std/hash/sha1.ts"
   const rev = domain => domain.split(/\./).reverse()
-  const done = ['46.101.23.193', '159.203.254.26', '188.166.198.19', '46.101.237.224']
 
 
 // Find the most recent search scrape log
@@ -63,7 +62,9 @@
 
 // Ignore addresses considered "done"
 
-  table = table.filter(row => !(row[4]?.length == 1 && done.includes(row[4][0])))
+  let ipcounts = {}
+  let ipcount = ip => { ipcounts[ip] ||= 0; ipcounts[ip]+= 1; return ipcounts[ip] }
+  table = table.filter(row => ipcount(row[4][0]) <= 5)
 
 
 // Record sha1 hash for each version
@@ -78,6 +79,7 @@
 // done | pbcopy
 
   let versions = [
+    ['0.8.8','a01dcabe16e24982fc7e96ae8d8925f1092ca343'],
     ['0.8.7','368c07f096c73a15454e4dd6a3bdf7d3723a5f23'],
     ['0.8.6','add9b2be8510a85c3f51db25ec0b4c143dbdf3cb'],
     ['0.8.5','f6225e5a1cbcb3b5ec26cf90d2eb9d5fd8f3e1bd'],
