@@ -5,46 +5,61 @@
 
 const uniq = (value, index, self) => self.indexOf(value) === index;
 
-let testContext = {
-  site:'simnet.ward.asia.wiki.org',
-  page:{story:[{type:'assets',text:'pages/diagrams-as-base-model/data/trail-maps'}]}
+let {page, site} = await frameContext()
+let allassets = await sources('assets')
+report('sources', {allassets})
+
+let uploads = {} // team => file => where
+sequence((where,what) => {if(!where.remote) prioritize(where,what)})
+sequence((where,what) => {if(where.remote) prioritize(where,what)})
+report('uploads',uploads)
+
+function sequence(doit) {
+  for (let pane of allassets.reverse()) {
+    for (let folder in pane.assetsData) {
+      if (!folder.match(/pages\/(.+?)\/data\/(.+?)$/)) continue
+      for (let twin in pane.assetsData[folder]) {
+        let files = pane.assetsData[folder][twin]
+        let remote = twin != '/assets'
+        let server = remote ? twin : `${site}${twin}`
+        doit({server, folder, remote, site:pane.panel.site}, files)
+      }
+    }
+  }
 }
 
-let {page, site} = window == window.top ? testContext : await frameContext()
-let assets = page.story.filter(item => item.type == 'assets')
-let markup = assets[0].text
-let [,root,team] = markup.split(/\n/)[0].match(/pages\/(.+?)\/data\/(.+?)$/)
-// let root = m[1]
-// let team = m[2]
-report('context',{site,root,team})
-let cd = `http://${site}/assets/pages/${root}`
+function prioritize(where,what) {
+  let team = where.folder.split(/\/data\//)[1]
+  let qualified = uploads[team] = uploads[team] || {}
+  for (let file of what) {
+    if (qualified[file]) {
+      report('duplicate',{where,file})
+    } else {
+      qualified[file] = where
+    }
+  }
+}
 
-let rollup = await fetch(`${cd}/index.json`).then(res => res.json())
-report('rollup',rollup)
-let version = (await fetch(`${cd}/index.html`).then(res => res.text())).match(/const version = "(.+?)"/)[1]
-if (rollup.version != version) report('upgrading',{json:rollup.version,html:version})
 
-for (let teaminfo of await allteams()) {
-  if (!teaminfo.isDirectory) continue
-  let team = teaminfo.name
-  if (team[0] == '.') continue
+let indexurl = `/assets/${Object.keys(allassets[0].assetsData)[0]}/index.json`
+let rollup = await fetch(indexurl).then(res => res.json())
+report('index',rollup)
+
+// let version = (await fetch(`${cd}/index.html`).then(res => res.text())).match(/const version = "(.+?)"/)[1]
+// if (rollup.version != version) report('upgrading',{json:rollup.version,html:version})
+
+for (let team in uploads) {
   if (!rollup.data[team]) {
     report('new', {team})
     rollup.data[team] = {}
-  } else {
-    report('team', {data:rollup.data[team]})
+  // } else {
+  //   report('team', {data:rollup.data[team]})
   }
 
-  // let files = Deno.readDirSync(`${cd}/data/${team}`).filter(d => d.isFile).map(d => d.name)
-  let files = []
-  for (let fileinfo of await allfiles(team)) {
-    if (!fileinfo.isFile) continue
-    let file = fileinfo.name
-    files.push(fileinfo.name)
-  }
+  let files = Object.keys(uploads[team])
   let expected = Object.keys(rollup.data[team]).map(diagram => `${diagram}.${rollup.data[team][diagram].extension}`)
   let missing = expected.filter(file => !files.includes(file))
-  if (missing.length) report('files',{team, missing})
+  if (missing.length) report('missing',{team, missing})
 
   for (let file of files) {
     let parts = file.split('.')
@@ -54,7 +69,7 @@ for (let teaminfo of await allteams()) {
       if (!rollup.data[team][diagram]) report('new', {team, diagram})
       let meta = {extension}
       if (files.includes(`${diagram}.json`)) {
-        meta = await readfile(team, `${diagram}.json`)
+        meta = await readfile(uploads[team], `${diagram}.json`)
         for (let thing of Object.keys(meta.things)) {
           if (meta.things[thing] == null) {
             if (spliceout(rollup.data[team][diagram].things, thing)) {
@@ -76,13 +91,14 @@ for (let teaminfo of await allteams()) {
       if (meta.date) metadata.date = meta.date
       rollup.data[team][diagram] = metadata
       rollup.metadata.types = rollup.metadata.types.concat(types).filter(uniq).sort()
-      rollup.version = version
+      // rollup.version = version
     }
   }
 }
 report('download', rollup)
 window.download.onclick = event => download(JSON.stringify(rollup,null,2), 'index.json')
 
+// diff <(curl -s http://simnet.ward.asia.wiki.org/assets/pages/diagrams-as-base-model/index.json) <(cat ~/Downloads/index.json)
 
 function spliceout(array, element) {
   let i = array.indexOf(element)
@@ -101,30 +117,31 @@ function svg2things(team, diagram) {
 }
 
 
-// B E   L I K E   C O M M A N D   L I N E
+// // B E   L I K E   C O M M A N D   L I N E
 
-async function allteams() {
-  return [{name:team, isDirectory:true}]
-}
+// async function allteams() {
+//   return [{name:team, isDirectory:true}]
+// }
 
-async function allfiles(team) {
-  let assets = `pages/${root}/data/${team}`
-  let {error,files} = await fetch(`http://${site}/plugin/assets/list?assets=${assets}`).then(res => res.json())
-  report('assets',{root,team,error,files})
-  return files.map(filename => ({name:filename, isFile:true}))
-  // [
-  //   {name:'thprd-trail-map.jpg', isFile:true},
-  //   {name:'thprd-trail-map.json', isFile:true},
-  //   {name:'sw-portland-bike-trails.jpg', isFile:true}
-  // ]
-}
+// async function allfiles(team) {
+//   let assets = `pages/${root}/data/${team}`
+//   let {error,files} = await fetch(`http://${site}/plugin/assets/list?assets=${assets}`).then(res => res.json())
+//   report('assets',{root,team,error,files})
+//   return files.map(filename => ({name:filename, isFile:true}))
+//   // [
+//   //   {name:'thprd-trail-map.jpg', isFile:true},
+//   //   {name:'thprd-trail-map.json', isFile:true},
+//   //   {name:'sw-portland-bike-trails.jpg', isFile:true}
+//   // ]
+// }
 
-async function readfile(team, filename) {
-  let path = `data/${team}/${filename}`
-  report('fetch',{cd,path})
+async function readfile(where, filename) {
+  let info = where[filename]
+  let path = `//${info.server}/${info.folder}/${filename}`
+  // report('fetch',{info,filename,path})
   let isjson = filename.endsWith('.json')
-  let file = await fetch(`${cd}/${path}`).then(res => isjson ? res.json() : res.text())
-  report('result',file)
+  let file = await fetch(path).then(res => isjson ? res.json() : res.text())
+  // report('result',file)
   return file
 }
 
@@ -170,6 +187,20 @@ function download(string, file) {
   document.body.appendChild(anchor); // required for firefox
   anchor.click();
   anchor.remove();
+}
+
+function sources(topic) {
+  const action = 'requestSourceData'
+  return new Promise(resolve => {
+    let handler = event => {
+      let {data} = event
+      if (!data.action == action) return
+      window.removeEventListener('message',handler)
+      resolve(data.sources)
+    }
+    window.addEventListener('message',handler)
+    window.parent.postMessage({action, topic},"*")
+  })
 }
 
 </script>

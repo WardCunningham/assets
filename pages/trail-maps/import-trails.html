@@ -6,6 +6,7 @@
 </style>
 <script type="module">
   import {scaleLinear} from "https://cdn.skypack.dev/d3-scale@4";
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 
   let testContext = {
     site:'simnet.ward.asia.wiki.org',
@@ -21,7 +22,8 @@
   function menu (metas) {
     let html =['<table>']
     for (let meta of metas) {
-      html.push(`<tr><td>${meta.replace(/\.json$/,'')}`)
+      let diagram = meta.replace(/\.json$/,'')
+      html.push(`<tr><td>${diagram}`)
       html.push(`<td><button onclick="preview('${meta}')">preview</button>`)
       html.push(`<td><button onclick="download('${meta}')">download</button>`)
     }
@@ -86,6 +88,37 @@
   }
 
 
+// D O W N L O A D
+
+  window.download = async function (meta) {
+    let data = await fetch(`http://${site}/assets/${assets}/${meta}`).then(res => res.json())
+    let diagram = meta.replace(/\.json$/,'')
+    let {horz,vert} = scale(data)
+
+    let file = list.files.find(file => file.startsWith(diagram))
+    let src = `http://${site}/assets/${assets}/${file}`
+    let {width, height} = await getsize(src)
+    let region = { north:vert(0), south:vert(height), east:horz(width), west:horz(0)}
+
+    let trails = await places(region)
+    console.log({data,trails})
+    for (let trail of trails) {
+      let thing = trail[2]
+      let wiki = `http://trails.ward.asia.wiki.org/${asSlug(thing)}.html`
+      let google = `https://www.google.com/search?q=${trail[0]},%20${trail[1]}`
+      let x = Math.round(horz.invert(+trail[1]))
+      let y = Math.round(vert.invert(+trail[0]))
+      let dot = [x,y]
+      let scale = "2"
+      let type = 'trail'
+      let description = `Import from trails. ${wiki}\nGoogle map. ${google}`
+      data.things[thing] = {dot, scale, type, description}
+    }
+    data.date = Date.now()
+    download(JSON.stringify(data,null,2),meta)
+  }
+
+
 // H E L P E R S
 
   function scale (data) {
@@ -97,7 +130,6 @@
       let latlon = each[1].description.split(/\n/)[0].split(/,/).map(k => +k)
       things.push({name,dot,latlon})
     }
-    console.table(things)
 
     const [one,two] = [0,1]
     const [x, y] = [0,1]

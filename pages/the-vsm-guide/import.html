@@ -4,12 +4,15 @@
   let pages = ['introduction','0cybeyes','1qguide','2_1cs1','2_2cs2','2_3cs3','2cs','3pd_5sys','4autonomy','5intbal','6infsys','7envtbal','8psysdes','9wholsys','10appfed','bibliography','janus','links','preface','recursion','variety']
   output.innerHTML = pages.map(page => `<span onclick="convert(event)">${page}</span>`).join('<br>')
 
+  let stack = []
+
   async function convert(event) {
     let file = event.target.innerText
-    let page = await fetch(`http://ward.dojo.fed.wiki/assets/pages/the-vsm-guide/${file}.html`).then(res => res.text())
+    let url = `http://ward.dojo.fed.wiki/assets/pages/the-vsm-guide/${file}.html`
+    let page = await fetch(url).then(res => res.text())
     let message = {
       action: "importer",
-      pages: wikify(page),
+      pages: wikify(url, page),
       keepLineup: event.shiftKey
     }
     window.parent.postMessage(message, "*");
@@ -19,28 +22,60 @@
     return {type:'paragraph', text, id:Math.floor(Math.random()*10000000000000)}
   }
 
-  function wikify(text) {
+  function html(text) {
+    return {type:'html', text, id:Math.floor(Math.random()*10000000000000)}
+  }
+
+  function wikify(url, text) {
     let pages = {}
     let starts = {}
-    debugger
+    // debugger
     let nextmatch = text.matchAll(/<(\/?\w+).*?>/g)
     let match = nextmatch.next()
     while(!match.done && match.value[0] != '<td align="left">')
       match = nextmatch.next()
     let tagdump = []
+    let stackdump = []
     let h2index = []
     let bodytxt = []
     for (match of nextmatch) {
+      const link = () => `[${`http://ward.dojo.fed.wiki/assets/pages/the-vsm-guide/scripts/text.html?file=${url}&cursor=${starts.p}`} starts.p]`
       tagdump.push(paragraph(match[0]))
+      stackdump.push(doit(link, match[1]))
       if(match[1] == 'h2') starts.h2 = match.index + match[0].length
       if(match[1] == '/h2') h2index.push(paragraph(`[[${text.slice(starts.h2, match.index)}]]`))
       if(match[1] == 'p') starts.p = match.index + match[0].length
-      if(match[1] == '/p') bodytxt.push(paragraph(`[[${text.slice(starts.p, match.index)}]]`))
+      if(match[1] == '/p') bodytxt.push(paragraph(`${text.slice(starts.p, match.index)} ${link()}`))
     }
     pages['tag-dump'] = {title:'Tag Dump', story:tagdump}
+    pages['stack-dump'] = {title:'Stack Dump', story:[html('<font size=-1>'+stackdump.join("<br>"))]}
     pages['h2-index'] = {title:'H2 Index', story:h2index}
     pages['body-text'] = {title:'Body Text', story:bodytxt}
     return pages
+
+
+    function doit(link, tag, text) {
+      let line = ''
+      if (!tag) return line
+      let parts = tag.match(/^(\/)?([a-z]+[0-9]?) *(.*)$/i) 
+      if(!parts) { console.error(tag); return line}
+      let [all, end, element, args] = parts
+      // console.log({end,element,args})
+      if (!end) {
+        stack.push(element)
+        // let dots = text.replace(/\S+/g,'.').replace(/\s+/g,'')
+        line = `${link()} ${stack.join('-')} ${args}`
+        if (args[args.length-1] == '/') stack.pop()
+        if (['meta','link','hr','img'].includes(element)) stack.pop()
+      } else {
+        line = `${link()} ${stack.join('-')} ${end+element}`
+        if(stack.includes(element))
+          while(stack.pop() != element) {}
+      }
+      return line
+    }
+
   }
+
 
 </script>

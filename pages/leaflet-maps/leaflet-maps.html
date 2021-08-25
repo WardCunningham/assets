@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<p>
+  <button onclick=preview(event)>preview</button>
+  <button onclick=download(event)>download</button>
+</p>
+<div id=result></div>
+<style>
+  body {font-family: Verdana, helvetica, Sans; }
+</style>
+<script type=module>
+  let lineup = await sources('region')
+  let region = lineup[0].regionData
+  let mapped = (await sources('marker'))[0].markerData
+  let showing = mapped.filter(mark => 
+    mark.lat > region.south &&
+    mark.lat < region.north &&
+    mark.lon > region.west &&
+    mark.lon < region.east)
+  window.result.innerHTML = `<p>${showing.map(marker => marker.label).join("<br>")}</p>`
+
+  window.preview = event => {
+    let title = `Select from ${lineup[0].panel.title}`
+    let text = showing.map(marker => `${marker.lat},${marker.lon} ${marker.label}`).join("\n")
+    let story = [
+      {type:'paragraph',text:`Selected ${showing.length} of ${mapped.length} markers in [[${lineup[0].panel.title}]].`},
+      {type:'map',text}
+    ]
+    report('page',{title,story})
+    open({title,story})
+  }
+
+  window.download = event => {
+    let trails = showing.map(marker => ({title:marker.label, latlon:[marker.lat,marker.lon]}))
+    report('download',trails)
+    download(JSON.stringify(trails,null,2),'trails.json')
+  }
+
+  function report (label, obj) {
+    window.result.innerHTML += `
+      <details><pre>${JSON.stringify(obj,null,2)}</pre>
+      <summary>${label}</summary>
+      </details>`
+  }
+
+// U T I L I T I E S
+
+  function sources(topic) {
+    const action = 'requestSourceData'
+    return new Promise(resolve => {
+      let handler = event => {
+        let {data} = event
+        if (!data.action == action) return
+        window.removeEventListener('message',handler)
+        resolve(data.sources)
+      }
+      window.addEventListener('message',handler)
+      window.parent.postMessage({action, topic},"*")
+    })
+  }
+
+  function open(page, keepLineup=false, forks=[]) {
+    const dup = obj => JSON.parse(JSON.stringify(obj))
+    let date = Date.now()
+    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+    let message = {action: "showResult", page, keepLineup}
+    window.parent.postMessage(message, "*");
+  }
+
+  function download(string, file) {
+    var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+    var anchor = document.createElement('a');
+    anchor.setAttribute("href",     data);
+    anchor.setAttribute("download", file);
+    document.body.appendChild(anchor); // required for firefox
+    anchor.click();
+    anchor.remove();
+  }
+
+
+</script>
