@@ -18,10 +18,10 @@
   </style>
 
   <script>
-
     const google = (latlon, title) => `<a href="https://www.google.com/search?q=${latlon}" target=_blank>${title}</a>`
 
-    var map = L.map('map')
+    // https://github.com/Leaflet/Leaflet/issues/7255#issuecomment-849638476
+    var map = L.map('map',{ "tap": false })
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map)
