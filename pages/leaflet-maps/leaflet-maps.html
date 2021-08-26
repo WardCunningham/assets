@@ -8,6 +8,9 @@
   body {font-family: Verdana, helvetica, Sans; }
 </style>
 <script type=module>
+
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
   let lineup = await sources('region')
   let region = lineup[0].regionData
   let mapped = (await sources('marker'))[0].markerData
@@ -16,7 +19,9 @@
     mark.lat < region.north &&
     mark.lon > region.west &&
     mark.lon < region.east)
-  window.result.innerHTML = `<p>${showing.map(marker => marker.label).join("<br>")}</p>`
+  for (let marker of showing) marker.label = marker.label.replace(/<.*?>/g,'')
+  let labels = showing.map(marker => marker.label).filter(uniq)
+  window.result.innerHTML = `<p>${labels.join("<br>")}</p>`
 
   window.preview = event => {
     let title = `Select from ${lineup[0].panel.title}`
