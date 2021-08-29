@@ -28,13 +28,24 @@
       attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map)
 
-    map.locate({setView: true, maxZoom: 16});
+    // map.locate({setView: true, maxZoom: 16});
+    let circle = null
+    map.locate({setView: false,
+      maxZoom: 20,
+      watch: true,
+      enableHighAccuracy: true,
+      maximumAge: 15000,
+      timeout: 3000000});
+
 
     function onLocationFound(e) {
       var radius = e.accuracy;
-      L.marker(e.latlng).addTo(map)
-        .bindPopup("You are within " + radius + " meters from this point").openPopup()
-      L.circle(e.latlng, radius).addTo(map)
+      // L.marker(e.latlng).addTo(map)
+      //   .bindPopup("You are within " + radius + " meters from this point").openPopup()
+      if (circle) circle.remove();
+      else map.setView(e.latlng, 16)
+      circle = L.circle(e.latlng, radius).addTo(map)
+      map.panTo(e.latlng, {annimate: true})
     }
     map.on('locationfound', onLocationFound)
 
