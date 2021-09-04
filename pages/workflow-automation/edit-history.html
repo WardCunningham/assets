@@ -1,0 +1,130 @@
+<p>
+  <button onclick=scan(event)>scan</button>
+  <button onclick=preview(event)>preview</button>
+  <button onclick=basemap(event)>basemap</button>
+  <!-- <button onclick=download(event)>download</button> -->
+</p>
+<div id=result></div>
+<div id=active><p>working</p></div>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; }
+  td, th { border: 1px solid gray; padding: 8px; }
+  table { border-collapse: collapse; }
+</style>
+
+<script type=module>
+
+  let site = 'http://trails.ward.asia.wiki.org'
+  let sitemap = []
+  let history = []
+  let markers = {}
+  let counts = {}
+
+  const show = (list, label) => window.result.innerHTML += `${list.length} ${label}<br>\n`
+
+  let recall = Promise.all([
+    fetch(`${site}/assets/pages/edit-history/history.json`).then(res => res.json())
+      .then(json => {history = json; show(history, 'actions')}),
+    fetch(`${site}/assets/pages/places-detailed/markers.json`).then(res => res.json())
+      .then(json => {markers = json; show(Object.keys(markers),'trails')}),
+    fetch(`${site}/system/sitemap.json`).then(res => res.json())
+      .then(json => {sitemap = json; show(sitemap,'pages')})
+  ])
+
+  window.scan = async function (event) {
+    history = []
+    let working = sitemap.map(info => 
+      fetch(`${site}/${info.slug}.json`)
+        .then(res => res.json())
+        .then(page => tally(info, page))
+    )
+    await Promise.all(working)
+    window.result.innerHTML += `<p>${history.length} actions</p>`
+    history.sort((a,b) => a.date - b.date)
+    console.log('history',history)
+    download(JSON.stringify(history,null,2),'history.json')
+
+    async function tally(info, page) {
+      window.result.innerHTML += ' .'
+      for (let item of page.journal) {
+        if (item.date) {
+          history.push({date:item.date, type:item.type, slug:info.slug})
+        }
+      }
+    }
+  }
+
+  window.preview = async function (event) {
+    counts = {}
+    for (let action of history) {
+      let day = Math.floor(action.date / (24*60*60*1000))
+      counts[day] = (counts[day] || 0) + 1
+    }
+    let days = Object.keys(counts).sort()
+    let first = Math.floor(1598212746620 / (24*60*60*1000))
+    let last = +days.slice(-1)[0]
+    let table = [`<table onclick=details(event)>`]
+    for (let sunday = first; sunday <= last; sunday += 7) {
+      let week = ['','','','','','','']
+      for (let i = 0; i<7; i++) {
+        let today = sunday + i
+        let title = new Date(today * (24*60*60*1000)).toLocaleDateString()
+        week[i] = `<span title="${title}"" data-day="${today}">${counts[today]||''}</span>`
+      }
+      table.push(`<tr><td>${week.join('<td>')}`)
+    }
+    window.result.innerHTML = `${table.join("\n")}</table>`
+  }
+
+  window.details = async function (event) {
+    let target = event.target
+    console.log('target',target)
+    let day = +target.dataset.day
+    let actions = history.filter(action => Math.floor(action.date / (24*60*60*1000)) == day)
+    console.table(actions)
+  }
+
+  window.basemap = async function (event) {
+    let wider = Object.keys(sitemap.find(info => info.slug == 'wider-travels').links)
+    const quote = str => `"${str.replace(/ /g,'\n')}"`
+    let dot = [`digraph { node [shape=box style=filled fillcolor=bisque]` ]
+    for (let info of sitemap) {
+      if (markers[info.title] || wider.includes(info.slug)) continue
+      for (let slug of Object.keys(info.links || {})) {
+        let link = sitemap.find(info => info.slug == slug)
+        if (!link || wider.includes(link.slug)) continue
+        if (!markers[link.title]) dot.push(`${quote(info.title)} -> ${quote(link.title)}`)
+      }
+    }
+    dot.push('}')
+    let story = [
+      {type:'graphviz', text:dot.join("\n")}
+    ]
+    open({title:'Basemap', story})
+  }
+
+  await recall
+  window.active.innerHTML = ''
+
+// U T I L I T I E S
+
+  function download(string, file) {
+    var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+    var anchor = document.createElement('a');
+    anchor.setAttribute("href",     data);
+    anchor.setAttribute("download", file);
+    document.body.appendChild(anchor); // required for firefox
+    anchor.click();
+    anchor.remove();
+  }
+
+  function open(page, keepLineup=false, forks=[]) {
+    const dup = obj => JSON.parse(JSON.stringify(obj))
+    let date = Date.now()
+    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+    let message = {action: "showResult", page, keepLineup}
+    window.parent.postMessage(message, "*");
+  }
+
+</script>
