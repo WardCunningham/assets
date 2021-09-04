@@ -1,6 +1,6 @@
 <section style="display:flex">
-  <div id=metadata style="flex:30%; padding:16px;"></div>
-  <div id=basemap style="flex:70%"></div>
+  <div id=metadata style="flex:20%; padding:16px;"></div>
+  <div id=basemap style="flex:80%"></div>
 </section>
 
 <script type=module>
@@ -21,7 +21,7 @@
   await loading
   basemap = basemap
     .replace(/<svg width=".*?" height=".*?"/,"<svg ")
-    .replace(/<\/g>\n<\/svg>/,"<g id=\"annimation\"></g>\n</g>\n</svg>")
+    .replace(/<\/g>\n<\/svg>/,"<g id=\"animation\"></g>\n</g>\n</svg>")
   window.basemap.innerHTML = basemap
 
   let places = {}
@@ -35,6 +35,7 @@
   }
   console.log(places)
 
+  let episodes = []
   let start = 1600855200000
   let last = Date.now()
   while (start < last) {
@@ -52,20 +53,71 @@
         }
       }
       if (moves.length) {
-        window.metadata.innerHTML = `<h3>${new Date(start).toLocaleDateString()}</h3>${moves.join("<br>")}`
-        let squiggle = []
-        for (let move of moves) {
-          let a = places[move[0]]
-          let b = places[move[1]]
-          squiggle.push(`<circle cx="${a.x}" cy="${a.y}" r="5" stroke="red" fill="red"/>`)
-          squiggle.push(`<circle cx="${b.x}" cy="${b.y}" r="5" stroke="red" fill="red"/>`)
-          squiggle.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="red" stroke-width="5" stroke-opacity=".4" />`)
-        }
-        window.annimation.innerHTML = squiggle.join("\n")
-        await delay(200)
+        episodes.push({start,moves})
       }
     }
     start = finish
   }
+
+  window.metadata.innerHTML = `
+    <p><button onclick=allhistory(event)>all history</button></p>
+    Click for all episode sequence, 20 seconds.<br>
+    Hover over node for node specific sequence.<br>
+    Hover over date for one day's episode.`
+  window.allhistory = async event => {
+    for (let {start, moves} of episodes) {
+      window.metadata.innerHTML = `<h3>${new Date(start).toLocaleDateString()}</h3>${moves.join("<br>")}`
+      display(moves)
+      await delay(300)
+    }
+  }
+
+  function display (moves) {
+    let squiggle = []
+    for (let move of moves) {
+      let a = places[move[0]]
+      let b = places[move[1]]
+      squiggle.push(`<circle cx="${a.x}" cy="${a.y}" r="5" stroke="red" fill="red"/>`)
+      squiggle.push(`<circle cx="${b.x}" cy="${b.y}" r="5" stroke="red" fill="red"/>`)
+      squiggle.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="red" stroke-width="5" stroke-opacity=".4" />`)
+    }
+    window.animation.innerHTML = squiggle.join("\n")
+  }
+
+  let lasttitle = null
+
+  window.metadata.addEventListener('mouseover', event => {
+    let target = event.target
+    if (target.tagName == 'SPAN') {
+      let when = target.innerText
+      let episode = episodes.find(episode => new Date(episode.start).toLocaleDateString() == when)
+      display(episode.moves)
+    }
+  })
+
+  window.basemap.addEventListener('mouseover', async event => {
+    let target = event.target.parentElement
+    let type = target.getAttribute('class')
+    if (type == 'graph') {
+      window.animation.innerHTML = ''
+      lasttitle = null
+      return
+    }
+    if (type == 'node') {
+      let title = target.getElementsByTagName('title').item(0).innerHTML.replace(/\n/g,' ')
+      if (title == lasttitle) return
+      lasttitle = title
+      let slug = asSlug(title)
+      window.metadata.innerHTML = `<h3>${title}</h3>`
+      for (let {start, moves} of episodes) {
+        if (moves.find(move => move.includes(slug))) {
+          window.metadata.innerHTML += `<span>${new Date(start).toLocaleDateString()}</span></br>`
+          display(moves)
+          await delay(300)
+        }
+      }
+    }
+  })
+
 
 </script>
