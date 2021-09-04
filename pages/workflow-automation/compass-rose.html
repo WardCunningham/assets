@@ -77,17 +77,10 @@
     let link = event.target.innerText
     let home = trails.find(trail => trail.link == link)
     draw(home)
-    open(link)
+    view(link)
   }
 
-  const id = () => Math.trunc(Math.random()*1000000000000).toString()
-  const deepcopy = (obj) => JSON.parse(JSON.stringify(obj))
-  const paragraph = (text) => ({type: "paragraph", text, id:id()})
-  const item = (fields) => Object.assign(fields, {id:id()})
-  const create = (item) => ({type: "create", date: Date.now(), item: deepcopy(item)})
-  const fork = (site) => ({type: "fork", site, date: Date.now()})
-
-  async function open(link) {
+  async function view(link) {
     const fmt = trail => `${trail.lat}, ${trail.lon} [[${trail.link}]]`
     let dirs = Object.keys(octants)
     let good = dirs.filter(dir => octants[dir].length)
@@ -97,21 +90,11 @@
 
     let title = `Near ${link}`.slice(0,29)
     let story = [
-      paragraph(`We look for trails in each of eight compass directions from [[${link}]].`),
-      item({type:'map',text}),
-      item({type:'html',text:html})
+      {type:'paragraph', text:`We look for trails in each of eight compass directions from [[${link}]].`},
+      {type:'map',text},
+      {type:'html',text:html}
     ]
-    let page = { title, story }
-    page.journal = [ create(page) ]
-    console.log(page)
-    if (window && window.frameElement) {
-      window.parent.postMessage({
-        action: "showResult",
-        pageKey: window.frameElement.name,
-        keepLineup: false, //event.shiftKey,
-        page
-      })
-    }    
+    open({title,story})
   }
 
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
@@ -132,6 +115,17 @@
       .replace(/100%/,'32%')
       .replace(/<img/,`<img title="${page.title}"`))
     .join("\n")
+  }
+
+// U T I L I T I E S
+
+  function open(page, keepLineup=false, forks=[]) {
+    const dup = obj => JSON.parse(JSON.stringify(obj))
+    let date = Date.now()
+    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+    let message = {action: "showResult", page, keepLineup}
+    window.parent.postMessage(message, "*");
   }
 
 </script>
