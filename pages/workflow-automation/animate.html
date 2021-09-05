@@ -59,19 +59,6 @@
     start = finish
   }
 
-  window.metadata.innerHTML = `
-    <p><button onclick=allhistory(event)>all history</button></p>
-    Click for all episode sequence, 20 seconds.<br>
-    Hover over node for node specific sequence.<br>
-    Hover over date for one day's episode.`
-  window.allhistory = async event => {
-    for (let {start, moves} of episodes) {
-      window.metadata.innerHTML = `<h3>${new Date(start).toLocaleDateString()}</h3>${moves.join("<br>")}`
-      display(moves)
-      await delay(300)
-    }
-  }
-
   function display (moves) {
     let squiggle = []
     for (let move of moves) {
@@ -81,8 +68,34 @@
       squiggle.push(`<circle cx="${b.x}" cy="${b.y}" r="5" stroke="red" fill="red"/>`)
       squiggle.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="red" stroke-width="5" stroke-opacity=".4" />`)
     }
-    window.animation.innerHTML = squiggle.join("\n")
+    return squiggle.join("\n")
   }
+
+  let sequencing = {date:Date.now(), run:false}
+  async function sequence (episodes, each=null) {
+    sequencing.run = false
+    let seq = sequencing = {date:Date.now(), run:true}
+    for (let {start, moves} of episodes) {
+      console.log(seq)
+      if (!seq.run) return
+      if(each) {
+        let report = each(start, moves)
+        window.metadata.innerHTML += report
+      }
+      window.animation.innerHTML = display(moves)
+      await delay(300)
+    }
+  }
+
+  window.metadata.innerHTML = `
+    <p><button onclick=allhistory(event)>all history</button></p>
+    Click for all episode sequence, 20 seconds.<br>
+    Hover over node for node specific sequence.<br>
+    Hover over date for one day's episode.`
+  window.allhistory = event => sequence(episodes, (start, moves) => {
+    window.metadata.innerHTML = `<h3>${new Date(start).toLocaleDateString()}</h3>`
+    return moves.join("<br>")
+  })
 
   let lasttitle = null
 
@@ -91,7 +104,7 @@
     if (target.tagName == 'SPAN') {
       let when = target.innerText
       let episode = episodes.find(episode => new Date(episode.start).toLocaleDateString() == when)
-      display(episode.moves)
+      sequence([episode])
     }
   })
 
@@ -101,6 +114,7 @@
     if (type == 'graph') {
       window.animation.innerHTML = ''
       lasttitle = null
+      sequencing.run = false
       return
     }
     if (type == 'node') {
@@ -109,13 +123,8 @@
       lasttitle = title
       let slug = asSlug(title)
       window.metadata.innerHTML = `<h3>${title}</h3>`
-      for (let {start, moves} of episodes) {
-        if (moves.find(move => move.includes(slug))) {
-          window.metadata.innerHTML += `<span>${new Date(start).toLocaleDateString()}</span></br>`
-          display(moves)
-          await delay(300)
-        }
-      }
+      let mine = episodes.filter(episode => episode.moves.find(move => move.includes(slug)))
+      sequence(mine, (start, moves) => `<span>${new Date(start).toLocaleDateString()}</span></br>`)
     }
   })
 
