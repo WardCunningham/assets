@@ -11,6 +11,8 @@
   const uniq = (value, index, self) => self.indexOf(value) === index
   const params = Object.fromEntries(new URLSearchParams(location.search).entries())
 
+  let wholesitemap = []
+
   cross(
   	fetch(`${site}/chronological-destinations.json`).then(res => res.json()),
   	fetch(`${site}/places-i-have-been.json`).then(res => res.json()),
@@ -19,6 +21,7 @@
 
   async function cross(...checks) {
     let [dest, been, sitemap] = await Promise.all(checks)
+    wholesitemap = sitemap
     console.log({dest, been, sitemap})
     report(
       links(dest.story.map(item => item.text)).filter(uniq),
@@ -27,6 +30,10 @@
     )
   }
 
+  const when = title => wholesitemap.find(info => info.title == title).date
+  const chron = (a,b) => when(a) - when(b)
+
+
   async function report (dest, been, sitemap) {
     console.log({dest, been, sitemap})
 
@@ -34,12 +41,14 @@
       result.innerHTML = `<h3>New Chronological Destinations</h3>`
       let newlinks = sitemap
         .filter(trail => !dest.includes(trail))
+        .sort(chron)
         .map(trail => `[[${trail}]]`)
       result.innerHTML += newlinks.join("<br>\n")
       result.innerHTML += `<h3>New Places I Have Been</h3>`
       let newmarks = await Promise.all(sitemap
         .filter(trail => !been.includes(trail))
-        .map(trail => fetch(`/${asSlug(trail)}.json`).then(res => res.json()).then(mark)))
+        .sort(chron)
+        .map(trail => fetch(`${site}/${asSlug(trail)}.json`).then(res => res.json()).then(mark)))
       result.innerHTML += newmarks.join("<br>\n")
       return
     }
@@ -97,7 +106,7 @@
     const stops = [
       'Chronological', 'Comforts', 'Compass', 'Creeks', 'Cross Check', 'Culverts', 'Crossing',
       'Edit', 'Environmental', 'Garden Home Junction', 'Heritage', 'Historic',
-      'Incremental', 'Iron Mountain', 'Jeffries Creek', 'Kalama', 'King\'s North', 'Leaflet', 'Marshall Proposed',
+      'Incremental', 'Jeffries Creek', 'Kalama', 'King\'s North', 'Leaflet', 'Marshall Proposed',
       'Movable', 'Navigate', 'Near', 'Pandemic', 'Places', 'Portland', 'Red Electric Trail System', 'Round',
       'Sisters', 'Sleeping', 'Southwest', 'Spark',
       'Terminal', 'Things', 'Topo', 'Trail', 'Trees', 'Tryon Creek Trail System', 'Tuning',
@@ -108,6 +117,8 @@
       if (title.startsWith(stop)) return false
     }
     if (title.includes('Nina')) return false
+
+    if (title == 'Iron Mountain Park') return false
     return true
   }
 
