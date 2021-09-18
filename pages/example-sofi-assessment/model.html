@@ -78,7 +78,7 @@
      event.stopPropagation()
 
      let {id, description, type, site=null} = el.dataset
-     let title = description
+     let title = id
      window.parent.postMessage({
        action:"doInternalLink",
        title,
