@@ -1,5 +1,6 @@
 <html>
 <head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟪</text></svg>">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
   integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
   crossorigin=""/>
@@ -19,6 +20,7 @@
 
   <script>
     const google = (latlon, title) => `<a href="https://www.google.com/search?q=${latlon}" target=_blank>${title}</a>`
+    const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 
     // https://github.com/Leaflet/Leaflet/issues/7255#issuecomment-849638476
     var map = L.map('map',{ "tap": false })
@@ -38,13 +40,14 @@
 
     fetch(`markers.json`).then(res => res.json()).then(trails => {
       for (trail in trails) {
+        let link = `<a href=http://trails.ward.asia.wiki.org/${asSlug(trail)}.html>${trail}</a>`
         let line = []
         for (latlon of trails[trail]) {
           line.push(latlon)
           let dot = L.circle(latlon,4,{color:'red'})
-          dot.addTo(map).bindPopup(trail)
+          dot.addTo(map).bindPopup(link)
         }
-        L.polyline(line,{color:'red',opacity:0.3}).addTo(map).bindPopup(trail)
+        L.polyline(line,{color:'red',opacity:0.3}).addTo(map).bindPopup(link)
       }
     })
 
