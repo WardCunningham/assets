@@ -36,6 +36,18 @@
         .bindPopup(google(trail.latlon,trail.title)))      
     })
 
+    fetch(`markers.json`).then(res => res.json()).then(trails => {
+      for (trail in trails) {
+        let line = []
+        for (latlon of trails[trail]) {
+          line.push(latlon)
+          let dot = L.circle(latlon,4,{color:'red'})
+          dot.addTo(map).bindPopup(trail)
+        }
+        L.polyline(line,{color:'red',opacity:0.3}).addTo(map).bindPopup(trail)
+      }
+    })
+
 
 
     map.on('locationfound', e => {
