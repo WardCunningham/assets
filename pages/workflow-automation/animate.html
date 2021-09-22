@@ -1,9 +1,13 @@
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟫</text></svg>">
+
 <section style="display:flex">
   <div id=metadata style="flex:20%; padding:16px;"></div>
   <div id=basemap style="flex:80%"></div>
 </section>
 
 <script type=module>
+
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
 
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
@@ -16,7 +20,7 @@
 
   let loading = Promise.all([
     fetch(`${assets}/history.json`).then(req => req.json()).then(json => {history = json}),
-    fetch(`${assets}/basemap.svg`).then(req => req.text()).then(text => {basemap = text})
+    fetch(`${assets}/${params['svg']||'basemap'}.svg`).then(req => req.text()).then(text => {basemap = text})
   ])
   await loading
   basemap = basemap
@@ -27,7 +31,7 @@
   let places = {}
   let nodes = window.basemap.getElementsByClassName('node')
   for (let node of [...nodes]) {
-    let title = node.getElementsByTagName('title').item(0).innerHTML.replace(/\n/g,' ')
+    let title = [...node.getElementsByTagName('text')].map(text => text.innerHTML).join(' ')
     let text = node.getElementsByTagName('text').item(0)
     let x = text.getAttribute('x')
     let y = text.getAttribute('y')
@@ -118,7 +122,7 @@
       return
     }
     if (type == 'node') {
-      let title = target.getElementsByTagName('title').item(0).innerHTML.replace(/\n/g,' ')
+      let title = [...target.getElementsByTagName('text')].map(text => text.innerHTML).join(' ')
       if (title == lasttitle) return
       lasttitle = title
       let slug = asSlug(title)
