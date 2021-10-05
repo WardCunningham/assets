@@ -42,6 +42,7 @@
   basemap = basemap
     .replace(/<svg width=".*?" height=".*?"/,"<svg ")
     .replace(/<\/g>\n<\/svg>/,"<g id=\"animation\"></g>\n</g>\n</svg>")
+    .replace(/fill="white"/,'fill=none')
   window.basemap.innerHTML = basemap
 
   let places = {}
