@@ -19,6 +19,7 @@
   let basemap = ''
   let site = `http://code.fed.wiki`
   let assets = `${site}/assets/pages/working-within-the-lineup`
+  let find = null
 
   let loading = Promise.all([
     fetch(`${site}/use-case-survey.json`).then(req => req.json()).then(page => parse(page)),
@@ -57,21 +58,42 @@
 
 // P L A Y   A N I M A T I O N
 
+
+  document.querySelectorAll('.node').forEach(node => {
+    node.addEventListener('mouseenter', event => {
+      find = [...event.target.getElementsByTagName('text')].map(text => text.innerHTML).join(' ')
+    })
+    node.addEventListener('mouseleave', event => {
+      find = null
+    })
+  })
+
   let f = places['federation']
   while (true) {
-    for (let [verb, noun] of doits) {
+    for (let i = 0; i<doits.length; i++) {
+
+      const delayskip = ms => {
+        if (!find) return delay(ms)
+        for (let j = i+1; j<doits.length; j++) {
+          if (doits[j][0] == 'trace' && doits[j][1].includes(find)) return delay(ms)
+          if (doits[j][0] == doits[i][0]) return delay(100)
+        }
+        return delay(100)
+      }
+
+      let [verb, noun] = doits[i]
       switch(verb) {
         case 'site':
           window.animation.innerHTML = `<text text-anchor="middle" x="${f.x}" y="${f.y-64}">${noun}</text>`
-          await delay(3000)
+          await delayskip(2000)
           break
         case 'script':
           window.animation.innerHTML = `<text text-anchor="middle" x="${f.x}" y="${f.y-36}">${noun}</text>`
-          await delay(1000)
+          await delayskip(1000)
           break
         case 'trace':
           window.animation.innerHTML = ''
-          await delay(200)
+          await delayskip(200)
           await display(noun)
           break
       }
@@ -79,6 +101,7 @@
   }
 
   async function display (moves) {
+    if (find && !moves.includes(find)) return
     let p = []
     let squiggle = []
     for (let move of moves) {
