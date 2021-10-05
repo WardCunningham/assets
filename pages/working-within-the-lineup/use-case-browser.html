@@ -15,7 +15,7 @@
 
 // L O A D   D A T A
 
-  let cases = []
+  let doits = []
   let basemap = ''
   let site = `http://code.fed.wiki`
   let assets = `${site}/assets/pages/working-within-the-lineup`
@@ -28,19 +28,14 @@
 
   function parse(page) {
     for (let item of page.story) {
-      if(item.type == 'markdown') {
-        if (item.text.startsWith('#')) {
-          let use = item.text.split(/ *[#\[] */)[1]
-          console.log({use})
-        }
-        else {
-          for (let line of item.text.split(/\n/)) {
-            cases.push(line.replace(/^- */,'').split(/ *⇒ */))
-          }          
-        }
-      }
+      if(item.type == 'markdown' && item.text.startsWith('#'))
+        doits.push(['site',item.text.split(/ *[#\[] */)[1]])
+      if(item.type == 'paragraph' && item.text.endsWith('github]'))
+        doits.push(['script',item.text.replace(/ *\[.*$/,'')])
+      if(item.type == 'markdown' && item.text.startsWith('-'))
+        for (let line of item.text.split(/\n/))
+          doits.push(['trace',line.replace(/^- */,'').split(/ *⇒ */)])
     }
-    console.log({cases})
   }
 
   basemap = basemap
@@ -57,45 +52,42 @@
     let y = text.getAttribute('y')
     places[asSlug(title)] = {x,y}
   }
-  console.log(places)
+  console.log({places,doits})
 
 
 // P L A Y   A N I M A T I O N
 
+  let f = places['federation']
   while (true) {
-    for (let usecase of cases) {
-      await display(route(usecase))
-      await delay(500)
-      window.animation.innerHTML = ''
-      await delay(200)
-
+    for (let [verb, noun] of doits) {
+      switch(verb) {
+        case 'site':
+          window.animation.innerHTML = `<text text-anchor="middle" x="${f.x}" y="${f.y-64}">${noun}</text>`
+          await delay(3000)
+          break
+        case 'script':
+          window.animation.innerHTML = `<text text-anchor="middle" x="${f.x}" y="${f.y-36}">${noun}</text>`
+          await delay(1000)
+          break
+        case 'trace':
+          window.animation.innerHTML = ''
+          await delay(200)
+          await display(noun)
+          break
+      }
     }
-    window.animation.innerHTML = ''
-    await delay(3000)
   }
 
-  function route(usecase) {
-    let moves = []
-    for (let i = 0; i+1 < usecase.length; i++) {
-      moves.push([asSlug(usecase[i]), asSlug(usecase[i+1])])
-    }
-    return moves
-  } 
-
   async function display (moves) {
-    let f = places[moves[0][0]]
-    window.animation.innerHTML = `<circle cx="${f.x}" cy="${f.y}" r="8" stroke="red" fill="red"/>`
-    await delay(400)
-
+    let p = []
     let squiggle = []
     for (let move of moves) {
-      let a = places[move[0]]
-      let b = places[move[1]]
-      squiggle.push(`<circle cx="${a.x}" cy="${a.y}" r="8" stroke="red" fill="red"/>`)
-      squiggle.push(`<circle cx="${b.x}" cy="${b.y}" r="8" stroke="red" fill="red"/>`)
-      squiggle.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="red" stroke-width="8" stroke-opacity=".4" />`)
+      p.unshift(places[asSlug(move)])
+      squiggle.push(`<circle cx="${p[0].x}" cy="${p[0].y}" r="8" stroke="red" fill="red"/>`)
+      if(p.length > 1)
+        squiggle.push(`<line x1="${p[0].x}" y1="${p[0].y}" x2="${p[1].x}" y2="${p[1].y}" stroke="red" stroke-width="8" stroke-opacity=".4" />`)
       window.animation.innerHTML = squiggle.join("\n")
-      await delay(200)
+      await delay(p.length == 1 ? 400 : 200)
     }
   }
 
