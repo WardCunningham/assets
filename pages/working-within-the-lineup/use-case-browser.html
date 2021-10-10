@@ -1,5 +1,6 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟨</text></svg>">
 
+<div id=result></div>
 <section style="display:flex">
   <!-- <div id=metadata style="flex:20%; padding:16px;"></div> -->
   <div id=basemap style="flex:100%"></div>
@@ -54,7 +55,21 @@
     let y = text.getAttribute('y')
     places[asSlug(title)] = {x,y}
   }
-  console.log({places,doits})
+
+
+// R E P O R T   M I S A L I G N M E N T
+
+  let used = [...doits
+    .filter(doit => doit[0]=='trace')
+    .reduce((sum,trace) => new Set([...sum, ...trace[1]]), new Set())
+    ].map(use => asSlug(use))
+    .sort()
+  let have = Object.keys(places).sort()
+  let missing = used.filter(use => !have.includes(use))
+  let unused = have.filter(place => !used.includes(place))
+  console.log({have,used})
+  console.log({missing,unused})
+  if (missing.length) window.result.innerHTML = `<p>missing: ${missing.join(', ')}</p>`
 
 
 // P L A Y   A N I M A T I O N
