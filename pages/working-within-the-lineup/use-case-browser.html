@@ -13,6 +13,14 @@
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
+  window.detail = i => {
+    let doit = doits[i]
+    let kind = doit[0].charAt(0).toUpperCase() + doit[0].slice(1)
+    let title = `${doit[1]} ${kind}`
+    let story = [{type:'paragraph', text:'how to advice here'}]
+    open({title,story})
+  }
+
 
 // L O A D   D A T A
 
@@ -40,9 +48,10 @@
     }
   }
 
+  let annotation = `<g id="site"></g><g id="script"></g><g id="trace"></g>\n`
   basemap = basemap
     .replace(/<svg width=".*?" height=".*?"/,"<svg ")
-    .replace(/<\/g>\n<\/svg>/,"<g id=\"animation\"></g>\n</g>\n</svg>")
+    .replace(/<\/g>\n<\/svg>/,`${annotation}</g>\n</svg>`)
     .replace(/fill="white"/,'fill=none')
   window.basemap.innerHTML = basemap
 
@@ -100,15 +109,18 @@
       let [verb, noun] = doits[i]
       switch(verb) {
         case 'site':
-          window.animation.innerHTML = `<text text-anchor="middle" x="${f.x}" y="${f.y-64}">${noun}</text>`
+          window.site.innerHTML = `<text onclick="detail(${i})" text-anchor="middle" x="${f.x}" y="${f.y-64}">${noun}</text>`
+          window.script.innerHTML = ''
+          window.trace.innerHTML = ''
           await delayskip(2000)
           break
         case 'script':
-          window.animation.innerHTML = `<text text-anchor="middle" x="${f.x}" y="${f.y-36}">${noun}</text>`
+          window.script.innerHTML = `<text onclick="detail(${i})" text-anchor="middle" x="${f.x}" y="${f.y-42}">${noun}</text>`
+          window.trace.innerHTML = ''
           await delayskip(1000)
           break
         case 'trace':
-          window.animation.innerHTML = ''
+          window.trace.innerHTML = ''
           await delayskip(200)
           await display(noun)
           break
@@ -125,9 +137,21 @@
       squiggle.push(`<circle cx="${p[0].x}" cy="${p[0].y}" r="8" stroke="red" fill="red"/>`)
       if(p.length > 1)
         squiggle.push(`<line x1="${p[0].x}" y1="${p[0].y}" x2="${p[1].x}" y2="${p[1].y}" stroke="red" stroke-width="8" stroke-opacity=".4" />`)
-      window.animation.innerHTML = squiggle.join("\n")
+      window.trace.innerHTML = squiggle.join("\n")
       await delay(p.length == 1 ? 400 : 200)
     }
   }
+
+
+// U T I L I T I E S
+
+function open(page, keepLineup=false, forks=[]) {
+  const dup = obj => JSON.parse(JSON.stringify(obj))
+  let date = Date.now()
+  for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+  page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+  let message = {action: "showResult", page, keepLineup}
+  window.parent.postMessage(message, "*");
+}
 
 </script>

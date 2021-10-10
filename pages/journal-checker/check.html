@@ -82,9 +82,9 @@
           for (let action of page.journal||[]) {
             apply(revPage, action||{});
           }
-          let ok = JSON.stringify(page.story) != JSON.stringify(revPage.story)
-          if (!ok) console.log('revision', {page, revPage})
-          return ok  ? 'revision' : null
+          let ok = JSON.stringify(page.story) == JSON.stringify(revPage.story)
+          if (!ok) console.log('revision', page.title, {page, revPage})
+          return ok ? null : 'revision'
           }
       }
 
