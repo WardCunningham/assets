@@ -12,12 +12,16 @@
 
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+  const upper = word => word.charAt(0).toUpperCase() + word.slice(1)
 
-  window.detail = i => {
+  window.detail = async function(i) {
     let doit = doits[i]
-    let kind = doit[0].charAt(0).toUpperCase() + doit[0].slice(1)
-    let title = `${doit[1]} ${kind}`
-    let story = [{type:'paragraph', text:'how to advice here'}]
+    let title = `${doit[1]} ${upper(doit[0])}`
+    let link = doit[2].text.replace(/^.*?\[/,'[')
+    let text = `We share the online material we examined when reporting this case. ${link}`
+    let more = await moredetail(link)
+    let story = [{type:'paragraph', text}, ...more]
+    console.log({title,story})
     open({title,story})
   }
 
@@ -39,9 +43,9 @@
   function parse(page) {
     for (let item of page.story) {
       if(item.type == 'markdown' && item.text.startsWith('#'))
-        doits.push(['site',item.text.split(/ *[#\[] */)[1]])
+        doits.push(['site',item.text.split(/ *[#\[] */)[1],item])
       if(item.type == 'paragraph' && item.text.endsWith('github]'))
-        doits.push(['script',item.text.replace(/ *\[.*$/,'')])
+        doits.push(['script',item.text.replace(/ *\[.*$/,''),item])
       if(item.type == 'markdown' && item.text.startsWith('-'))
         for (let line of item.text.split(/\n/))
           doits.push(['trace',line.replace(/^- */,'').split(/ *⇒ */)])
@@ -80,9 +84,43 @@
   console.log({missing,unused})
   if (missing.length) window.result.innerHTML = `<p>missing: ${missing.join(', ')}</p>`
 
+  function moredetail(link) {
+    console.log(link)
+    // [http://sofi.dojo.fed.wiki/view/sofi-administration/view/sofi-scripts scripts]
+    let scripts = link.match(/^\[https?:\/\/(.+?)\/(.+?) scripts\]$/)
+    if (scripts) return scriptdetail(...scripts)
+
+    // [https://github.com/WardCunningham/seattle-scripts/blob/main/make-new-places.html github]
+    let github = link.match(/^\[https?:\/\/github.com\/(.+?)\/(.+?)\/blob\/(master|main)\/(.+?) github\]$/)
+    if (github) return githubdetail(...github)
+    return []
+  }
+
+  async function scriptdetail(link, origin, lineup) {
+    let words = lineup.split(/\//)
+    let story = []
+    for (let i=0; i<words.length; i+=2) {
+      let site = words[i]=='view' ? origin : words[i]
+      let slug = words[i+1]
+      let page = await fetch(`http://${site}/${slug}.json`).then(res => res.json())
+      let title = page.title
+      let text = page.story[0].text
+      story.push({type:'reference', site, slug, title, text})
+    }
+    return story
+  }
+
+  async function githubdetail(link,user,repo,branch,file) {
+    let url = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${file}`
+    let src = await fetch(url).then(res => res.text())
+    let funs = src.split(/\n/)
+      .filter(line => line.includes('function'))
+      .map(line => `- ${line.replace(/^ +/,'').replace(/ *\{.*$/,'')}`)
+    return [{type:'markdown', text:funs.join("\n")}]
+  }
+
 
 // P L A Y   A N I M A T I O N
-
 
   document.querySelectorAll('.node').forEach(node => {
     node.addEventListener('mouseenter', event => {
