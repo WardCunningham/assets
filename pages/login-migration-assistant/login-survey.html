@@ -1,0 +1,85 @@
+<p>
+  <input id=search type=text placeholder="optional search"></input>
+  <button onclick="survey(event)">survey</button>
+</p>
+<div id=result></div>
+
+<script type="module">
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  let url = `http://localhost/assets/pages/login-migration-assistant/asia-owners.json`
+  let owners = await fetch(url).then(res => res.json())
+  window.result.innerHTML = `${owners.length} owned sites<br>`
+
+  let google = owners.filter(owner => owner[1].google)
+  window.result.innerHTML += `${google.length} claimed from google<br>`
+
+  let friend = owners.filter(owner => owner[1].friend)
+    window.result.innerHTML += `${friend.length} claimed from friend<br>`
+
+  let users = {}
+  for (let owner of google) {
+    let uid = `${owner[1].google.id} ${owner[1].name}`
+    let user = users[uid] ||= []
+    user.push(owner[0])
+  }
+  window.result.innerHTML += `${Object.keys(users).length} google users<br>`
+
+  window.survey = function (event) {
+    let search = window.search.value.toLowerCase()
+    let want = use => !search || use[0].toLowerCase().includes(search) || use[1].join(" ").toLowerCase().includes(search)
+    let sites = Object.entries(users).sort((a,b) => b[1].length - a[1].length)
+    window.result.innerHTML = sites.filter(want).map(use => `
+      <details><summary>${use[1].length} × ${use[0]}</summary>
+      <p>
+        <input type=text placeholder="optional pin"></input>
+        <button onclick="convert(event,'${use[0]}')">convert</button>
+      </p>
+      <p>${use[1].sort().join("<br>")}</p>
+      </details>`).join("\n")
+  }
+
+  // https://stackoverflow.com/questions/1167746/how-to-assign-a-heredoc-value-to-a-variable-in-bash
+
+  window.convert = function (event,user) {
+    let pin = event.target.parentNode.getElementsByTagName('input').item(0).value ||
+      '00000000'.split('').map(digit => Math.floor(Math.random()*9)+1).join('')
+    let words = user.trim().split(/ /)
+    let details = google
+      .filter(owner => owner[1].google.id == words[0])
+    let samples = details
+      .map(owner => JSON.stringify(owner[1].google.emails))
+      .filter(uniq)
+      .join("\n")
+    let title = words.length > 1 ? words.slice(1).join(' ') : words[0]
+    let synopsis =
+      `We have coverted our wiki farm you use to "friend" style login using recovery code ${pin}.
+      You will use this instead of your Google identity which is no longer available to us.
+      Save it in a safe place.
+      We have no automatic way to recover lost codes other than appealing to me as your friend.
+      This code applies to these sites.`
+    let doit = `export DOIT='run --allow-read --allow-write reset-pin.js ${pin}'\n`
+    let restart = `systemctl restart wiki\n`
+    let text = doit + users[user].map(site => `deno $DOIT ${site}\n`).join('') + restart
+    let story = [
+      {type:'paragraph',text:synopsis},
+      {type:'markdown',text:users[user].map(site => `- ${site}\n`).join('')},
+      {type:'code',text:samples},
+      {type:'shell',text}]
+    console.table(story)
+    open({title, story},event.shiftKey)
+  }
+
+
+// U T I L I T I E S
+
+function open(page, keepLineup=false, forks=[]) {
+  const dup = obj => JSON.parse(JSON.stringify(obj))
+  let date = Date.now()
+  for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+  page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+  let message = {action: "showResult", page, keepLineup}
+  window.parent.postMessage(message, "*");
+}
+
+</script>
