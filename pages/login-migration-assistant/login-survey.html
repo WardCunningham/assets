@@ -1,6 +1,7 @@
 <p>
   <input id=search type=text placeholder="optional search"></input>
-  <button onclick="survey(event)">survey</button>
+  <button onclick="fromgoogle(event)">google</button>
+  <button onclick="fromfriend(event)">friend</button>
 </p>
 <div id=result></div>
 
@@ -23,9 +24,15 @@
     let user = users[uid] ||= []
     user.push(owner[0])
   }
-  window.result.innerHTML += `${Object.keys(users).length} google users<br>`
+  // window.result.innerHTML += `${Object.keys(users).length} google users<br>`
 
-  window.survey = function (event) {
+  window.fromgoogle = function (event) {
+    users = {}
+    for (let owner of google) {
+      let uid = `${owner[1].google.id} ${owner[1].name}`
+      let user = users[uid] ||= []
+      user.push(owner[0])
+    }
     let search = window.search.value.toLowerCase()
     let want = use => !search || use[0].toLowerCase().includes(search) || use[1].join(" ").toLowerCase().includes(search)
     let sites = Object.entries(users).sort((a,b) => b[1].length - a[1].length)
@@ -36,6 +43,28 @@
         <button onclick="convert(event,'${use[0]}')">convert</button>
       </p>
       <p>${use[1].sort().join("<br>")}</p>
+      </details>`).join("\n")
+  }
+
+  window.fromfriend = function (event) {
+    users = {}
+    for (let owner of friend) {
+      let uid = `${owner[1].friend.secret.substring(0,5)} ${owner[1].name}`
+      let user = users[uid] ||= []
+      user.push(owner[0])
+    }
+    let search = window.search.value.toLowerCase()
+    let want = use => !search || use[0].toLowerCase().includes(search) || use[1].join(" ").toLowerCase().includes(search)
+    let show = site => `${site}<br><pre>${JSON.stringify(owners.find(each => each[0]==site)[1],null,2)}</pre>`
+    let sites = Object.entries(users).sort((a,b) => b[1].length - a[1].length)
+    window.result.innerHTML = sites.filter(want).map(use => `
+      <details><summary>${use[1].length} × ${use[0]}</summary>
+      <p>
+        <input type=text placeholder="optional pin"></input>
+        <button onclick="convert(event,'${use[0]}')">convert</button>
+      </p>
+      <p>${use[1].sort().map(show).join("<br>")}</p>
+      <p>
       </details>`).join("\n")
   }
 
