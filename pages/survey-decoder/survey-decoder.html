@@ -61,12 +61,7 @@ window.doimport = function (event) {
     {type:'markdown',text:index.join("")}
   ]
   pages[asSlug(title)] = {title, story}
-  let message = {
-    action: "importer",
-    pages,
-    keepLineup: event.shiftKey
-  }
-  window.parent.postMessage(message, "*");
+  importer(pages,event.shiftKey)
 }
 
 function report(label, data) {
@@ -95,6 +90,18 @@ function frameContext() {
     window.addEventListener('message',handler)
     window.parent.postMessage({action:"sendFrameContext"},"*")
   })
+}
+
+function importer(pages, keepLineup, forks=[]) {
+  const dup = obj => JSON.parse(JSON.stringify(obj))
+  let date = Date.now()
+  for (let slug in pages) {
+    let page = pages[slug]
+    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+  }
+  let message = {action: "importer", pages, keepLineup}
+  window.parent.postMessage(message, "*")
 }
 
 // function open(page, keepLineup=false, forks=[]) {
