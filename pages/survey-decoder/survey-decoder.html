@@ -19,7 +19,10 @@ report('assets',{folder,files})
 let context = await frameContext()
 report('context',context)
 
-let url = `//${context.site}/assets/${folder}/${files[0]}`
+let neighborhood = await requestNeighborhood()
+report('neighborhood',{neighborhood})
+
+let url = `//${neighborhood[0]}/assets/${folder}/${files[0]}`
 report('url',{url})
 
 let data = await csv(url)
@@ -27,15 +30,17 @@ let columns = data.columns
 report('csv',{columns,data})
 
 let survey = {}
+let dates = {}
 for (let row of data) {
   let who = row[columns[1]]
   survey[who] = {}
+  dates[who] = Date.parse(row[columns[0]])
   for (let col of columns.slice(2)) {
     let key = col.split('>')[0]
     survey[who][key] = row[col]
   }
 }
-report('survey',survey)
+report('survey',{survey,dates})
 
 window.report.innerHTML += `<p><button onclick=doimport(event)>import</button></p>`
 
@@ -45,14 +50,19 @@ window.doimport = function (event) {
   let index = []
   for (let who in survey) {
     let title = `${who}: ${inquiry}`
-    let story = [{type:'paragraph', text:'Reported degree of agreement. 1 star is low agreement and 5 stars is a high agreement.'}]
+    let text = 'Reported degree of agreement. 1 star is low agreement and 5 stars is a high agreement.'
+    let story = [{type:'paragraph', text}]
     for (let col of columns.slice(2)) {
       let [key, description] = col.split(/ *> */)
       story.push({type:'paragraph',text:`[[${key}]]`})
       story.push({type:'fivestar',text:key,key,stars:`${survey[who][key]}`})
       story.push({type:'paragraph',text:description})
     }
-    pages[asSlug(title)] = {title, story}
+    story.push({type:'pagefold',text:`Analysis`})
+    story.push({type:'paragraph',text:`Analyze with a [[Radar Chart]]`})
+    let page = journal({title, story})
+    page.journal[0].date = dates[who]
+    pages[asSlug(title)] = page
     index.push(`- [[${title}]]\n`)
   }
   let title = `${inquiry} Index`
@@ -60,7 +70,7 @@ window.doimport = function (event) {
     {type:'paragraph',text:'Pages imported with [[Survey Decoder]].'},
     {type:'markdown',text:index.join("")}
   ]
-  pages[asSlug(title)] = {title, story}
+  pages[asSlug(title)] = journal({title, story})
   importer(pages,event.shiftKey)
 }
 
@@ -74,6 +84,14 @@ function report(label, data) {
 
 function csv(url) {
   return new Promise(resolve => window.d3.csv(url,resolve))
+}
+
+function journal(page,forks=[]) {
+  const dup = obj => JSON.parse(JSON.stringify(obj))
+  let date = Date.now()
+  for (let item of page.story) item.id ||= (Math.random()*10**20).toFixed(0)
+  page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+  return page
 }
 
 
@@ -92,16 +110,24 @@ function frameContext() {
   })
 }
 
-function importer(pages, keepLineup, forks=[]) {
-  const dup = obj => JSON.parse(JSON.stringify(obj))
-  let date = Date.now()
-  for (let slug in pages) {
-    let page = pages[slug]
-    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
-    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
-  }
+function importer(pages, keepLineup) {
   let message = {action: "importer", pages, keepLineup}
   window.parent.postMessage(message, "*")
+}
+
+function requestNeighborhood() {
+  return new Promise((resolve, reject) => {
+    window.addEventListener("message", neighborhood)
+    function neighborhood({data}) {
+      if (data.action != "neighborhood") return
+      window.removeEventListener(
+        "message", neighborhood)
+      resolve(data.neighborhood)
+    }
+    window.parent.postMessage({
+      action: "requestNeighborhood"
+    }, "*")
+  })
 }
 
 // function open(page, keepLineup=false, forks=[]) {
