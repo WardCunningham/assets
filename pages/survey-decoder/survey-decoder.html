@@ -5,6 +5,12 @@
 import {csv} from "https://cdn.skypack.dev/d3-fetch@3"
 const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 
+let context = await frameContext()
+report('context',context)
+
+let neighbors = await requestNeighborhood()
+report('neighbors',{neighbors})
+
 let assets = await sources('assets')
 report('sources',{assets})
 
@@ -16,61 +22,62 @@ let folder = Object.keys(assetData)[0]
 let files = assetData[folder]['/assets']
 report('assets',{folder,files})
 
-let context = await frameContext()
-report('context',context)
+let inquiries = {}
+for (let file of files.filter(file => file.endsWith('.csv'))) {
+  let inquiry = file.split(' ')[0]
+  let url = `//${neighbors[0]}/assets/${folder}/${file}`
+  report('file',{file, inquiry, url})
 
-let neighborhood = await requestNeighborhood()
-report('neighborhood',{neighborhood})
+  let data = await csv(url)
+  let columns = data.columns
+  report('csv',{columns,data})
 
-let url = `//${neighborhood[0]}/assets/${folder}/${files[0]}`
-report('url',{url})
-
-let data = await csv(url)
-let columns = data.columns
-report('csv',{columns,data})
-
-let survey = {}
-let dates = {}
-for (let row of data) {
-  let who = row[columns[1]]
-  survey[who] = {}
-  dates[who] = Date.parse(row[columns[0]])
-  for (let col of columns.slice(2)) {
-    let key = col.split('>')[0]
-    survey[who][key] = row[col]
+  let survey = {}
+  let dates = {}
+  for (let row of data) {
+    let who = row[columns[1]]
+    survey[who] = {}
+    dates[who] = Date.parse(row[columns[0]])
+    for (let col of columns.slice(2)) {
+      let key = col.split('>')[0]
+      survey[who][key] = row[col]
+    }
   }
+  report('survey',{survey,dates})
+  inquiries[inquiry] = {columns,survey,dates}
 }
-report('survey',{survey,dates})
+
 
 window.report.innerHTML += `<p><button onclick=doimport(event)>import</button></p>`
 
 window.doimport = function (event) {
-  let inquiry = files[0].split(' ')[0]
   let pages = {}
-  let index = []
-  for (let who in survey) {
-    let title = `${who}: ${inquiry}`
-    let text = 'Reported degree of agreement. 1 star is low agreement and 5 stars is a high agreement.'
-    let story = [{type:'paragraph', text}]
-    for (let col of columns.slice(2)) {
-      let [key, description] = col.split(/ *> */)
-      story.push({type:'paragraph',text:`[[${key}]]`})
-      story.push({type:'fivestar',text:key,key,stars:`${survey[who][key]}`})
-      story.push({type:'paragraph',text:description})
+  for (let inquiry in inquiries) {
+    let index = []
+    for (let who in inquiries[inquiry].survey) {
+      let title = `${who}: ${inquiry}`
+      let text = 'Reported degree of agreement. 1 star is low agreement and 5 stars is a high agreement.'
+      let story = [{type:'paragraph', text}]
+      for (let col of inquiries[inquiry].columns.slice(2)) {
+        let [key, description] = col.split(/ *> */)
+        story.push({type:'paragraph',text:`[[${key}]]`})
+        story.push({type:'fivestar',text:key,key,stars:`${inquiries[inquiry].survey[who][key]}`})
+        story.push({type:'paragraph',text:description})
+      }
+      story.push({type:'pagefold',text:`Analysis`})
+      story.push({type:'paragraph',text:`Analyze with a [[Radar Chart]]`})
+      let page = journal({title, story})
+      page.journal[0].date = inquiries[inquiry].dates[who]
+      pages[asSlug(title)] = page
+      index.push(`- [[${title}]]\n`)
     }
-    story.push({type:'pagefold',text:`Analysis`})
-    story.push({type:'paragraph',text:`Analyze with a [[Radar Chart]]`})
-    let page = journal({title, story})
-    page.journal[0].date = dates[who]
-    pages[asSlug(title)] = page
-    index.push(`- [[${title}]]\n`)
+    let title = `${inquiry} Index`
+    let story = [
+      {type:'paragraph',text:'Pages imported with [[Survey Decoder]].'},
+      {type:'markdown',text:index.join("")}
+    ]
+    pages[asSlug(title)] = journal({title, story})
   }
-  let title = `${inquiry} Index`
-  let story = [
-    {type:'paragraph',text:'Pages imported with [[Survey Decoder]].'},
-    {type:'markdown',text:index.join("")}
-  ]
-  pages[asSlug(title)] = journal({title, story})
   importer(pages,event.shiftKey)
 }
 
