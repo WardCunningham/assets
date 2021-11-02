@@ -1,0 +1,42 @@
+<div id=result></div>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+  const capital = word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  const title = name => name.split('_').map(capital).join(' ')
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+
+  let site = `ward.nrrd.wiki.org`
+  let assets = `assets/pages/sessionized-clickstream`
+  let csv = params['csv'] || `sessionized_clickstream.csv`
+  d3.csv(`https://${site}/${assets}/${csv}`,render)
+
+  function render(data) {
+    let empty = JSON.stringify(data.map(row => ""))
+    for (let heading of data.columns) {
+      let column = data
+        .map(row => row[heading])
+        .map(item => item.startsWith('{') ? Object.keys(JSON.parse(item)).join(", ") : item)
+        // .map(item => item.startsWith('{') ? "foo" : item)
+      if (JSON.stringify(column) != empty) {
+        result.innerHTML += `
+          <details>
+            <summary>${title(heading)}</summary>
+            <pre>${stats(column)}</pre>
+          </details>
+        `
+      }
+    }
+  }
+
+  function stats(column) {
+    let counts = {}
+    for (let val of column) {
+      let count = counts[val] || 0
+      counts[val] = count + 1
+    }
+    let entries = Object.entries(counts).sort((a,b) => b[1]-a[1])
+    return entries.map(entry => `${entry[1]} × ${entry[0]}`).join("<br>")
+  }
+
+</script>
