@@ -2,14 +2,16 @@
   <input id=search type=text placeholder="optional search"></input>
   <button onclick="fromgoogle(event)">google</button>
   <button onclick="fromfriend(event)">friend</button>
+  <button onclick="frombatch(event)">batch</button>
 </p>
 <div id=result></div>
 
 <script type="module">
+  import {csv} from "https://cdn.skypack.dev/d3-fetch@3"
   const uniq = (value, index, self) => self.indexOf(value) === index
+  const site = 'http://localhost/assets/pages/login-migration-assistant'
 
-  let url = `http://localhost/assets/pages/login-migration-assistant/asia-owners.json`
-  let owners = await fetch(url).then(res => res.json())
+  let owners = await fetch(`${site}/asia-owners.json`).then(res => res.json())
   window.result.innerHTML = `${owners.length} owned sites<br>`
 
   let google = owners.filter(owner => owner[1].google)
@@ -66,6 +68,46 @@
       <p>${use[1].sort().map(show).join("<br>")}</p>
       <p>
       </details>`).join("\n")
+  }
+
+  window.frombatch = async function (event) {
+    let batch = await csv(`${site}/batch-want-pierson-sofi.csv`)
+    let script = [
+      `export DENO="deno run --allow-read --allow-write"`,
+      `export CODE="$DENO reset-pin.js"`,
+      `export NAME="$DENO reset-name.js"`]
+    let result = []
+    for (let row of batch) {
+      function check (op,want,have) {
+        if (want == have) {
+          return '<font color=green>✔︎</font>'
+        } else {
+          script.push(`$${op} '${want}' ${row.site}`)
+          return '<font color=red>✘</font>'
+        }
+      }
+      let owner = owners.find(owner => owner[0] == row.site)
+      result.push(`
+        <details>
+        <summary>
+          name ${check('NAME',row.name,owner[1].name)}
+          code ${check('CODE',row.code,owner[1].friend.secret)}
+          ${row.site}
+        </summary>
+        <pre>${JSON.stringify({row,owner},null,2)}</pre>
+        </details>
+      `)
+    }
+    script.push(`systemctl restart wiki`)
+    script.push(`echo done`)
+    result.push(`<p><button>convert</button></p>`)
+    window.result.innerHTML = result.join("\n")
+    document.querySelector('#result button').addEventListener('click', event => {
+      let title = 'Batch Update'
+      let story = [{type:'code',text:script.join("\n")}]
+      open({title,story},event.shiftKey)
+    })
+
   }
 
   // https://stackoverflow.com/questions/1167746/how-to-assign-a-heredoc-value-to-a-variable-in-bash

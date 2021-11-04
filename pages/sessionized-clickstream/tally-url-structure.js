@@ -6,24 +6,25 @@ const guid = /^[0-9a-f_-]{20,}$/
 
 let stop = JSON.parse(Deno.readTextFileSync('stop.json'))
 let tree = {count:0,children:{}}
-let limit = 100000
+let limit = 1000
 
 for await (let line of readLines(Deno.stdin)) {
   if(line == 'PAGE_URL') continue
   line = line.replace(/"?https:\/\//,'').split(/\?/)[0]
-  // console.log()
-  // console.log(line)
-  let branch = tree
-  for (let part of line.split('/')) {
-    if (!want(part) || stop[part]) part = '*'
-    branch.count += 1
-    if(!branch.children[part]) {
-      branch.children[part] = {count:0,children:{}}
-    } else {
-      branch.children[part].count += 1
-    }
-    branch = branch.children[part]
-  }
+  let parts = line.split('/').filter(part => want(part) && !stop[part])
+  console.log(parts.json('/'))
+
+  // let branch = tree
+  // for (let part of ) {
+  //   if (!want(part) || stop[part]) part = '*'
+  //   branch.count += 1
+  //   if(!branch.children[part]) {
+  //     branch.children[part] = {count:0,children:{}}
+  //   } else {
+  //     branch.children[part].count += 1
+  //   }
+  //   branch = branch.children[part]
+  // }
   if (limit-- < 1) break
 }
 
