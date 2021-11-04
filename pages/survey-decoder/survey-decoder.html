@@ -24,6 +24,7 @@ report('assets',{folder,files})
 
 let inquiries = {}
 for (let file of files.filter(file => file.endsWith('.csv'))) {
+  window.report.innerHTML += '<br>'
   let inquiry = file.split(' ')[0]
   let url = `//${neighbors[0]}/assets/${folder}/${file}`
   report('file',{file, inquiry, url})
@@ -44,15 +45,17 @@ for (let file of files.filter(file => file.endsWith('.csv'))) {
     }
   }
   report('survey',{survey,dates})
-  inquiries[inquiry] = {columns,survey,dates}
+  inquiries[inquiry] = {file,columns,survey,dates}
 }
 
 
 window.report.innerHTML += `<p><button onclick=doimport(event)>import</button></p>`
 
 window.doimport = function (event) {
-  let pages = {}
+  let newstory = []
   for (let inquiry in inquiries) {
+    newstory.push({type:'paragraph',text:inquiries[inquiry].file})
+    let pages = {}
     let index = []
     for (let who in inquiries[inquiry].survey) {
       let title = `${who}: ${inquiry}`
@@ -77,8 +80,9 @@ window.doimport = function (event) {
       {type:'markdown',text:index.join("")}
     ]
     pages[asSlug(title)] = journal({title, story})
+    newstory.push({type:'importer',pages})
   }
-  importer(pages,event.shiftKey)
+  open({title:'Survey Importer',story:newstory},event.shiftKey)
 }
 
 function report(label, data) {
@@ -133,14 +137,14 @@ function requestNeighborhood() {
   })
 }
 
-// function open(page, keepLineup=false, forks=[]) {
-//   const dup = obj => JSON.parse(JSON.stringify(obj))
-//   let date = Date.now()
-//   for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
-//   page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
-//   let message = {action: "showResult", page, keepLineup}
-//   window.parent.postMessage(message, "*");
-// }
+function open(page, keepLineup=false, forks=[]) {
+  const dup = obj => JSON.parse(JSON.stringify(obj))
+  let date = Date.now()
+  for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+  page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+  let message = {action: "showResult", page, keepLineup}
+  window.parent.postMessage(message, "*");
+}
 
 // function download(string, file) {
 //   var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
