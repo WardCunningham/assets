@@ -7,8 +7,9 @@
 <script type=module>
   let site = 'trails.ward.asia.wiki.org'
   let markers = await fetch(`http://${site}/assets/pages/places-detailed/markers.json`).then(res => res.json())
-  let places = await fetch(`http://${site}/places-to-consider.json`).then(res => res.json())
-  let markup = places.story.find(item => item.type == 'map').text
+  // let places = await fetch(`http://${site}/places-to-consider.json`).then(res => res.json())
+  let {page} = await frameContext()
+  let markup = page.story.find(item => item.type == 'map').text
   let close = []
   for (let line of markup.split(/\n/)) {
     let best = {trail:'', dist:999999}
@@ -35,4 +36,21 @@
     let message = { action:"doInternalLink", title, keepLineup: event.shiftKey }
     window.parent.postMessage(message, "*")
   }
+
+
+// U T I L I T I E S
+
+  function frameContext() {
+    return new Promise(resolve => {
+      let handler = event => {
+        let {data} = event
+        if (!data.action == "frameContext") return
+        window.removeEventListener('message',handler)
+        resolve(data)
+      }
+      window.addEventListener('message',handler)
+      window.parent.postMessage({action:"sendFrameContext"},"*")
+    })
+  }
+
 </script>
