@@ -1,0 +1,73 @@
+<p><button onclick=doopen(event)>preview</button></p>
+<div id=report></div>
+
+<script type=module>
+
+  import {csv} from "https://cdn.skypack.dev/d3-fetch@3"
+
+  let assets = await sources('assets')
+  report('assets',assets[0])
+
+  let site = assets[0].panel.site
+  let folders = Object.keys(assets[0].assetsData)
+  report('folders',{site,folders})
+
+  let files = assets[0].assetsData['pages/simple-csv-reader']['/assets']
+  report('files',{files})
+
+  let url = `http://${site}/assets/${folders[0]}/${files.filter(file => file.endsWith('.csv'))[0]}`
+  report('url',{url})
+
+  let data = await csv(url)
+  report('data',{data})
+
+
+  window.doopen = function(event) {
+    const td = val => `<td>${val}</td>`
+    const tr = row => `<tr>${data.columns.map(col => td(row[col])).join("")}</tr>`
+    let title = "Table Preview"
+    let link = `https://app.element.io/#/room/#fedwiki:matrix.org/$1636133087155687aoUPL:matrix.org`
+    let text = `<table border=1 cellpadding=6>${data.map(row => tr(row)).join("\n")}</table>`
+    let story = [
+      {type:'paragraph', text:`A good strategy for reading csv files. [${link} matrix]`},
+      {type:'html',text}
+    ]
+    open({title,story},event.shiftKey)
+  }
+
+  function report(label, data) {
+    window.report.innerHTML += `
+      <details>
+        <summary>${label} — ${Object.keys(data).join(", ")}</summary>
+        <pre>${JSON.stringify(data,null,2)}</pre>
+      </details>\n`
+  }
+
+
+// U T I L I T I E S
+
+
+  function sources(topic) {
+    const action = 'requestSourceData'
+    return new Promise(resolve => {
+      let fn = event => {
+        let {data} = event
+        if (!data.action == action) return
+        window.removeEventListener('message', fn)
+        resolve(data.sources)
+      }
+      window.addEventListener('message', fn)
+      window.parent.postMessage({action, topic},"*")
+    })
+  } 
+
+  function open(page, keepLineup=false, forks=[]) {
+    const dup = obj => JSON.parse(JSON.stringify(obj))
+    let date = Date.now()
+    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+    let message = {action: "showResult", page, keepLineup}
+    window.parent.postMessage(message, "*");
+  }
+
+</script>
