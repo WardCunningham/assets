@@ -10,13 +10,21 @@
      return new Inspector(document.body)
    }
  })
+    let neighbors = await requestNeighborhood()
+    let member = await fetch(`//${neighbors[0]}/assets/pages/member-assessment/assessment.json`).then(res => res.ok ? res.json() : null)
 
     const params = Object.fromEntries(new URLSearchParams(location.search).entries())
     if (params['data']) {
+      console.log('assessment from data')
       window.assessment = JSON.parse(atob(params['data'].replace(/ /g,'+')))
     } else if (params['config']) {
+      console.log('assessment from config')
       window.assessment = await fetch(params['config']).then(res => res.json())
+    } else if (member) {
+      console.log('assessment from member (origin)')
+      window.assessment = member
     } else {
+      console.log('assessment from random numbers')
       window.assessment = await randomSofiStatus()
     }
     console.log('assessment', window.assessment)
@@ -110,4 +118,19 @@
      height: document.body.offsetHeight
    }, "*")
  }
+
+ function requestNeighborhood() {
+  return new Promise((resolve, reject) => {
+    window.addEventListener("message", neighborhood)
+    function neighborhood({data}) {
+      if (data.action != "neighborhood") return
+      window.removeEventListener(
+        "message", neighborhood)
+      resolve(data.neighborhood)
+    }
+    window.parent.postMessage({
+      action: "requestNeighborhood"
+    }, "*")
+  })
+}
 </script>
