@@ -71,7 +71,14 @@
   }
 
   window.frombatch = async function (event) {
-    let batch = await csv(`${site}/batch-want-pierson-sofi.csv`)
+    let search = window.search.value.toLowerCase()
+    let assets = (await allassets())
+      .filter(asset => asset.file.startsWith('batch-want') && (!search || asset.file.includes(search)))
+    if (assets.length != 1) {
+      window.result.innerHTML = `Select one of ${assets.length} batch csv assets.`
+      return
+    }
+    let batch = await csv(assets[0].url)
     let script = [
       `export DENO="deno run --allow-read --allow-write"`,
       `export CODE="$DENO reset-pin.js"`,
@@ -144,13 +151,42 @@
 
 // U T I L I T I E S
 
-function open(page, keepLineup=false, forks=[]) {
-  const dup = obj => JSON.parse(JSON.stringify(obj))
-  let date = Date.now()
-  for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
-  page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
-  let message = {action: "showResult", page, keepLineup}
-  window.parent.postMessage(message, "*");
-}
+  function open(page, keepLineup=false, forks=[]) {
+    const dup = obj => JSON.parse(JSON.stringify(obj))
+    let date = Date.now()
+    for (let item of page.story) item.id = (Math.random()*10**20).toFixed(0)
+    page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+    let message = {action: "showResult", page, keepLineup}
+    window.parent.postMessage(message, "*");
+  }
+
+  async function allassets() {
+    let assets = await sources('assets')
+    let result = []
+    for (let source of assets){
+      let site = source.panel.site
+      let slug = source.panel.slug
+      let item = source.panel.itemId
+      for (let dir of Object.keys(source.assetsData))
+        for (let path of Object.keys(source.assetsData[dir]))
+          for (let file of source.assetsData[dir][path])
+            result.push({site,slug,item,dir,path,file,url:`${path}/${dir}/${file}`})
+    }
+    return result
+  }
+
+  function sources(topic) {
+    const action = 'requestSourceData'
+    return new Promise(resolve => {
+      let fn = event => {
+        let {data} = event
+        if (!data.action == action) return
+        window.removeEventListener('message', fn)
+        resolve(data.sources)
+      }
+      window.addEventListener('message', fn)
+      window.parent.postMessage({action, topic},"*")
+    })
+  }
 
 </script>
