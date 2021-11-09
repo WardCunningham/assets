@@ -1,4 +1,7 @@
-<p><button onclick=doopen(event)>preview</button></p>
+<p>
+  <button onclick=doopen(event)>preview</button>
+  <button onclick=dodownload(event)>download</button>
+</p>
 <div id=report></div>
 
 <script type=module>
@@ -13,9 +16,10 @@
   report('folders',{site,folders})
 
   let files = assets[0].assetsData['pages/simple-csv-reader']['/assets']
-  report('files',{files})
+  let file = files.filter(file => file.endsWith('.csv'))[0]
+  report('files',{files,file})
 
-  let url = `http://${site}/assets/${folders[0]}/${files.filter(file => file.endsWith('.csv'))[0]}`
+  let url = `http://${site}/assets/${folders[0]}/${file}`
   report('url',{url})
 
   let data = await csv(url)
@@ -33,6 +37,10 @@
       {type:'html',text}
     ]
     open({title,story},event.shiftKey)
+  }
+
+  window.dodownload = function(event) {
+    download(JSON.stringify(data,null,2), file.replace(/csv$/,'json'))
   }
 
   function report(label, data) {
@@ -68,6 +76,17 @@
     page.journal = [{type:'create', date, item:dup(page)}, ...forks.map(site => ({type:'fork',date,site}))]
     let message = {action: "showResult", page, keepLineup}
     window.parent.postMessage(message, "*");
+  }
+
+
+  function download(string, file) {
+    var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+    var anchor = document.createElement('a');
+    anchor.setAttribute("href",     data);
+    anchor.setAttribute("download", file);
+    document.body.appendChild(anchor); // required for firefox
+    anchor.click();
+    anchor.remove();
   }
 
 </script>
