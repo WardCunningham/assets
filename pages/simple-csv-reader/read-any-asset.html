@@ -1,0 +1,77 @@
+<div id=report></div>
+
+<script type=module>
+
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  let host = location.hostname
+  let origin = (await requestNeighborhood())[0]
+  let assets = await sources('assets')
+
+  let table = []
+  let columns = []
+  let keys = Object.keys
+
+  for (let source of assets){
+    let site = source.panel.site
+    let slug = source.panel.slug
+    let item = source.panel.itemId
+    for (let dir of keys(source.assetsData)) {
+      for (let path of keys(source.assetsData[dir])) {
+        for (let file of source.assetsData[dir][path]) {
+          let url = `${path}/${dir}/${file}`
+          let row = {host,origin,site,slug,item,
+            dir,path,file,url}
+          columns = keys(row)
+          table.push(row)             
+        }
+      }
+    }
+  }
+  console.table(table)
+
+  let rows = Object.values(table)
+  let code = rows.map(row => Object.values(row)).flat().filter(uniq)
+
+  const id = val => `<span title="${val}">${code.indexOf(val)+1}</span>`
+  const td = val => `<td>${val}`
+  const tr = fn => `<tr>${columns.map(fn).join("")}`
+  window.report.innerHTML = `
+    <table border=1 cellpadding=7 style="border-collapse: collapse;">
+      ${tr(col => td(col))}
+      ${rows.map(row => `${tr(col => td(id(row[col])))}`).join("\n")}
+    </table>
+  `
+
+
+// U T I L I T I E S
+
+  function sources(topic) {
+    const action = 'requestSourceData'
+    return new Promise(resolve => {
+      let fn = event => {
+        let {data} = event
+        if (!data.action == action) return
+        window.removeEventListener('message', fn)
+        resolve(data.sources)
+      }
+      window.addEventListener('message', fn)
+      window.parent.postMessage({action, topic},"*")
+    })
+  }
+
+  function requestNeighborhood() {
+    return new Promise((resolve, reject) => {
+      window.addEventListener("message", neighborhood)
+      function neighborhood({data}) {
+        if (data.action != "neighborhood") return
+        window.removeEventListener(
+          "message", neighborhood)
+        resolve(data.neighborhood)
+      }
+      window.parent.postMessage({
+        action: "requestNeighborhood"
+      }, "*") 
+    })
+  }
+</script>
