@@ -85,20 +85,20 @@
       `export NAME="$DENO reset-name.js"`]
     let result = []
     for (let row of batch) {
+      let owner = owners.find(owner => owner[0] == row.site) || ["non-existant site",null]
       function check (op,want,have) {
         if (want == have) {
           return '<font color=green>✔︎</font>'
         } else {
-          script.push(`$${op} '${want}' ${row.site}`)
+          if(owner[1]) script.push(`$${op} '${want}' ${row.site}`)
           return '<font color=red>✘</font>'
         }
       }
-      let owner = owners.find(owner => owner[0] == row.site)
       result.push(`
         <details>
         <summary>
-          name ${check('NAME',row.name,owner[1].name)}
-          code ${check('CODE',row.code,owner[1].friend.secret)}
+          name ${check('NAME',row.name,owner[1]?.name)}
+          code ${check('CODE',row.code,owner[1]?.friend?.secret)}
           ${row.site}
         </summary>
         <pre>${JSON.stringify({row,owner},null,2)}</pre>
