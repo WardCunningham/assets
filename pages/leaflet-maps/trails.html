@@ -49,6 +49,16 @@
         }
         L.polyline(line,{color:'red',opacity:0.3}).addTo(map).bindPopup(link)
       }
+      const Tally = L.Control.extend({options: {position: 'bottomleft'},
+        onAdd: function (map) {
+          var container = L.DomUtil.create('div', 'tally')
+          container.innerHTML = `<span>
+            ${Object.keys(trails).length} trails<br>
+            ${Object.values(trails).flat().length} images</span>`
+          return container
+        }
+      })
+      map.addControl(new Tally())
     })
 
 
