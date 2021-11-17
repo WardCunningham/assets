@@ -1,0 +1,41 @@
+<p>
+  <button onclick=slurp(event)>details</button>
+</p>
+<div id=result></div>
+
+<script type=module>
+  import {open} from "http://code.fed.wiki/assets/v1/frame.js"
+  let page = await fetch(`/search-for-toconsider.json`).then(res => res.json())
+  if(page) window.result.innerText = `${page.story.length-1} remaining search results`
+
+  window.slurp = async function (event) {
+    let refs = page.story.filter(item => item.type=='reference')
+    let rows = refs.map(item => {
+      let {site,slug,id,title} = item
+      return {site,slug,id,title}
+    })
+    let hits = await Promise.all(rows
+      .map(row => fetch(`//${row.site}/${row.slug}.json`)
+        .then(res => res.json())))
+    let div = document.querySelector('#result')
+    while(div.firstChild) div.removeChild(div.firstChild)
+    for (let i = 0; i<rows.length; i++) {
+      let {site,slug,id,title} = rows[i]
+      let {story} = hits[i]
+      let line = story
+        .filter(item => item.text.includes('ToConsider'))
+        .map(item => item.text)
+        .join("\n")
+        .split(/\n/)
+        .filter(line => line.includes('ToConsider'))
+        .map(line => line.replace(/.*?ToConsider:?\*\*/,' — '))
+        .join('')
+      let details = document.createElement('div')
+      details.innerHTML = `
+        <p><img width=16 src=//${site}/favicon.png> ${title} ${line}</p>
+      `
+      // details.querySelector('pre').innerText = line
+      div.appendChild(details)
+    }
+  }
+</script>
