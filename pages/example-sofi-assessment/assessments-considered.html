@@ -1,14 +1,12 @@
-<p>
-  <button onclick=slurp(event)>details</button>
-</p>
+<p><button onclick=details(event)>details</button></p>
 <div id=result></div>
 
 <script type=module>
   import {open} from "http://code.fed.wiki/assets/v1/frame.js"
   let page = await fetch(`/search-for-toconsider.json`).then(res => res.json())
-  if(page) window.result.innerText = `${page.story.length-1} remaining search results`
+  if(page) window.result.innerHTML = `${page.story.length-1} items in search<br>`
 
-  window.slurp = async function (event) {
+  window.details = async function (event) {
     let refs = page.story.filter(item => item.type=='reference')
     let rows = refs.map(item => {
       let {site,slug,id,title} = item
@@ -16,26 +14,22 @@
     })
     let hits = await Promise.all(rows
       .map(row => fetch(`//${row.site}/${row.slug}.json`)
-        .then(res => res.json())))
-    let div = document.querySelector('#result')
-    while(div.firstChild) div.removeChild(div.firstChild)
+        .then(res => {window.result.innerHTML += ' .'; return res.json()})))
+    let story = [
+      {type:'paragraph', text:`Items marked of interest in member assessments. See [[Search for 'ToConsider']]`}
+    ]
     for (let i = 0; i<rows.length; i++) {
       let {site,slug,id,title} = rows[i]
-      let {story} = hits[i]
-      let line = story
+      let text = hits[i].story
         .filter(item => item.text.includes('ToConsider'))
         .map(item => item.text)
         .join("\n")
         .split(/\n/)
         .filter(line => line.includes('ToConsider'))
-        .map(line => line.replace(/.*?ToConsider:?\*\*/,' — '))
+        .map(line => line.replace(/.*?ToConsider:?\*\*/,' '))
         .join('')
-      let details = document.createElement('div')
-      details.innerHTML = `
-        <p><img width=16 src=//${site}/favicon.png> ${title} ${line}</p>
-      `
-      // details.querySelector('pre').innerText = line
-      div.appendChild(details)
+      story.push({type:'reference',site,title,id,text})
+      open({title:`Considered ${new Date().toLocaleDateString()}`,story})
     }
   }
 </script>
