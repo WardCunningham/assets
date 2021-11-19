@@ -29,7 +29,7 @@
         .map(line => line.replace(/.*?ToConsider:?\*\*/,' '))
         .join('')
       story.push({type:'reference',site,title,id,text})
-      open({title:`Considered ${new Date().toLocaleDateString()}`,story})
     }
+    open({title:`Considered ${new Date().toLocaleDateString()}`,story})
   }
 </script>
