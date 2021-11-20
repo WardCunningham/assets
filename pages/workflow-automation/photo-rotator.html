@@ -1,0 +1,36 @@
+<table>
+  <tr><td><td>
+  <tr><td><td>
+  <tr><td><td>
+</table>
+
+<script type=module>
+
+  let assets = `http://trails.ward.asia.wiki.org/assets/pages`
+  let json = await fetch(`${assets}/chronological-wandering/images.json`).then(res => res.json())
+
+  document.querySelector('table').addEventListener('click', event => {
+    let title = event.target.dataset['trail']
+    let message = {action:"doInternalLink", title, keepLineup: event.ShiftKey}
+    window.parent.postMessage(message, "*")
+  })
+
+  let images = []
+  for (let folder in json)
+    for (let trail in json[folder])
+      for (let image of json[folder][trail])
+        images.push({trail,folder,image})
+  let i=0
+  while(i<6) show()
+  setInterval(show,2000)
+
+  function show() {
+    let td = document.querySelectorAll('td')[i++%6]
+    let {trail,folder,image} = images[Math.floor(Math.random() * images.length)]
+    let src = `${assets}/${folder}/${image}`
+    let img = new Image()
+    img.addEventListener('load', () => td.innerHTML = `<img width=100% src="${src}" data-trail="${trail}">`)
+    img.src = src
+  }
+
+</script>
