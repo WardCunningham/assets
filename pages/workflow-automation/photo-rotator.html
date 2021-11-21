@@ -10,7 +10,7 @@
   let json = await fetch(`${assets}/chronological-wandering/images.json`).then(res => res.json())
 
   document.querySelector('table').addEventListener('click', event => {
-    let title = event.target.dataset['trail']
+    let title = event.target.getAttribute('title')
     let message = {action:"doInternalLink", title, keepLineup: event.shiftKey}
     window.parent.postMessage(message, "*")
   })
@@ -29,7 +29,7 @@
     let {trail,folder,image} = images[Math.floor(Math.random() * images.length)]
     let src = `${assets}/${folder}/${image}`
     let img = new Image()
-    img.addEventListener('load', () => td.innerHTML = `<img width=100% src="${src}" data-trail="${trail}">`)
+    img.addEventListener('load', () => td.innerHTML = `<img width=100% src="${src}" title="${trail}">`)
     img.src = src
   }
 
