@@ -1,0 +1,38 @@
+<p>
+  <button onclick="preview(event)">preview</button>
+  <button onclick="download(event)">download</button>
+</p>
+  
+<div id=editorjs></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+<script type=module>
+
+  import {open} from "http://code.fed.wiki/assets/v1/frame.js"
+
+  const file = 'text.json'
+  let data = await fetch(`/assets/pages/editorjs-workflow/${file}`).then(res => res.json())
+  const editor = new EditorJS({data});
+
+  window.preview = async function(event) {
+    let data = await editor.save()
+    console.log(data)
+    let story = data.blocks
+      .filter(block => block.type == 'paragraph')
+      .map(block => ({type:'html',text:block.data.text,id:block.id}))
+    open({title:"Imported Text",story})
+  }
+
+  window.download = async function() {
+    let data = await editor.save()
+    let json = JSON.stringify(data,null,2)
+    let text = "data:text/json;charset=utf-8," + encodeURIComponent(json);
+    let anchor = document.createElement('a');
+    anchor.setAttribute("href",     text);
+    anchor.setAttribute("download", file);
+    document.body.appendChild(anchor); // required for firefox
+    anchor.click();
+    anchor.remove();
+  }
+
+</script>
