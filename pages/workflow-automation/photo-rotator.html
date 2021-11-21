@@ -11,7 +11,7 @@
 
   document.querySelector('table').addEventListener('click', event => {
     let title = event.target.dataset['trail']
-    let message = {action:"doInternalLink", title, keepLineup: event.ShiftKey}
+    let message = {action:"doInternalLink", title, keepLineup: event.shiftKey}
     window.parent.postMessage(message, "*")
   })
 
