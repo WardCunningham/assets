@@ -1,0 +1,24 @@
+<p><button onclick=dopreview(event)>preview</button></p>
+<div id=result>working</div>
+
+<script type=module>
+  import {open} from "http://code.fed.wiki/assets/v1/frame.js"
+  let svg = await fetch(`http://ward.dojo.fed.wiki/assets/pages/svg-enrichment/Test%20SequenceDiagram.svg`).then(res=>res.text())
+  window.result.innerText = `${svg.length} bytes`
+
+  window.dopreview = function (event) {
+    let div = document.createElement('div')
+    div.innerHTML = svg
+    let elm = div.querySelector('svg')
+    let width = elm.getAttribute('width')
+    let height = elm.getAttribute('height')
+    elm.setAttribute('width',"100%")
+    elm.removeAttribute('height')
+    elm.setAttribute('viewbox',`0 0 ${width} ${height}`)
+    let title = "Your New SVG"
+    let text = div.innerHTML
+    let story = [{type:'html',text}]
+    open({title,story},event.shiftKey)    
+  }
+
+</script>
