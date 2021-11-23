@@ -16,6 +16,15 @@
     elm.removeAttribute('height')
     elm.setAttribute('viewbox',`0 0 ${width} ${height}`)
 
+    elm.querySelectorAll('text').forEach(text => {
+      let link = text.innerHTML.replace(/&nbsp;/g,' ')
+      if(/\S/.test(link)) {
+        console.log(link)
+        text.outerHTML = `\n\n<a href="#" data-title="${link}">${text.outerHTML}</a>\n\n`
+      }
+    })
+
+    window.result.innerHTML += `<br>${div.innerHTML.length} bytes`
     let title = "Test Sequence Diagram"
     let story = [{type:'html',text:div.innerHTML}]
     open({title,story},event.shiftKey)    
