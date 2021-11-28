@@ -1,10 +1,21 @@
 <head>
+  <meta charset="UTF-8"><meta charset="UTF-8">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎧</text></svg>">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+  integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+  crossorigin=""/>
+  <!-- Make sure you put this AFTER Leaflet's CSS -->
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+  integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+  crossorigin=""></script>
+
 </head>
 <style>
   body {font-family:helvetica,Arial,Sans;}
   th { width: 30px; }
   td { vertical-align:top; }
+  #map { width: 640px; height: 480px; border:1px solid gray;}
 </style>
 
 <table border="1" style="border-collapse:collapse; border-color:#ccc;" >
@@ -16,6 +27,8 @@
   <span id=lastupdate>waiting</span>
 <p>
   <pre id=markup></pre>
+<p>
+  <div id="map"></div>
 <div id=show><p>waiting</div>
 
 
@@ -59,6 +72,7 @@ console.table(params)
 
 let crow = {}   // call => dist
 let callook = window.callook = {}  // call => info
+let cpin = {} // call => {latlon, symbol, color, marker}
 
 function maidenhead(grid) {
   // https://en.wikipedia.org/wiki/Maidenhead_Locator_System
@@ -87,9 +101,48 @@ function familiar() {
     .then(page => {
       let map = page.story.filter(item => item.type == 'map')[0]
       let markers = map.text.split(/\n/).filter(mark => mark.match(/^\d/)).map(mark => mark.split(/[, ]+/))
-      for (let [lat,lon,call] of markers) crow[call] = flies(params.here,[lat,lon]).toFixed(1)
+      for (let [lat,lon,call] of markers) {
+        crow[call] = flies(params.here,[lat,lon]).toFixed(1)
+        cpin[call] = {latlon:[+lat,+lon]}
+      }
     })
 }
+
+
+// M A P
+
+var map = L.map('map',{ "tap": false }).setView([45.470493,-122.7486411], 9)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+}).addTo(map)
+// map.locate({setView: false})
+
+// let marker = L.marker([lat,lon]).addTo(map)
+// marker.bindPopup(`<a ...>`)
+// marker.setLatLng([lat,lon]);
+// marker.remove()
+
+function showpin(call, symbol) {
+  let pin = cpin[call]
+  if (pin) {
+    pin.symbol = symbol
+    console.log(call, pin)
+    if (pin.latlon && !pin.marker) {
+      let cbll = `cbll=${pin.latlon.join(",")}`
+      let google = `<a href="http://maps.google.com/maps?q=&layer=c&${cbll}" target=_blank>${call}</a>`
+      pin.marker =L.marker(pin.latlon).addTo(map).bindPopup(google)
+    }
+  }
+}
+
+function deletepin(call) {
+  let pin = cpin[call]
+  if (pin && pin.marker) {
+    pin.marker.remove()
+    pin.marker = undefined
+  }
+}
+
 
 
 // L I S T E N
@@ -193,7 +246,16 @@ function tally(spots) {
     op.last = now
     if(crow[spot.call]) op.dst = crow[spot.call]
     if(spot.distance && !op.dst) op.dst = Math.round(spot.distance*0.621371)
-    if(op.dst == 14) local(spot,op)
+    if(op.dst == 14) {
+      local(spot,op)
+    } else {
+      if (spot.locator) {
+        cpin[spot.call] = cpin[spot.call] || {}
+        if(!cpin[spot.call].latlon)
+          cpin[spot.call].latlon = maidenhead(spot.locator)
+      }
+    }
+    showpin(spot.call, ch)
   }
 }
 
@@ -203,7 +265,10 @@ function expire() {
     let chan = log[band]
     let expired = Object.keys(chan).filter(call => chan[call].last < now-(10*60*1000))
     // if(expired.length) console.log(new Date().toLocaleTimeString(), band, '⇒', ...expired)
-    for (let call of expired) delete chan[call]
+    for (let call of expired) {
+      delete chan[call]
+      deletepin(call)
+    }
     if(!Object.keys(chan).length) delete log[band]
   }
 }
