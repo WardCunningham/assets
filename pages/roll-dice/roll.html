@@ -1,0 +1,9 @@
+<center>
+  <span id=dice onclick=roll()></span>
+</center>
+<script>
+  const assets = `http://found.ward.bay.wiki.org/assets/pages/roll-dice`
+  const rand = () => `<img src=${assets}/dice${1+Math.floor(6*Math.random())}.png>`
+  const roll = () => {dice.innerHTML = rand()+rand()}
+  roll()
+</script>
