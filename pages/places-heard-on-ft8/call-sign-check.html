@@ -1,0 +1,15 @@
+<div id=result>working</div>
+<script type=module>
+  import {context} from 'http://code.fed.wiki/assets/v1/frame.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  const dupl = (value, index, self) => self.indexOf(value) !== index
+  const where = (array, thing) => array.map((each, i) => each === thing ? i : null).filter(i => i !== null)
+  let page = (await context()).page
+  let markup = page.story.filter(item => item.type == 'map')[0].text.split(/\n/)
+  let stations = markup.filter(line => /^\d/.test(line))
+  let unique = stations.filter(uniq)
+  let duplicates = stations.filter(dupl)
+  window.result.innerHTML = `${stations.length} stations, ${unique.length} unique`
+  let report = duplicates.map(line => [line, ...where(markup,line)].join(", "))
+  window.result.innerHTML += `<pre>${report.join("\n")}</pre>`
+</script>
