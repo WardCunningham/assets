@@ -1,0 +1,75 @@
+<h3>Inputs</h3>
+<p>
+  <button onclick=docontext(event)>context</button>
+  <button onclick=doneighbors(event)>neighbors</button>
+  <button onclick=dosources(event)>sources</button>
+  <button onclick=doassets(event)>assets</button>
+</p>
+
+<h3>Outputs</h3>
+<p>
+  <button onclick=dolink(event)>link</button>
+  <button onclick=doopen(event)>open</button>
+  <button onclick=doimporter(event)>importer</button>
+  <button onclick=dodownload(event)>download</button>
+</p>
+
+<pre id=result></pre>
+
+<script type=module>
+
+import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+
+// I N P U T S
+
+window.docontext = async event => {
+  let context = await frame.context()
+  report(context)
+}
+
+window.doneighbors = async event => {
+  let neighbors = await frame.neighbors()
+  report(neighbors)
+}
+
+window.dosources = async event => {
+  let sources = await frame.sources('assets')
+  report(sources)
+}
+
+window.doassets = async event => {
+  let assets = await frame.assets()
+  report(assets)
+}
+
+function report(result) {
+  window.result.innerHTML = JSON.stringify(result,null,2)
+}
+
+
+// O U T P U T S
+
+window.dolink = event => {
+  frame.link("recent-changes",event.shiftKey)
+}
+
+window.doopen = event => {
+  let page = {title:'Salem Confluence',story:[{type:'map',text:'45,-123'}]}
+  frame.open(page,event.shiftKey)
+}
+
+window.doimporter = event => {
+  let pages = {
+    eugene: {title:'Eugene',story:[{type:'map',text:'44.0524108, -123.0956268'}]},
+    medford: {title:'Medford',story:[{type:'map',text:'42.3288307, -122.8721237'}]}
+  }
+  frame.importer(pages,event.shiftKey)
+}
+
+window.dodownload = event => {
+  frame.download("hello\nworld",'hello.txt','text/plain')
+}
+
+
+</script>
