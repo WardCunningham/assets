@@ -1,0 +1,63 @@
+<div id=result>working</div>
+<script type="module">
+
+  import {Octokit} from "https://cdn.skypack.dev/@octokit/rest";
+  import {open} from "http://code.fed.wiki/assets/v1/frame.js"
+  const octokit = new Octokit();
+
+  let done = {}
+  {
+    let site = `http://scripts.fed.wiki`
+    let map = await fetch(`${site}/system/sitemap.json`).then(res => res.json())
+    let infos = map.filter(info => info.synopsis.endsWith('github]'))
+
+    for (let info of infos) {
+      let m = info.synopsis.match(/\[https:\/\/github.com.*\/pages\/(.*?)\/(.*?) github\]/)
+      if (m) {
+        done[m[1]] = done[m[1]] || []
+        done[m[1]].push(m[2])        
+      }
+    }
+    console.log(done)}
+
+  // https://octokit.github.io/rest.js/v18#repos-get-contents
+  let owner = 'WardCunningham'
+  let repo = 'assets'
+  let path = 'pages'
+  {
+    let {data} = await octokit.rest.repos.getContent({owner,repo,path})
+    console.log(data)
+    const check = dir => done[dir.name] ? ' <span style="color:palegreen;">✔︎</span>' : ''
+
+    window.result.innerHTML = data.map(dir => `
+      <details ontoggle="toggle(event)" data-path="${dir.path}">
+      <summary>${dir.name}${check(dir)}</summary>
+      <ul></ul>
+      </details>`
+    ).join("\n")}
+
+
+  window.toggle = async function(event) {
+    let path = event.target.getAttribute('data-path')
+    let {data} = await octokit.rest.repos.getContent({owner,repo,path})
+    let scripts = data.filter(file => file.name.endsWith('.html'))
+    let list = scripts.map(file => 
+      `<li onclick=skim(event) data-path="${file.path}">${file.name}</li>`)
+    event.target.querySelector('ul').innerHTML = list.join("\n")
+  }
+
+  window.skim = async function(event) {
+    let path = event.target.getAttribute('data-path')
+    let dir = path.split('/')[1]
+    let {data} = await octokit.rest.repos.getContent({owner,repo,path})
+    let title = data.name
+    let text = atob(data.content).split(/\n/).map(line => line.replace(/(^ *[\w\<\/\.]+)( \w+)?.*$/,'$1$2 ⋯')).join("\n")
+    let story = [
+      {type:'paragraph',text:`Script from [${data.html_url} github]`},
+      {type:'search',text:`SEARCH SLUGS ${dir}`},
+      {type:'code',text}
+    ]
+    open({title,story},event.shiftKey)
+  }
+
+</script>
