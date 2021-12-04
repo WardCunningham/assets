@@ -1,0 +1,57 @@
+<style>
+  body {font-family: "Helvetica Neue",helvetica,Sans; line-height: 1.3;}
+</style>
+
+<div id=select onclick=dofile(event)>looking</div>
+<pre id=result></pre>
+
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const short = str => str.length < 40 ? str : str.slice(0,20)+' ⋯ '+str.slice(-20)
+  let files = (await frame.assets()).filter(asset => asset.file.toLowerCase().endsWith('.svg'))
+  window.select.innerHTML = files.map(asset => `
+    <img src=//${asset.site}/favicon.png width=12>
+    <span title="${asset.url}">${short(asset.file)}</span><br>`).join("\n")
+
+
+  window.dofile = async function (event) {
+    let url = event.target.getAttribute('title')
+    if(!url) return
+    let file = await fetch(url).then(res => res.text())
+    let div = document.createElement('div')
+    div.innerHTML = file
+    let svg = div.querySelector('svg')
+    
+    resize()
+    hyperlink()
+    lineup()
+
+    function resize() {
+      let width = svg.getAttribute('width')
+      let height = svg.getAttribute('height')
+      svg.setAttribute('width',"100%")
+      svg.removeAttribute('height')
+      svg.setAttribute('viewbox',`0 0 ${width} ${height}`)
+    }
+
+    function hyperlink() {
+      window.result.innerText = ''
+      svg.querySelectorAll('text').forEach(text => {
+        let link = text.textContent.replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim()
+        if(/\S/.test(link)) {
+          window.result.innerText += `${link}\n`
+          text.outerHTML = `\n\n<a href="#" data-title="${link}">${text.outerHTML}</a>\n\n`
+        }
+      })
+    }
+
+    function lineup() {
+      let title = "Converted SVG"
+      let story = [{type:'html',text:div.innerHTML}]
+      frame.open({title,story},event.shiftKey)
+    }
+
+  }
+</script>
