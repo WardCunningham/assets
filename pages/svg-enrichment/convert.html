@@ -3,7 +3,7 @@
 
 <script type=module>
   import {open} from "http://code.fed.wiki/assets/v1/frame.js"
-  let svg = await fetch(`http://ward.dojo.fed.wiki/assets/pages/svg-enrichment/Test%20Sequence%20Diagram.svg`).then(res=>res.text())
+  let svg = await fetch(`http://ward.dojo.fed.wiki/assets/pages/svg-enrichment/Dobbs-SequenceDiagram.svg`).then(res=>res.text())
   window.result.innerText = `${svg.length} bytes`
 
   window.dopreview = function (event) {
