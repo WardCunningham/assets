@@ -1,33 +1,20 @@
 <head>
   <body>
-    <h1>Story/Journal Checker</h1>
+    <h3>Story/Journal Checker</h3>
     <li><b><font color=red>nulls</font></b> story contains null items or null type in item.
-    <li><b><font color=red>huge</font></b> page is too big to fork, greater than 5 MB.
-    <li><b><font color=red>bloated</font></b> journal is more than twenty times bigger than story.
-    <li><b><font color=red>chronology</font></b> journal contains items out of chronological order.
+    <li><b><font color=red>huge</font></b> page is too big to fork, over 5 MB.
+    <li><b><font color=red>bloated</font></b> journal is 20 times larger than story.
+    <li><b><font color=red>chronology</font></b> journal contains items out of order.
     <li><b><font color=red>revision</font></b> journal cannot construct the current version.
-    <h2 id=sitelink></h2>
+    <h3 id=sitelink></h3>
     <div id=output><p>waiting</p></div>
 
     <script>
       main()
 
-      function params () {
-
-          function hashed(hash, assign) {
-              let op=assign.split(/=/)
-              if (op[1]) hash[op[0]]=op[1]
-              return hash
-          }
-
-          let query = window.location.href.split(/\?/)[1]||''
-          let args = query.split(/&/)
-          return args.reduce(hashed,{})
-      }
-
       function main() {
-        let p = params()
-        let site = p.site || 'found.ward.bay.wiki.org'
+        let params = Object.fromEntries(new URLSearchParams(location.search).entries())
+        let site = params.site || 'found.ward.bay.wiki.org'
         sitelink.innerHTML = `<a href="http://${site}" target=_blank>${site}</a>`
         fetch(`http://${site}/system/sitemap.json`)
           .then(res => res.json())
@@ -35,7 +22,6 @@
       }
 
       function scan (site, map) {
-        // output.innerHTML = '<pre>' + JSON.stringify(map, null, 2)
         output.innerHTML = map
           .map(info =>`
             <li><a href="http://${site}/${info.slug}.html" target=_blank>${info.title}</a>
@@ -88,14 +74,6 @@
           }
       }
 
-
-      /*
-       * decaffeinate suggestions:
-       * DS101: Remove unnecessary use of Array.from
-       * DS102: Remove unnecessary code created because of implicit returns
-       * DS207: Consider shorter variations of null checks
-       * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
-       */
       // This module interprets journal actions in order to update
       // a story or even regenerate a complete story from some or
       // all of a journal.
@@ -153,15 +131,6 @@
         return page.journal.push(action);
       };
 
-      // const create = function(revIndex, data) {
-      //   revIndex = +revIndex;
-      //   const revJournal = data.journal.slice(0, +revIndex + 1 || undefined);
-      //   const revPage = {title: data.title, story: []};
-      //   for (let action of Array.from(revJournal)) {
-      //     apply(revPage, action||{});
-      //   }
-      //   return revPage;
-      // };
 
 
     </script>
