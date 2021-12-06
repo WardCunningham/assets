@@ -1,0 +1,68 @@
+<pre id=result>working
+</pre>
+<style>
+  pre {font-size: small;}
+</style>
+<script type=module>
+  // import {context} from "http://code.fed.wiki/assets/v1/frame.js"
+  // let input = (await context()).page.story.filter(item => item.type == 'code')[0].text
+  let input = `CREATE (n0:PERSON {name:"Ward"}) -[:DAD]-> (n1)`
+  let pos = 0
+
+// non-terminals
+
+  const create = () => token('CREATE') && path() && star(() => token(',') && path())
+  const path = () => node() && star(() => relation() && node())
+  const node = () => token('(') && ident() && mayb (() => token(':') && label() && mayb(() => props())) && token(')')
+  const relation = () => out() || inn()
+    const out = () => token('-') && mayb(() => rel()) && token('->')
+    const inn = () => token('<-') && mayb(() => rel()) && token('-')
+  const rel = () => token('[') && mayb(() => ident()) && mayb(() => token(':') && type() && mayb(() => props())) && token(']')
+  const props = () => token('{') && key() && token(':') && value() && token('}')
+
+// operators
+
+  const plus = (exp) => exp() && star(exp)           // exp+
+  const star = (exp) => {while(exp()); return true}  // exp*
+  const mayb = (exp) => {exp(); return true}         // exp?
+
+// terminals
+
+  const label = () => lex(/^\w+/,'label')
+  const type = () => lex(/^\w+/,'type')
+  const ident = () => lex(/^\w+/,'ident')
+  const key = () => lex(/^\w+/,'key')
+  const value = () => lex(/^".*?"/,'value',)
+
+// scanning
+
+  const token = string => {
+    let word = input.slice(pos, pos+string.length)
+    if (word == string) {
+      pos += string.length
+      window.result.innerText += `token ${string}\n`
+      skip()
+      return true
+    }
+    return false
+  }
+
+  function lex (regex,token) {
+    let m = input.slice(pos).match(regex)
+    if (m) {
+      pos += m[0].length
+      window.result.innerText += `${token} ${m[0]}\n`
+      skip()
+      return true
+    }
+    return false    
+  }
+
+  const skip = () => {
+    while(pos < input.length && (input.charAt(pos) == " " || input.charAt(pos) == "\n")) pos++
+    window.result.innerText += `\nnext ${input.slice(0,pos)}🀫${input.slice(pos)}\n`
+  }
+
+  console.log(create())
+
+</script>
