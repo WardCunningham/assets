@@ -7,30 +7,12 @@
 <script>
 
 
-// P A R A M E T E R S
-
-function hashed(hash, arg) {
-    let op = arg.split(/=/)
-    if (op[1]) hash[op[0]] = op[1]
-    return hash
-}
-
-let query = window.location.href.split(/\?/)[1]||''
-let params = query.split(/&/).reduce(hashed,{})
-
-
 // L I S T E N
 
+let params = Object.fromEntries(new URLSearchParams(location.search).entries())
 let socket = new WebSocket(`ws://${params['domain']||'localhost'}:4649/Spark`)
-
-socket.addEventListener('open', (event) => {
-  socket.send('{"cmd":"subscribeToSpots","Enable":true}')
-})
-
-socket.addEventListener('message', (event) => {
-    let msg = JSON.parse(event.data)
-    tally(msg.spots)
-})
+socket.addEventListener('open', event => socket.send('{"cmd":"subscribeToSpots","Enable":true}'))
+socket.addEventListener('message', event => tally(JSON.parse(event.data).spots))
 
 
 // R E C O R D
@@ -61,25 +43,9 @@ function tally(spots) {
     trace.y.push(avg)
   }
   when[band] = Date.now()
-  // result.innerHTML = JSON.stringify(data, null, 2)
   result.innerHTML = `Updated ${time}`
-  plot()
-}
-
-
-// D I S P L A Y
-
-var start = true
-function plot () {
   Plotly.newPlot('graph', data)
-  // } else {
-    // var more = keys.map((k)=>[data[k]])
-    // var when = keys.map(()=>[new Date()])
-    // var iota = keys.map((_,k)=>k)
-    // Plotly.extendTraces('graph', {x: when, y: more}, iota)
-  // }
 }
-
 
 </script>
 </body>
