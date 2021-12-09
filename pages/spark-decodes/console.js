@@ -24,7 +24,7 @@
 //     }, ...
 
 
-const socket = new WebSocket('ws://localhost:4649/Spark')
+const socket = new WebSocket('ws://nr.local:4649/Spark')
 
 socket.addEventListener('open', event =>
   socket.send('{"cmd":"subscribeToSpots","Enable":true}')
@@ -32,8 +32,12 @@ socket.addEventListener('open', event =>
 
 socket.addEventListener('message', event => {
   let payload = JSON.parse(event.data)
-  for (let spot of payload.spots ?? []) {
+  let spots = payload.spots ?? []
+  for (let spot of spots) {
     let columns = Deno.args.map( field => spot[field] )
     console.log(columns.join("\t"))
   }
+  let d = new Date()
+  let s = new Date(spots[0].time)
+  console.log('Δt', (d.getTime() - s.getTime())/1000, 'sec')
 })
