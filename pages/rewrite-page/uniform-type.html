@@ -1,0 +1,39 @@
+<p><button onclick=preview(event)>preview</button></p>
+<div id=result>working</div>
+<script type=module>
+import {open} from "http://code.fed.wiki/assets/v1/frame.js"
+let page = await fetch(`http://clive.tries.fed.wiki/deep-thoughts-on-wiki.json`).then(res => res.json())
+let when = {} // id => [dates]
+for (let action of page.journal) {
+  let dates = when[action.id] = when[action.id] || []
+  dates.push(`${action.date} ${action.type}`)
+  dates.sort()
+}
+window.result.innerText = `${page.story.length} items`
+
+window.preview = function(event) {
+  let now = 1498934214928
+  let month = 'foo'
+  let skip = 2
+  let calendar = 'jan.feb.mar.apr.may.jun.jul.aug.sep.oct.nov.dec'.split('.')
+  let story = []
+  for (let item of page.story) {
+    let t = +(when[item.id][0].split(' '))[0]
+    let d = new Date(Math.max(t,now))
+    let m = calendar[d.getMonth()]
+    if (m == 'jan') m += ` ${d.getFullYear()}`
+    if (skip-- <=0 && m != month) {
+      let id = (Math.random()*1000000000).toFixed(0)
+      story.push({type:'pagefold',text:m,id})
+    }
+    item.type = 'paragraph'
+    story.push(item)
+    now = t
+    month = m
+    page.story = story
+  }
+  open({title:page.title, story})  
+}
+
+
+</script>
