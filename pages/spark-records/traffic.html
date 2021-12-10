@@ -1,0 +1,27 @@
+<html>
+<head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍓</text></svg>">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+  <div id="graph" style="width:100%;height:90%;"></div>
+  <script type=module>
+    let traffic = await fetch(`http://search.fed.wiki.org:3030/traffic/2`).then(res => res.text())
+    let band = {35:80, 70:40, 14:20, 21:15}
+    let type = 'scatter'
+    let data = []
+    for (name of Object.values(band).sort().reverse())
+      data.push({name,type,x:[],y:[],stackgroup:'one'})
+    for (let line of traffic.trim().split(/\n/)) {
+      let [count,timestamp,freq] = line.trim().split(/ /)
+      let name = band[freq]
+      let date = new Date(timestamp+':00Z')
+      let avg = count / 20
+      let trace = data.find(trace => trace.name == name)
+      trace.x.push(date)
+      trace.y.push(avg)
+    }
+    Plotly.newPlot('graph', data, {title:'Average FT8 Decodes / 30 Seconds'}, {responsive: true})
+  </script>
+</body>
+</html>
