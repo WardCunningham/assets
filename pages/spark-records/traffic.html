@@ -12,10 +12,20 @@
     let data = []
     for (name of Object.values(band).sort().reverse())
       data.push({name,type,x:[],y:[],stackgroup:'one'})
+    let last = null
     for (let line of traffic.trim().split(/\n/)) {
       let [count,timestamp,freq] = line.trim().split(/ /)
       let name = band[freq]
       let date = new Date(timestamp+':00Z')
+      if (last && (date.getTime()-last.getTime()) > 15*60*1000) {
+        for (let trace of data) {
+          trace.x.push(last)
+          trace.y.push(null)
+          trace.x.push(date)
+          trace.y.push(null)
+        }
+      }
+      last = date
       let avg = count / 20
       let trace = data.find(trace => trace.name == name)
       trace.x.push(date)
