@@ -1,0 +1,18 @@
+<style>
+  p {font-weight: bold; text-align:center;}
+</style>
+
+<p>
+  Hello <span onclick=change(event)>World</span>
+</p>
+
+<script>
+  function change(event) {
+    if(event.target.innerText == 'World') {
+      event.target.innerText = 'Friends'
+    }
+    else {
+      event.target.innerText = 'World'
+    }
+  }
+</script>
