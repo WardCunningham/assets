@@ -2,5 +2,5 @@
 # usage: sh traffic.sh 2
 
 (cd data; cat `ls | tail -$1`) |\
-  jq -r '.[]|.time[0:15] +"0 "+ (.tunedfrequency|tostring)[0:2]' |\
+  jq -r '.[]|.time[0:15] +"0:00Z "+ (.tunedfrequency|tostring)[0:2]' |\
   sort | uniq -c

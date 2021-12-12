@@ -17,7 +17,7 @@
     for (let line of traffic.trim().split(/\n/)) {
       let [count,timestamp,freq] = line.trim().split(/ /)
       let name = band[freq]
-      let date = new Date(timestamp+':00Z')
+      let date = new Date(timestamp)
       if (last && (date.getTime()-last.getTime()) > 15*60*1000) {
         for (let trace of data) {
           trace.x.push(last)
