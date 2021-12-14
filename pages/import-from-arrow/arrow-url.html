@@ -1,0 +1,55 @@
+<div id=result onclick=doopen(event)>working</div>
+<script type=module>
+  import {context, open} from "http://code.fed.wiki/assets/v1/frame.js"
+  let story = (await context()).page.story
+  let choices = story
+    .map(markup => markup.text?.match(/\[https:\/\/arrows.app\/#\/import\/json=(.*?) (.*?)\]/))
+    .filter(match => match)
+  window.result.innerHTML = `<ul>${choices.map(choice => `<li>${choice[2]}`).join("\n")}</ul>`
+
+  window.doopen = function(event){
+    let title = event.target.innerText
+    let choice = choices.find(choice => choice[2] == title)
+    let arrow = JSON.parse(atob(choice[1])).graph
+
+    const nameof = id => arrow.nodes.find(each => each.id == id).caption
+
+    let nodes = []
+    let relations = []
+    let graph = []
+
+    for (let node of arrow.nodes)
+      nodes.push(node.caption)
+    for (let rel of arrow.relationships)
+      if(!relations.includes(rel.type))
+        relations.push(rel.type)
+    for (let rel of arrow.relationships) {
+      graph.push([
+        nodes.indexOf(nameof(rel.fromId)),
+        relations.indexOf(rel.type),
+        nodes.indexOf(nameof(rel.toId))
+      ])
+    }
+
+    let token = btoa(JSON.stringify({nodes,relations,graph}))
+
+    // window.result.innerText += `nodes:\n${JSON.stringify(nodes,null,2)}\n\n`
+    // window.result.innerText += `relations:\n${JSON.stringify(relations,null,2)}\n\n`
+    // window.result.innerText += `graph:\n[\n${graph.map(row => '  '+JSON.stringify(row)).join(",\n")}\n]\n\n`
+
+    const quote = text => `"${text.split(/ /).join("\\n")}"`
+    const edge = rel => `${quote(nodes[rel[0]])} -> ${quote(nodes[rel[2]])}`
+    let text = `digraph {
+      layout=neato; overlap = false; splines=true
+      node [style=filled fillcolor=bisque]
+      ${graph.reverse().map(edge).join("\n")}
+      \n}`
+    let upstream = `http://ward.dojo.fed.wiki/assets/pages/import-from-arrow/arrow-upstream.html`
+    let story = [
+      {type:'paragraph',text:choice[0]},
+      {type:'graphviz',text},
+      {type:'paragraph',text:`View this as an interactive driver tree. [${upstream}#${token} view]`}
+    ]
+    open({title,story},event.shiftKey)
+  }
+</script>

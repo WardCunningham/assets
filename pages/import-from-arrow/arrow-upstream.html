@@ -1,0 +1,59 @@
+<head>
+  <meta charset="UTF-8">
+  <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
+  <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+</head>
+
+<div id=diagram></div>
+
+<script type=module>
+
+  let hash = window.location.hash
+  let {nodes,relations,graph} = JSON.parse(atob(hash.slice(1)))
+  console.log({nodes,relations,graph})
+
+  const quote = label => `"${label.split(/ /).join('\\n')}"`
+  diagram.addEventListener("click", reroot)
+
+  let dot = []
+  context(0)
+  draw()
+
+  function reroot(event) {
+    let node = event.target.closest('.node')
+    let titles = node?.getElementsByTagName('title')
+    if (!titles) return
+    let text = titles[0].innerHTML.replace(/\\n/g, ' ').replace(/&amp;/g, '&')
+    let root = nodes.findIndex(node => node == text)
+    dot = []
+    context(root)
+    draw()
+  }
+
+  function context(root) {
+    let mark = {} // variable => true
+    const ready = variable => !mark[variable]
+    const upstream = node => graph.filter(edge => edge[2] == node)
+    dot.push('strict digraph {')
+    dot.push('rankdir=TB')
+    dot.push('node [style=filled fillcolor=bisque]')
+    let todo = [root]
+    while(todo.length > 0) {
+      let next = todo.shift()
+      if (mark[next]) continue
+      mark[next] = true
+      for (let edge of upstream(next).filter(edge => ready(edge[0]))) {
+        dot.push(`${quote(nodes[edge[0]])} -> ${quote(nodes[next])} [label=${quote(relations[edge[1]])}]`)
+        todo.push(edge[0])
+      }
+    }
+    dot.push('}')
+  }
+
+  function draw() {
+    hpccWasm.graphviz.layout(dot.join("\n"), "svg", "dot").then(svg => {
+      diagram.innerHTML = svg;
+    })
+  }
+  
+</script>

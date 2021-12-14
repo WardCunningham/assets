@@ -1,0 +1,28 @@
+<pre id=result></pre>
+<script type=module>
+  let arrow = await fetch(`http://ward.dojo.fed.wiki/assets/pages/import-from-arrow/data/family.json`).then(res => res.json())
+  console.log(arrow)
+  const nameof = id => arrow.nodes.find(each => each.id == id).properties.name
+
+  let nodes = []
+  let relations = []
+  let graph = []
+
+  for (let node of arrow.nodes)
+    nodes.push(node.properties.name)
+  for (let rel of arrow.relationships)
+    if(!relations.includes(rel.type))
+      relations.push(rel.type)
+  for (let rel of arrow.relationships) {
+    graph.push([
+      nodes.indexOf(nameof(rel.fromId)),
+      relations.indexOf(rel.type),
+      nodes.indexOf(nameof(rel.toId))
+    ])
+  }
+  window.result.innerText = `nodes:\n${JSON.stringify(nodes,null,2)}\n\n`
+  window.result.innerText += `relations:\n${JSON.stringify(relations,null,2)}\n\n`
+  window.result.innerText += `graph:\n[\n${graph.map(row => '  '+JSON.stringify(row)).join(",\n")}\n]\n\n`
+
+
+</script>
