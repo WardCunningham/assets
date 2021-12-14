@@ -7,10 +7,15 @@
 </body>
 <script type=module>
   import {context} from "http://code.fed.wiki/assets/v1/frame.js"
-  let codes = (await context()).page.story.filter(item => item.type == 'code')
-  for (let code of codes) {
-    for (let expr of code.text.split(/\n\n/)) {
-      window.result.innerHTML += window.LAMBDATALK.evaluate(expr).val
+  run()
+
+  async function run() {
+    let codes = (await context()).page.story.filter(item => item.type == 'code')
+    for (let code of codes) {
+      for (let expr of code.text.split(/\n\n/)) {
+        window.result.innerHTML += window.LAMBDATALK.evaluate(expr).val
+      }
     }
   }
+
 </script>
