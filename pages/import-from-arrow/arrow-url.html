@@ -46,9 +46,9 @@
       \n}`
     let upstream = `http://ward.dojo.fed.wiki/assets/pages/import-from-arrow/arrow-upstream.html`
     let story = [
-      {type:'paragraph',text:choice[0]},
-      {type:'graphviz',text},
-      {type:'paragraph',text:`View this as an interactive driver tree. [${upstream}#${token} view]`}
+      {type:'paragraph',text:`Imported from Arrows: ${choice[0]}`},
+      {type:'paragraph',text:`View as interactive driver tree. [${upstream}#${token} page]`},
+      {type:'graphviz',text}
     ]
     open({title,story},event.shiftKey)
   }

@@ -10,14 +10,10 @@
 
   let hash = window.location.hash
   let {nodes,relations,graph} = JSON.parse(atob(hash.slice(1)))
-  console.log({nodes,relations,graph})
-
-  const quote = label => `"${label.split(/ /).join('\\n')}"`
-  diagram.addEventListener("click", reroot)
-
   let dot = []
   context(0)
   draw()
+  diagram.addEventListener("click", reroot)
 
   function reroot(event) {
     let node = event.target.closest('.node')
@@ -34,6 +30,7 @@
     let mark = {} // variable => true
     const ready = variable => !mark[variable]
     const upstream = node => graph.filter(edge => edge[2] == node)
+    const quote = label => `"${label.split(/ /).join('\\n')}"`
     dot.push('strict digraph {')
     dot.push('rankdir=TB')
     dot.push('node [style=filled fillcolor=bisque]')
