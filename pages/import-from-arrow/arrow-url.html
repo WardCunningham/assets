@@ -1,35 +1,61 @@
 <div id=result onclick=doopen(event)>working</div>
+<button onclick=domerge(event)>merge</button>
 <script type=module>
+
   import {context, open} from "http://code.fed.wiki/assets/v1/frame.js"
+
   let story = (await context()).page.story
   let choices = story
     .map(markup => markup.text?.match(/\[https:\/\/arrows.app\/#\/import\/json=(.*?) (.*?)\]/))
     .filter(match => match)
-  window.result.innerHTML = `<ul>${choices.map(choice => `<li>${choice[2]}`).join("\n")}</ul>`
+  window.result.innerHTML = `
+    <p>${choices.map(choice => `
+      <input type=checkbox> <span>${choice[2]}</span>`).join("<br>")}
+    </p>`
 
   window.doopen = function(event){
+    if(event.target.nodeName == 'INPUT') return
     let title = event.target.innerText
-    let choice = choices.find(choice => choice[2] == title)
-    let arrow = JSON.parse(atob(choice[1])).graph
+    retrieve([title])
+  }
 
-    const nameof = id => arrow.nodes.find(each => each.id == id).caption
+  window.domerge = function(event){
+    let checks = window.result.querySelectorAll("input[type='checkbox']")
+    let titles = [...checks].filter(check => check.checked).map(check => check.nextElementSibling.innerText)
+    retrieve(titles)
+  }
+
+  function retrieve(titles) {
 
     let nodes = []
     let relations = []
     let graph = []
 
-    for (let node of arrow.nodes)
-      nodes.push(node.caption)
-    for (let rel of arrow.relationships)
-      if(!relations.includes(rel.type))
-        relations.push(rel.type)
-    for (let rel of arrow.relationships) {
-      graph.push([
-        nodes.indexOf(nameof(rel.fromId)),
-        relations.indexOf(rel.type),
-        nodes.indexOf(nameof(rel.toId))
-      ])
+    let chosen = []
+
+    for (let title of titles) {
+      let choice = choices.find(choice => choice[2] == title)
+      chosen.push(choice[0])
+      let arrow = JSON.parse(atob(choice[1])).graph
+
+      const nameof = id => arrow.nodes.find(each => each.id == id).caption
+
+      for (let node of arrow.nodes)
+        if(!nodes.includes(node.caption))
+          nodes.push(node.caption)
+      for (let rel of arrow.relationships)
+        if(!relations.includes(rel.type))
+          relations.push(rel.type)
+      for (let rel of arrow.relationships) {
+        graph.push([
+          nodes.indexOf(nameof(rel.fromId)),
+          relations.indexOf(rel.type),
+          nodes.indexOf(nameof(rel.toId))
+        ])
+      }
     }
+
+    console.log({nodes,relations,graph})
 
     let token = btoa(JSON.stringify({nodes,relations,graph}))
 
@@ -46,10 +72,12 @@
       \n}`
     let upstream = `http://ward.dojo.fed.wiki/assets/pages/import-from-arrow/arrow-upstream.html`
     let story = [
-      {type:'paragraph',text:`Imported from Arrows: ${choice[0]}`},
+      {type:'paragraph',text:`Imported from Arrows: ${chosen.join(", ")}`},
       {type:'paragraph',text:`View as interactive driver tree. [${upstream}#${token} page]`},
       {type:'graphviz',text}
     ]
+    let title = titles.length == 1 ? titles[0] : 'Selected Graphs Merged'
+    console.log({title,story})
     open({title,story},event.shiftKey)
   }
 </script>
