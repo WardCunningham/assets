@@ -1,4 +1,5 @@
 <div id=result onclick=doopen(event)>working</div>
+<input type=text id=title size=25 placeholder="Optional Title">
 <button onclick=domerge(event)>merge</button>
 <script type=module>
 
@@ -32,6 +33,7 @@
     let graph = []
 
     let chosen = []
+    let intersections = new Set()
 
     for (let title of titles) {
       let choice = choices.find(choice => choice[2] == title)
@@ -43,6 +45,8 @@
       for (let node of arrow.nodes)
         if(!nodes.includes(node.caption))
           nodes.push(node.caption)
+        else
+          intersections.add(node.caption)
       for (let rel of arrow.relationships)
         if(!relations.includes(rel.type))
           relations.push(rel.type)
@@ -59,24 +63,22 @@
 
     let token = btoa(JSON.stringify({nodes,relations,graph}))
 
-    // window.result.innerText += `nodes:\n${JSON.stringify(nodes,null,2)}\n\n`
-    // window.result.innerText += `relations:\n${JSON.stringify(relations,null,2)}\n\n`
-    // window.result.innerText += `graph:\n[\n${graph.map(row => '  '+JSON.stringify(row)).join(",\n")}\n]\n\n`
-
     const quote = text => `"${text.split(/ /).join("\\n")}"`
     const edge = rel => `${quote(nodes[rel[0]])} -> ${quote(nodes[rel[2]])}`
     let text = `digraph {
       layout=neato; overlap = false; splines=true
       node [style=filled fillcolor=bisque]
+      ${[...intersections].map(node => `${quote(node)} [penwidth=3]`).join("\n")}\n
       ${graph.reverse().map(edge).join("\n")}
       \n}`
+
     let upstream = `http://ward.dojo.fed.wiki/assets/pages/import-from-arrow/arrow-upstream.html`
     let story = [
       {type:'paragraph',text:`Imported from Arrows: ${chosen.join(", ")}`},
       {type:'paragraph',text:`View as interactive driver tree. [${upstream}#${token} page]`},
       {type:'graphviz',text}
     ]
-    let title = titles.length == 1 ? titles[0] : 'Selected Graphs Merged'
+    let title = titles.length == 1 ? titles[0] : window.title.value || 'Selected Graphs Merged'
     console.log({title,story})
     open({title,story},event.shiftKey)
   }
