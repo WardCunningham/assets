@@ -1,6 +1,7 @@
 <div id=result onclick=doopen(event)>working</div>
 <input type=text id=title size=25 placeholder="Optional Title">
 <button onclick=domerge(event)>merge</button>
+
 <script type=module>
 
   import {context, open} from "http://code.fed.wiki/assets/v1/frame.js"
@@ -41,6 +42,7 @@
       let arrow = JSON.parse(atob(choice[1])).graph
 
       const nameof = id => arrow.nodes.find(each => each.id == id).caption
+      const includes = edge => graph.find(has => has[0]==edge[0] && has[1]==edge[1] && has[2]==edge[2])
 
       for (let node of arrow.nodes)
         if(!nodes.includes(node.caption))
@@ -51,15 +53,28 @@
         if(!relations.includes(rel.type))
           relations.push(rel.type)
       for (let rel of arrow.relationships) {
-        graph.push([
+        let edge = [
           nodes.indexOf(nameof(rel.fromId)),
           relations.indexOf(rel.type),
           nodes.indexOf(nameof(rel.toId))
-        ])
+        ]
+        if(!includes(edge))
+          graph.push(edge)
       }
     }
 
-    console.log({nodes,relations,graph})
+    const inbound = node => graph.filter(edge => edge[2] == node).map(edge => edge[0])
+    const outbound = node => graph.filter(edge => edge[0] == node).map(edge => edge[2])
+    let roots = [...intersections].map (root => ({
+      root,
+      in:inbound(nodes.indexOf(root)).length,
+      out:outbound(nodes.indexOf(root)).length
+    }))
+    const td = word => `<td style="border: 1px solid gray; padding:8px; ">${word}`
+    let table = `
+      <table style="border-collapse:collapse;">
+        ${roots.map(row => `<tr>${td(row.root)}${td(row.in)}${td(row.out)}`).join("\n")}
+      </table>`
 
     let token = btoa(JSON.stringify({nodes,relations,graph}))
 
@@ -76,7 +91,8 @@
     let story = [
       {type:'paragraph',text:`Imported from Arrows: ${chosen.join(", ")}`},
       {type:'paragraph',text:`View as interactive driver tree. [${upstream}#${token} page]`},
-      {type:'graphviz',text}
+      {type:'graphviz',text},
+      {type:'html',text:table}
     ]
     let title = titles.length == 1 ? titles[0] : window.title.value || 'Selected Graphs Merged'
     console.log({title,story})
