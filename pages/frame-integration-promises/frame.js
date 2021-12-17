@@ -73,7 +73,7 @@ export function neighbors() {
 
 // O U T P U T
 
-export function link(title, keepLineup=fase) {
+export function link(title, keepLineup=false) {
   window.parent.postMessage({action:"doInternalLink",title,keepLineup},"*")
 }
 
