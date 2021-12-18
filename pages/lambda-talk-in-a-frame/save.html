@@ -1,0 +1,35 @@
+<html>
+<head>
+  <script src="http://code.fed.wiki/assets/pages/lambda-talk-in-a-frame/JS.js"></script>
+</head>
+<body>
+  <p><button onclick="dosave(event)">save</button></p>
+  <div id=result></div>
+</body>
+<script type=module>
+  import {context, open} from "http://code.fed.wiki/assets/v1/frame.js"
+  run()
+
+  async function run() {
+    let codes = (await context()).page.story.filter(item => item.type == 'code')
+    let site = `http://code.fed.wiki`
+    let assets = `assets/pages/lambda-talk-page-maker`
+    let file = `hilbert-left-right.text`
+    let defns = await fetch(`${site}/${assets}/${file}`).then(res => res.text())
+    window.LAMBDATALK.evaluate(defns)
+    for (let code of codes) {
+      window.result.innerHTML += window.LAMBDATALK.evaluate(code.text).val
+    }
+  }
+
+  window.dosave = function(event) {
+    let title = "Lambda Saved Page"
+    let text = "This page created with the [[Lambda Talk Page Maker]]."
+    let story = [
+      {type:'paragraph', text},
+      {type:'html',text:window.result.innerHTML}
+    ]
+    open({title,story},event.shiftKey)
+  }
+
+</script>

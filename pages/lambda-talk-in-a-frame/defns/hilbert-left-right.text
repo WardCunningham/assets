@@ -1,0 +1,17 @@
+{def left {lambda {:d :n}
+ {if {< :n 1}
+   then
+   else T90      {right :d {- :n 1}}
+        M:d T-90 {left  :d {- :n 1}}
+        M:d      {left  :d {- :n 1}}
+        T-90 M:d {right :d {- :n 1}}
+        T90}}}
+
+{def right {lambda {:d :n}
+ {if {< :n 1}
+   then
+   else T-90    {left  :d {- :n 1}}
+        M:d T90 {right :d {- :n 1}}
+        M:d     {right :d {- :n 1}}
+        T90 M:d {left  :d {- :n 1}}
+        T-90}}}
