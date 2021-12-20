@@ -1,0 +1,62 @@
+<html>
+<body>
+<div id=show>waiting</div>
+<center><p><button onclick="dosave(event)">save</button></p></center>
+<script type=module>
+
+import * as THREE from 'https://unpkg.com/three@0.124.0/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three@0.124.0/examples/jsm/controls/OrbitControls.js';
+import { context, open } from 'http://code.fed.wiki/assets/v1/frame.js'
+
+let text = null
+let {slug, item, page} = await context()
+let search = location.search
+console.log({search})
+if (search && search.length) {
+  text = atob(search.slice(1))
+} else {
+  text = page.story.filter(it => it.type == 'code').map(it => it.text).join("\n") 
+}
+if (text.length) render(text) 
+
+
+async function render (text) {
+  let tick = null
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(2);
+  document.body.appendChild(renderer.domElement);
+
+  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 15);
+  camera.position.z = 3;
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+
+  const scene = new THREE.Scene();
+
+  try {
+    eval(text)
+    show.innerHTML = ''
+  } catch (e) {
+    show.innerHTML = `<pre>${e.message}</pre>`
+  }
+
+  renderer.setAnimationLoop(() => {
+    controls.update();
+    if(tick) tick()
+    renderer.render(scene, camera);
+  })
+}
+
+window.dosave = function(event) {
+  let title = page.title + ' Saved'
+  let url = `http://three.ward.asia.wiki.org/assets/pages/snippet-template/save.html`
+  let story = [ {type:'frame', text:`${url}?${btoa(text)}\nHEIGHT 500`} ]
+  open({title,story},event.shiftKey)
+}
+
+
+</script>
+</body>
+</html>
