@@ -1,0 +1,52 @@
+<head>
+  <meta charset="UTF-8">
+  <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
+  <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+</head>
+
+<div id=diagram></div>
+
+<script type=module>
+
+  let hash = window.location.hash
+  let {nodes,relations,graph,highlights} = JSON.parse(atob(hash.slice(1)))
+  console.log({nodes,relations,graph,highlights})
+
+  let dot = []
+  const quote = label => `"${label.split(/ /).join('\\n')}"`
+  dot.push('digraph {')
+  dot.push('layout=neato; overlap = false; splines=true')
+  dot.push('node [style=filled fillcolor=bisque]')
+  for (let node of highlights)
+    dot.push(`${quote(nodes[node])} [penwidth=3]`)
+  for (let edge of graph){
+    dot.push(`${quote(nodes[edge[0]])} -> ${quote(nodes[edge[2]])} [label=${quote(relations[edge[1]])}]`)
+  }
+  dot.push('}')
+
+  hpccWasm.graphviz.layout(dot.join("\n"), "svg", "dot").then(svg => {
+    diagram.innerHTML = svg;
+    dohover(diagram)
+  })
+
+  function dohover(diagram) {
+    let rels = [] // [[edge, from, to], ...]
+    const title = target => target.querySelector('title').textContent.replace(/\\n/g,' ')
+    diagram.querySelectorAll('.edge').forEach(edge => rels.push([edge, ...title(edge).split('->')]))
+    const trace = (node,doit) => {
+      const related = io => rels.filter(row => row[io]==node)
+      let o = related(1).length
+      let i = related(2).length
+      related(o>i?1:2).map(row => doit(row[0]))
+    }
+    const stroke = width => {
+      const adjust = edge => edge.setAttribute('stroke-width',width)
+      return event => trace(title(event.target), adjust)
+    }
+    diagram.querySelectorAll('.node').forEach(node => {
+      node.addEventListener('mouseenter',stroke(3))
+      node.addEventListener('mouseleave',stroke(1))
+    })
+  }
+  
+</script>

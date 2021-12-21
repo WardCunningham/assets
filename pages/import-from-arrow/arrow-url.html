@@ -76,7 +76,8 @@
         ${roots.map(row => `<tr>${td(row.root)}${td(row.in)}${td(row.out)}`).join("\n")}
       </table>`
 
-    let token = btoa(JSON.stringify({nodes,relations,graph}))
+    let highlights = [...intersections].map(node => nodes.indexOf(node))
+    let token = btoa(JSON.stringify({nodes,relations,graph,highlights}))
 
     const quote = text => `"${text.split(/ /).join("\\n")}"`
     const edge = rel => `${quote(nodes[rel[0]])} -> ${quote(nodes[rel[2]])}`
@@ -87,10 +88,10 @@
       ${graph.reverse().map(edge).join("\n")}
       \n}`
 
-    let upstream = `http://ward.dojo.fed.wiki/assets/pages/import-from-arrow/arrow-upstream.html`
+    let expand = `http://ward.dojo.fed.wiki/assets/pages/import-from-arrow/arrow-expand.html`
     let story = [
       {type:'paragraph',text:`Imported from Arrows: ${chosen.join(", ")}`},
-      {type:'paragraph',text:`View as interactive driver tree. [${upstream}#${token} page]`},
+      {type:'paragraph',text:`View in detail full screen. [${expand}#${token} page]`},
       {type:'graphviz',text},
       {type:'html',text:table}
     ]
