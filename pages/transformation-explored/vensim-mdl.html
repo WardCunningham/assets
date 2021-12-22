@@ -1,0 +1,50 @@
+<p><button onclick=doexpand(event)>expand</button></p>
+<pre id=report></pre>
+<script type="module">
+  import { sources, open } from "http://code.fed.wiki/assets/v1/frame.js"
+  import { parse } from "./parse.js"
+
+  let model = await parse()
+  console.log(model)
+
+  let nodes = []
+  let relations = [""]
+  let graph = []
+  let highlights = []
+
+  function nodeid (node) {
+    let id = nodes.indexOf(node)
+    if (id >= 0) return id
+    nodes.push(node)
+    return nodes.length-1
+  }
+
+  for (let node in model) {
+    for (let upstream of model[node].upstream)
+      graph.push([nodeid(upstream),0,nodeid(node)])
+    for (let downstream of model[node].downstream)
+      graph.push([nodeid(node),0,nodeid(downstream)])
+  }
+
+  window.report.innerText = `
+    ${Object.keys(model).length} formulas
+    ${nodes.length} nodes
+    ${graph.length} relations
+  `
+
+  window.doexpand = function(event) {
+    let hash = {nodes,relations,graph,highlights}
+    console.log(hash)
+    let token = btoa(JSON.stringify(hash))
+    let expand = `http://ward.dojo.fed.wiki/assets/pages/import-from-arrow/arrow-expand.html`
+    let story = [
+      {type:'paragraph',text:`This page provides access to tabs not available from Frame html scripts.`},
+      {type:'paragraph',text:`View in detail full screen. [${expand}#${token} page]`}
+    ]
+    let title = 'Vensim Full Screen'
+    open({title,story},event.shiftKey)
+    // window.open(`${expand}#${token}`,'_blank')
+  }
+
+
+</script>
