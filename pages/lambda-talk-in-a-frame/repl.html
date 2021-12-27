@@ -11,11 +11,8 @@
 
   async function run() {
     let codes = (await context()).page.story.filter(item => item.type == 'code')
-    for (let code of codes) {
-      for (let expr of code.text.split(/\n\n/)) {
-        window.result.innerHTML += window.LAMBDATALK.evaluate(expr).val
-      }
-    }
+    let exprs = codes.map(code => code.text).join("\n")
+    window.result.innerHTML += window.LAMBDATALK.evaluate(exprs).val
   }
 
 </script>
