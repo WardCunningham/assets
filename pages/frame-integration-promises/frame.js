@@ -45,6 +45,7 @@ export async function assets() {
     for (let dir of Object.keys(source.assetsData)) {
       for (let path of Object.keys(source.assetsData[dir])) {
         for (let file of source.assetsData[dir][path]) {
+          path = path.startsWith("//") ? path : `//${site}${path}`
           let url = `${path}/${dir}/${file}`
           let row = {site,slug,item,dir,path,file,url}
           table.push(row)
