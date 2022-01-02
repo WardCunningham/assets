@@ -1,0 +1,36 @@
+<div id=result>working</div>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+</style>
+<script type=module>
+  import {neighbors} from 'http://code.fed.wiki/assets/v1/frame.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  let index = await fetch(`https://wiki.c2.com/c2-fed-index.json`).then(res => res.json())
+  window.result.innerHTML = `<p>${index.rows.length} excerpts</p>`
+  let sites = await neighbors()
+  let show = sites.filter(site => index.sites.includes(site))
+
+  // [siten,slugn,titlen,md5wn,pagen]
+
+  window.result.innerHTML += show.map(site => {
+    let siten = index.sites.indexOf(site)
+    let rows = index.rows.filter(row => row[0] == siten)
+    let titles = rows.map(row => index.titles[row[2]]).filter(uniq)
+    let list = titles.map(title => `<li onclick=link(event)>${title}</li>`).join("\n")
+    return `<p><img src="http://${site}/favicon.png" width=16> ${site}<ul data-site="${site}">${list}</ul></p>`
+  }).join("\n")
+
+  window.link = function (event) {
+    let title = event.target.innerText
+    let site = event.target.parentElement.dataset.site
+    console.log({title,site})
+    window.parent.postMessage({
+      action:"doInternalLink",
+      title,
+      site,
+      keepLineup: event.shiftKey
+    }, "*")
+
+  }
+</script>
