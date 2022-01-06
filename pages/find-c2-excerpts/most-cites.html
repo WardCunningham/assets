@@ -1,0 +1,19 @@
+<table id=result>
+  <tr><td>rank<td>count<td>page
+</table>
+<style>
+  body { font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans; }
+  table { border-collapse: collapse; }
+  td, th { border: 1px solid gray; padding: 8px; }
+</style>
+<script type=module>
+  let site = 'https://wiki.c2.com'
+  let names = await fetch(`${site}/names.txt`).then(res => res.text()).then(text => text.split(/\n/))
+  let inlinks = await fetch(`${site}/inlinks.json`).then(res => res.json())
+  let table = names
+    .map((name,i) => ({name, count:inlinks[i].length}))
+    .sort((a,b) => b.count - a.count)
+    .slice(0,10)
+  window.result.innerHTML += table.map((row,i) =>
+    `<tr><td>${i+1}<td>${row.count}<td>${row.name}`).join("\n")
+</script>
