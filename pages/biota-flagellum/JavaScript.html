@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+
+<HTML>
+  <HEAD>
+    <TITLE>
+      Biota Interpreter in JavaScript
+    </TITLE>
+  </HEAD>
+  <BODY>
+    <H2><A HREF="http://c2.com/cgi/wiki?BiotaLanguage">Biota Language</A> Interpreter</H2>
+    <p>This page is my current best guess at the semantics of Ward Cunningham's 
+       Biota language. I would welcome corrections.
+       The source is in <A HREF="biota.js">biota.js</A></p>
+    <p>Start by selecting a sample or Show your own program below.
+       Even columns are code and data.  Odd columns have control characters:
+       '$' for the program counter, '#' for the data counter.</p>
+    <hr>
+    Sample:
+    <input type="button" value="Remote growth" onclick="format('remote')"></input>
+    <pre id="remote">
+    
+        g$g 
+      g     r 
+      t     g 
+        g g 
+ 
+ 
+ 
+ 
+                                          1#. 3 #
+                                         
+                                         
+   
+   
+    </pre>
+    <hr>
+    Sample:
+    <input type="button" value="Flagellum" onclick="format('flagellum')"></input>
+    <pre id="flagellum">
+
+        . . c .
+        . . s . .
+        t   g
+        t   t
+        t   . t . .$d
+        t   s   .     .
+        b   .   b . s s .               1#2 3 4 5
+    . s s . b   .   b
+      .     .   s   t
+        u d t t t   t
+                t   t
+                g   t
+            . . s . .
+              . c . .
+
+    </pre>
+    <hr>
+    <textarea type="text" id="raw" rows="25" cols="80"></textarea>
+    <p>
+      <input type="button" value="Show" onclick="format('raw')"></input>
+      <input type="text" id="dcdir" size="1" value="0">data counter direction</input>
+    </p>
+    <hr>
+    <pre id="code"/>[Formatted code will show up here]</pre>
+    <hr>
+    <p>Press Run or Step to single step the program and see the counter positions update.
+       The program counter is red and the data counter is green.</p>
+    <p>
+      <input type="button" id="run" value="Run" onclick="run()"></input>
+      <input type="text" id="speed" size="5" value="100">ms</input>
+      <input type="button" value="Step" onclick="step()"></input>
+      <input type="text" id="repeat" size="5" value="1">times</input>
+    </p>
+    <hr>
+    Feedback welcome: mailto colon piano at quirkster dot com (but I'm not a musical instrument)
+	<h6><em>Last modified: 2005-07-01</em></h6>
+
+    <SCRIPT LANGUAGE="JavaScript" type="text/javascript" SRC="biota.js">
+    </SCRIPT>
+  </BODY>
+</HTML>

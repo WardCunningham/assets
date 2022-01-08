@@ -1,0 +1,69 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+
+<HTML>
+  <BODY>
+    <pre id="flagellum" hidden>
+
+        . . c .
+        . . s . .
+        t   g
+        t   t
+        t   . t . .$d
+        t   s   .     .
+        b   .   b . s s .         1#2 3 4 5
+    . s s . b   .   b
+      .     .   s   t
+        u d t t t   t
+                t   t
+                g   t
+            . . s . .
+              . c . .
+
+    </pre>
+    <p hidden>
+      <input type="text" id="dcdir" size="1" value="0">data counter direction</input>
+    </p>
+    <pre id="code" style="letter-spacing:5px; line-height:90%;"></pre>
+    <p>
+      <input type="button" id="run" value="Run" onclick="run()"></input>
+      <input type="text" id="rate" size="8" value="30" style="text-align:right;"> steps / second<br>
+    </p>
+    <p hidden>
+      <button onclick=dotrace()>trace</button>
+    </p>
+    <p hidden>
+      <input type="text" id="speed" size="5" value="32"> ms</input> &nbsp;
+      <input type="button" value="Step" onclick="step()"></input>
+      <input type="text" id="repeat" size="5" value="1"> times</input>
+    </p>
+    <SCRIPT LANGUAGE="JavaScript" type="text/javascript" SRC="biota.js"></SCRIPT>
+    <script>
+      window.rate.addEventListener('input', event => {
+        let msec = 1000 / window.rate.value
+        if (msec > 16) {
+          window.speed.value = Math.floor(msec)
+          window.repeat.value = 1
+        } else {
+          window.speed.value = 16
+          window.repeat.value = Math.round(16/msec)
+        }
+      })
+      format('flagellum')
+
+      window.dotrace = function () {
+        let log = trace()
+        download(JSON.stringify(log),'biota-trace.json')
+      }
+
+      function download(string, file) {
+        var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
+        var anchor = document.createElement('a');
+        anchor.setAttribute("href",     data);
+        anchor.setAttribute("download", file);
+        document.body.appendChild(anchor); // required for firefox
+        anchor.click();
+        anchor.remove();
+      }
+    </script>
+  </BODY>
+</HTML>
