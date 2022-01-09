@@ -1,0 +1,10 @@
+<pre id=result></pre>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  let assets = (await frame.assets()).filter(asset => asset.file.endsWith('.ics'))
+  for (let asset of assets) {
+    window.result.innerText += JSON.stringify(asset,null,2)+"\n\n"
+    let ics = await fetch(asset.url).then(res => res.text())+"\n\n"
+    window.result.innerText += ics
+  }
+</script>
