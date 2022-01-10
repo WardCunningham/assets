@@ -124,7 +124,7 @@ async function doopen(event) {
   tier = 2
   while(refs.length && tier <= sequential+alphabetical+1) {
     let disposition = tier <= sequential ? 'sequenced' : tier <= sequential+alphabetical ? 'alphabetized' : 'omitted'
-    reference.innerHTML += refs.map(line).join("")+"\n"
+    reference.innerHTML += `<i>tier ${tier}</i><br>` + refs.map(line).join("")+"\n"
     reference.scrollIntoView(false)
     panels = await Promise.all(refs.filter(ispresent).map(title => getpanel(title)))
     count(`tier ${tier} titles ${disposition}`, panels.length)
