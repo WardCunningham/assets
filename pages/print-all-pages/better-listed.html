@@ -1,0 +1,229 @@
+<html>
+<body>
+
+<style>
+  body {font-family:helvetica;}
+</style>
+<p>
+  <button onclick="docollate(event)">collate</button>  
+  <button onclick="dodiagram(event)">diagram</button>
+  <button onclick="dodownload(event)">download</button>  
+</p>
+<p id=config></p>
+<pre id=contents onclick="doclick(event)"></pre>
+<pre id=reference onclick="doclick(event)"></pre>
+
+<script type=module>
+
+import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+import {count, counts, recount, trouble, troubles, prefer} from './print-stats.js'
+import {render, linkmark} from './print-page.js'
+
+// startup
+let context, present
+let neighborhood
+
+// collate
+let dot
+let sections
+let sequential = 0
+let alphabetical = 0
+let tier
+let titles = []
+let refs
+let html = []
+
+
+const radio = name => [0,1,2,3,4].map(value => `<input type=radio name=${name} value=${value}>`).join("\n")
+window.config.innerHTML = `${radio('seq')} sequential tiers<br> ${radio('alp')} alphabetical tiers`
+
+const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+const isjson = res => res.ok ? res.json() : {}
+const ispresent = title => present.includes(asSlug(title))
+const absent = title => ispresent(title) ? '' : ' <font color=red>✘</font>'
+const line = title => `<span>${title}</span>${absent(title)}\n`
+const quote = label => `"${label.replace('-','- ').split(/ /).join('\\n')}"`
+
+
+window.dodownload = async function() {
+  frame.download(html.join("\n"),'draft-pages.html','text/html')
+}
+
+window.docollate = async function(event) {
+  html = await collate()
+  statistics(event)
+}
+
+window.dodiagram = diagram
+
+await startup()
+
+function visit(page) {
+  const link = /\[\[(.*?)\]\]/g
+  let match
+  for (let item of page.story) {
+    let text = item.text
+    while (match = link.exec(text)) {
+      titles.push(match[1])
+    }
+  }
+}
+
+async function startup () {
+  context = await frame.context()
+  let roster = context.page.story.find(item => item.type == 'roster') || {text:context.site}
+  let sites = roster.text.split(/ *\n */).filter(line => /[\w-]+\.[\w-]+/.test(line))
+  let flights = await Promise.all(sites.map(site => fetch(`//${site}/system/sitemap.json`).then(res => res.json())))
+  neighborhood = {}
+  for (let i = 0; i<sites.length; i++) neighborhood[sites[i]] = flights[i]
+  present = Object.values(neighborhood).map(sitemap => sitemap.map(info => info.slug)).flat()
+  visit(context.page)
+  window.contents.innerHTML = titles.map(line).join("")
+
+}
+
+async function collate() {
+  document.getElementsByName('seq').forEach((i) => {if(i.checked) sequential = +i.value})
+  document.getElementsByName('alp').forEach((i) => {if(i.checked) alphabetical = +i.value})
+
+  tier = 1
+  refs = []
+  recount()
+
+  titles = []
+  visit(context.page)
+
+  dot = []
+  sections = {
+    sequenced: [],
+    alphabetized: [],
+    omitted: []
+  }
+
+  reference.innerText = ''
+  count(`1st sequential tiers`, sequential)
+  count(`2nd alphabetical tiers`, alphabetical)
+  let panels = await Promise.all(titles.filter(ispresent).map(title => getpanel(title)))
+  emit(panels, 'sequenced')
+
+  tier = 2
+  dot.push(`{ rank=same; node [style=filled fillcolor=palegreen];`)
+  dot.push(...refs.map(e => `${quote(e)};`))
+  dot.push(...refs.slice(0,-1).map((e,i) => `${quote(e)} -> ${quote(refs[i+1])}`))
+  dot.push(`}`)
+
+  while(refs.length && tier <= sequential+alphabetical+1) {
+    let disposition = tier <= sequential ? 'sequenced' : tier <= sequential+alphabetical ? 'alphabetized' : 'omitted'
+    reference.innerHTML += `<i style="opacity:0.6">tier ${tier}</i><br>` + refs.map(line).join("")+"\n"
+    panels = await Promise.all(refs.filter(ispresent).map(title => getpanel(title)))
+    count(`tier ${tier} titles ${disposition}`, panels.length)
+    titles.push(...refs)
+    refs = []
+    dot.push(`{ rank=tier${tier};`)
+    emit(panels, disposition)
+    dot.push(`}`)
+    tier += 1
+  }
+
+  const contents = (list, title) => `
+    <h2>${title} Contents</h2>
+    ${list.map(body => {
+      let head = body[0]
+      let m = head.match(/>(.+?)</)
+      return `<li><a href="#${asSlug(m[1])}">${m[1]}</a></li>`
+    }).join("\n")}`
+
+  sections.alphabetized.sort((a,b) => a[0] < b[0] ? -1 : 1)
+  return [
+    prolog(),
+    contents(sections.sequenced,"Story"),
+    ...sections.sequenced,
+    contents(sections.alphabetized,"Garden"),
+    ...sections.alphabetized
+  ].flat()
+}
+
+function getpanel(title) {
+  let slug = asSlug(title)
+  let candidates = []
+  for (let site in neighborhood) {
+    let info = neighborhood[site].find(info => info.slug == slug)
+    if (info) candidates.push([site, info.date])
+  }
+  candidates.sort((a,b) => a[1]-b[1])
+  let site = candidates[0][0]
+  count(`pages from ${site}`)
+  return new Promise(async response => {
+    let page = await fetch(`//${site}/${asSlug(title)}.json`).then(isjson)
+    response({site,page})})
+}
+
+function emit(panels, disposition) {
+  for (let panel of panels) {
+    let {site, page} = panel
+    if (!page || !page.title) continue
+    let html = []
+    sections[disposition].push(html)
+    count('pages encountered')
+    let age = (Date.now() - page.journal.slice(-1)[0].date) / (24*60*60*1000)
+    let when = age < 1 ? 'today' : age<7 ? 'this week' : age<30 ? 'this month' : age<365 ? 'this year' : 'years ago'
+    count(`pages revised ${when}`)
+    let slug = asSlug(page.title)
+    html.push(`<h2 id="${slug}">${page.title}<a href="http://${site}/${slug}.html" target=_blank> ⬀ </a></h2>`)
+    html.push(...render(page, disposition, resolve))
+  }
+}
+
+function resolve(page, disposition, text) {
+  const link = /\[\[(.*?)\]\]/g
+  return text.replace(link, (match, word) => {
+    let title = prefer(word)
+    if (!titles.includes(title) && !refs.includes(title)) {
+      refs.push(title)
+    }
+    if (ispresent(title)) {
+      console.log('present',disposition,page.title,'->',title)
+      if(disposition=='alphabetized')
+        dot.push(`${quote(page.title)} -> ${quote(title)}`)
+      return `<a href=#${asSlug(title)}>${title}</a>`
+    }
+    else {
+      console.log('absent',disposition,page.title,'->',title)
+      trouble(`Can't link to ${title}`, page.title)
+      return `<font color=gray>${title}</font>`
+    }
+  }).replace(/\[(https?:.*?) (.*?)\]/g,'<a href="$1">$2</a> '+linkmark())
+}
+
+function statistics(event) {
+  let story = [
+    {type:'paragraph',text:'Problems and other statistics found while collating.'},
+    {type:'html',text:counts()},
+    ...troubles()
+  ]
+  frame.open({title:'Print Statistics',story},event.shiftKey,[...Object.keys(neighborhood)])
+}
+
+function diagram(event) {
+  let story = [
+    {type:'paragraph',text:'Structure of pages as collated for printing.'},
+    {type:'graphviz',text:`strict digraph {rankdir=LR; ${dot.join("\n")}}`}
+  ]
+  frame.open({title:'Print Diagram',story},event.shiftKey,[...Object.keys(neighborhood)])
+}
+
+function prolog() {
+  return `
+  <meta charset="utf-8"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟢</text></svg>">
+  <style>
+    body { font-family:helvetica; width:550px; }
+    h2 { page-break-before:always; }
+    a { text-decoration:none; }
+  </style>`
+}
+
+</script>
+
+</body>
+</html>
