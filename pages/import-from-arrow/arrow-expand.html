@@ -1,9 +1,15 @@
+<html>
 <head>
   <meta charset="UTF-8">
   <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
   <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
 </head>
 
+<p>
+  <input type=radio name=layout value=neato checked> neato
+  <input type=radio name=layout value=circo> circo
+  <input type=radio name=layout value=dot> dot
+</p>
 <div id=diagram></div>
 
 <script type=module>
@@ -12,22 +18,30 @@
   let {nodes,relations,graph,highlights} = JSON.parse(atob(hash.slice(1)))
   console.log({nodes,relations,graph,highlights})
 
-  let dot = []
-  const quote = label => `"${label.split(/ /).join('\\n')}"`
-  dot.push('digraph {')
-  dot.push('layout=neato; overlap = false; splines=true')
-  dot.push('node [style=filled fillcolor=bisque]')
-  for (let node of highlights)
-    dot.push(`${quote(nodes[node])} [penwidth=3]`)
-  for (let edge of graph){
-    dot.push(`${quote(nodes[edge[0]])} -> ${quote(nodes[edge[2]])} [label=${quote(relations[edge[1]])}]`)
-  }
-  dot.push('}')
+  document.querySelectorAll('input').forEach(elem => elem.addEventListener('change',event => {
+    generate(event.target.value)
+  }))
 
-  hpccWasm.graphviz.layout(dot.join("\n"), "svg", "dot").then(svg => {
-    diagram.innerHTML = svg;
-    dohover(diagram)
-  })
+  generate('neato')
+
+  function generate(layout) {
+    let dot = []
+    const quote = label => `"${label.split(/ /).join('\\n')}"`
+    dot.push('digraph {')
+    dot.push(`layout=${layout}; overlap = false; splines=true`)
+    dot.push('node [style=filled fillcolor=bisque]')
+    for (let node of highlights)
+      dot.push(`${quote(nodes[node])} [penwidth=3]`)
+    for (let edge of graph){
+      dot.push(`${quote(nodes[edge[0]])} -> ${quote(nodes[edge[2]])} [label=${quote(relations[edge[1]])}]`)
+    }
+    dot.push('}')
+
+    hpccWasm.graphviz.layout(dot.join("\n"), "svg", "dot").then(svg => {
+      diagram.innerHTML = svg;
+      dohover(diagram)
+    })
+  }
 
   function dohover(diagram) {
     let rels = [] // [[edge, from, to], ...]
@@ -50,3 +64,4 @@
   }
   
 </script>
+</html>
