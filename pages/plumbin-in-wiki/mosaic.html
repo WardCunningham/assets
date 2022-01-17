@@ -1,6 +1,7 @@
 <center>
-  <table id=mosaic ondragstart=drag(event) ondragover=over(event) ondrop=drop(event)>
+  <table id=mosaic ondragstart=drag(event) ondragover=over(event) ondrop=drop(event) onmousemove=move(event)>
   </table>
+  <div id=readout></div>
 </center>
 <style>
   table {border-spacing:0;}
@@ -39,11 +40,26 @@
   }
 
 
-  // R E P L I C A T E   M O D E L
+  // H O V E R
 
   let nodes = {}
-  align()
+  window.move = event => {
+    let v = 0
+    let node = Object.values(nodes).find(node => node.node == event.target)
+    if(node) {
+      let rect = event.target.getBoundingClientRect();
+      let x = event.clientX - (rect.left+rect.right)/2
+      let y = event.clientY - (rect.top+rect.bottom)/2
+      let side = Math.abs(y) > Math.abs(x) ? (y<0 ? 0 : 2) : (x>0 ? 1 : 3)
+      v = node.v[side]
+    }
+    window.readout.innerText = v ? v.toFixed(0) : ''
+  }
 
+
+  // R E P L I C A T E   M O D E L
+
+  align()
   function align() {
     console.log('')
     let tr = document.querySelector('table tr')
@@ -91,7 +107,7 @@
       const ev = () => node.c < cmax && nodes[[node.c+1,node.r]] ? nodes[[node.c+1,node.r]].v[3] : 0
       switch(node.tile) {
         case 'faucet':
-          node.v = [0,0,20,0]
+          node.v = [0,0,100,0]
           break
         case 'spout':
           let v = node.v[0] = (node.v[0]+nv())/2
