@@ -8,24 +8,104 @@
 </style>
 <script type=module>
 
-  let tiles = ['elbow','faucet','flowing','reverse','spout','straight','tank','tee']
+  let tiles = ['elbow','faucet','reverse','spout','straight','tee']
   let rows = [0,1,2,3,4,5,6,7]
   let cols = [0,1,2,3,4,5,6,7,8]
+  let rmax = rows.length-1
+  let cmax = cols.length-1
   let rand = (n) => Math.floor(Math.random() * n)
-  let tile = (n) => `<img src="./tiles/${tiles[n]}.png">`
+  let tile = (n) => `<img src="./tiles/${tiles[n]}.png" data-tile=${tiles[n]}>`
   let maby = (n) => rand(100)<n
 
   window.mosaic.innerHTML = rows.map(r =>
-    `<tr>${cols.map(c =>`<td>${maby(60)?tile(rand(8)):''}`).join('')}`).join('')
+    `<tr>${cols.map(c =>`<td>${maby(60)?tile(rand(tiles.length)):''}`).join('')}`).join('')
 
   let dragged
-  window.drag = event => {dragged = event.target}
+  window.drag = event => {dragged = event.shiftKey ? event.target.cloneNode(true) : event.target}
   window.over = event => {event.preventDefault()}
   window.drop = event => {event.preventDefault()
     let target = event.target
     switch(target.nodeName) {
       case 'TD': target.appendChild(dragged); break
       case 'IMG': target.parentElement.replaceChild(dragged,target); break
+    }
+    align()
+    compute()
+  }
+
+  let nodes = {}
+  align()
+
+  function align() {
+    console.log('')
+    let tr = document.querySelector('table tr')
+    for (let r of rows) {
+      let td = tr.firstChild
+      for (let c of cols) {
+        let node = td.firstChild
+        if(node) {
+          let tile = node.dataset.tile
+          let prev = nodes[[c,r]]
+          if (!prev || !(prev.tile==tile)) {
+            if (prev) {
+              console.log('rep',c,r,prev.tile)
+            }
+            console.log('new',c,r,tile)
+            nodes[[c,r]] = {c,r,node,tile:node.dataset.tile, v:[0,0,0,0]}
+          }
+        } else {
+          if(nodes[[c,r]]) {
+            console.log('del',c,r, nodes[[c,r]].tile)
+            delete nodes[[c,r]]
+          }
+        }
+        td = td.nextSibling
+      }
+      tr = tr.nextSibling
+    }
+  }
+
+  //      0         nodes offer v facing each of four
+  //   3     1      directions, 0, 1, 2, 3. nodes retrieve
+  //      2         facing v from nv, sv, ev, wv functions.
+
+  setInterval(compute,16)
+
+  function compute() {
+    for (let key in nodes) {
+      let node = nodes[key]
+      const nv = () => node.r > 0 && nodes[[node.c,node.r-1]] ? nodes[[node.c,node.r-1]].v[2] : 0
+      const sv = () => node.r < rmax && nodes[[node.c,node.r+1]] ? nodes[[node.c,node.r+1]].v[0] : 0
+      const wv = () => node.c > 0 && nodes[[node.c-1,node.r]] ? nodes[[node.c-1,node.r]].v[1] : 0
+      const ev = () => node.c < cmax && nodes[[node.c+1,node.r]] ? nodes[[node.c+1,node.r]].v[3] : 0
+      switch(node.tile) {
+        case 'faucet':
+          node.v = [0,0,20,0]
+          break
+        case 'spout':
+          let v = node.v[0] = (node.v[0]+nv())/2
+          let src = v>10 ? 'flowing' : 'spout'
+          node.node.setAttribute('src', `./tiles/${src}.png`)
+          break
+        case 'straight':
+          node.v[0] = node.v[2] = (node.v[0]+node.v[2]+nv()+sv())/4
+          node.v[1] = node.v[3] = (node.v[1]+node.v[3]+ev()+wv())/4
+          break
+        case 'elbow':
+          node.v[0] = node.v[1] = (node.v[0]+node.v[1]+nv()+ev())/4
+          node.v[2] = node.v[3] = (node.v[2]+node.v[3]+sv()+wv())/4
+          break
+        case 'reverse':
+          node.v[0] = node.v[3] = (node.v[0]+node.v[3]+nv()+wv())/4
+          node.v[2] = node.v[1] = (node.v[2]+node.v[1]+sv()+ev())/4
+          break
+        case 'tee':
+          node.v[0] = node.v[1] = node.v[3] = (node.v[0]+node.v[1]+node.v[3]+nv()+ev()+wv())/6
+          break
+        case 'tank':
+          node.v[1] = node.v[3] = (node.v[1]+node.v[3]+ev()+wv())/4
+          break
+      }
     }
   }
 
