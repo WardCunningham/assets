@@ -5,24 +5,43 @@
 </center>
 <style>
   table {border-spacing:0;}
-  td {padding:0;background-color:#ddd;}
+  td {padding:0;background-color:#ddd;width:40px;height:40px;}
 </style>
 <script type=module>
 
 
-  // R A N D O M   T I L E S
+  // T I L E S
 
   let tiles = ['elbow','faucet','reverse','spout','straight','tee']
   let rows = [0,1,2,3,4,5,6,7]
   let cols = [0,1,2,3,4,5,6,7,8]
   let rmax = rows.length-1
   let cmax = cols.length-1
+
   let rand = (n) => Math.floor(Math.random() * n)
   let tile = (n) => `<img src="./tiles/${tiles[n]}.png" data-tile=${tiles[n]}>`
   let maby = (n) => rand(100)<n
+  let rntd = () => cols.map(c =>`<td>${maby(60)?tile(rand(tiles.length)):''}`).join('')
+  let rntr = () => rows.map(r =>`<tr>${rntd()}`).join('')
 
-  window.mosaic.innerHTML = rows.map(r =>
-    `<tr>${cols.map(c =>`<td>${maby(60)?tile(rand(tiles.length)):''}`).join('')}`).join('')
+  window.mosaic.innerHTML = location.search ? restore(location.search) : rntr()
+
+
+  // H I S T O R Y
+
+  function restore(search) {
+    let rows = search.slice(1).split('/')
+    let mosaic = rows.map(row => `<tr>${row.split('').map(col =>`<td>${col=='.' ? '' : tile(+col)}`).join('')}`)
+    return mosaic.join('')
+  }
+
+  window.onpopstate = function(event) {
+    if(!event.state) return
+    window.mosaic.innerHTML = restore(event.state)
+    nodes = {}
+    align()
+    setInterval(compute,16)
+  }
 
 
   // D R A G   A N D   D R O P
@@ -36,11 +55,12 @@
       case 'TD': target.appendChild(dragged); break
       case 'IMG': target.parentElement.replaceChild(dragged,target); break
     }
-    align()
+    let search = align()
+    history.pushState(search, '', location.origin+location.pathname+search)
   }
 
 
-  // H O V E R
+  // R E A D O U T
 
   let nodes = {}
   window.move = event => {
@@ -57,11 +77,11 @@
   }
 
 
-  // R E P L I C A T E   M O D E L
+  // U P D A T E   M O D E L S
 
   align()
   function align() {
-    console.log('')
+    let search = '?'
     let tr = document.querySelector('table tr')
     for (let r of rows) {
       let td = tr.firstChild
@@ -69,24 +89,26 @@
         let node = td.firstChild
         if(node) {
           let tile = node.dataset.tile
+          search += tiles.indexOf(tile)
           let prev = nodes[[c,r]]
           if (!prev || !(prev.tile==tile)) {
             if (prev) {
-              console.log('rep',c,r,prev.tile)
+              // console.log('rep',c,r,prev.tile)
             }
-            console.log('new',c,r,tile)
             nodes[[c,r]] = {c,r,node,tile:node.dataset.tile, v:[0,0,0,0]}
           }
         } else {
+          search += '.'
           if(nodes[[c,r]]) {
-            console.log('del',c,r, nodes[[c,r]].tile)
             delete nodes[[c,r]]
           }
         }
         td = td.nextSibling
       }
+      search += '/'
       tr = tr.nextSibling
     }
+    return search.slice(0,-1)
   }
 
 
