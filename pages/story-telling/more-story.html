@@ -1,0 +1,51 @@
+<p><button onclick=domore(event)>do more</button></p>
+<div id=result></div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  let context = await frame.context()
+  let inrefs = context.page.story.filter(item => item.type == 'reference')
+  let inlists = context.page.story.filter(item => item.type == 'markdown')
+  window.result.innerHTML = `<p>
+    ${inrefs.length} input references<br>
+    ${inlists.map(checks).reduce((s,e) => s+e.length,0)} choices made</p>`
+
+  window.domore = async function(event) {
+    let title = `More ${context.page.title}`
+    let story = [{type:'paragraph', text:'We tell more of this story by including these pages.'}]
+    for (let item of inrefs) {
+      let page = await fetch(`//${item.site}/${frame.asSlug(item.title)}.json`).then(res => res.json())
+      story.push({type:'reference', site:item.site, title:item.title, text:item.text})
+      let outrefs = visit(page).map(title => ({type:'reference', title}))
+      story.push({type:'markdown',text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
+    }
+    for (let item of inlists) {
+      for (let line of checks(item)) {
+        let title = line.split(/\[\[|\]\]/)[1]
+        let page = await fetch(`//${inrefs[0].site}/${frame.asSlug(title)}.json`).then(res => res.json())
+        story.push({type:'reference', site:inrefs[0].site, title:title, text:page.story[0].text.slice(0,120)})
+        let outrefs = visit(page).map(title => ({type:'reference', title}))
+        story.push({type:'markdown',text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
+      }
+    }
+    story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-story.html\nHEIGHT 60`})
+    frame.open({title,story},event.shiftKey)
+  }
+
+  function checks(item) {
+    return item.text.split(/\n/).filter(line => line.startsWith('- [x]'))
+  }
+
+  function visit(page) {
+    let links = []
+    const link = /\[\[(.*?)\]\]/g
+    let match
+    for (let item of page.story) {
+      let text = item.text
+      while (match = link.exec(text)) {
+        links.push(match[1])
+      }
+    }
+    return links
+  }
+
+</script>
