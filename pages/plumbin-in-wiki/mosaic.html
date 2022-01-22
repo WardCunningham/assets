@@ -5,29 +5,21 @@
 </center>
 <style>
   table {border-spacing:0;}
-  td {padding:0;background-color:#ddd;width:40px;height:40px;position:relative;}
-  td img.fill {position: absolute;left:6px;bottom:7px;
-    --s:calc(40px - 6px * 2);
-    --fill:0px;
-    width:var(--s);
-    max-height:var(--s);
-    height:calc(var(--s) * var(--fill));
-  }
+  td {padding:0;background-color:#ddd;width:40px;height:40px;}
 </style>
 <script type=module>
 
 
   // T I L E S
 
-  let tiles = ['elbow','faucet','reverse','spout','straight','tee', 'tank']
+  let tiles = ['elbow','faucet','reverse','spout','straight','tee']
   let rows = [0,1,2,3,4,5,6,7]
   let cols = [0,1,2,3,4,5,6,7,8]
   let rmax = rows.length-1
   let cmax = cols.length-1
 
   let rand = (n) => Math.floor(Math.random() * n)
-  let tile = (n) => `<img src="./tiles/${tiles[n]}.png" data-tile=${tiles[n]}>
-    ${tiles[n]=='tank'?`<img class="fill" src="/favicon.png" style="--fill:${Math.random()}">`:''}`
+  let tile = (n) => `<img src="./tiles/${tiles[n]}.png" data-tile=${tiles[n]}>`
   let maby = (n) => rand(100)<n
   let rntd = () => cols.map(c =>`<td>${maby(60)?tile(rand(tiles.length)):''}`).join('')
   let rntr = () => rows.map(r =>`<tr>${rntd()}`).join('')
