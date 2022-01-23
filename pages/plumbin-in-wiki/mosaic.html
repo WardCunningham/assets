@@ -12,7 +12,7 @@
 
   // T I L E S
 
-  let tiles = ['elbow','faucet','reverse','spout','straight','tee']
+  let tiles = ['elbow','faucet','reverse','spout','straight','tee','tank']
   let rows = [0,1,2,3,4,5,6,7]
   let cols = [0,1,2,3,4,5,6,7,8]
   let rmax = rows.length-1
@@ -23,6 +23,16 @@
   let maby = (n) => rand(100)<n
   let rntd = () => cols.map(c =>`<td>${maby(60)?tile(rand(tiles.length)):''}`).join('')
   let rntr = () => rows.map(r =>`<tr>${rntd()}`).join('')
+
+  let iota = Array.from({length: 27}, (_, i) => i + 1)
+  let tanks = await Promise.all(iota.map(i =>
+    new Promise(resolve => {
+      let img = new Image()
+      img.dataset.tile = 'tank'
+      img.onload = resolve(img)
+      img.src = `./tanks/tank${i}.png`
+    })
+  ))
 
   window.mosaic.innerHTML = location.search ? restore(location.search) : rntr()
   let nodes = {}
@@ -154,7 +164,9 @@
           node.v[0] = node.v[1] = node.v[3] = (node.v[0]+node.v[1]+node.v[3]+nv()+ev()+wv())/6
           break
         case 'tank':
-          node.v[1] = node.v[3] = (node.v[1]+node.v[3]+ev()+wv())/4
+          node.v[2] = (node.v[2]+sv())/2
+          let tank = Math.round(26*(100-node.v[2])/100)
+          node.node.replaceWith(tanks[tank].cloneNode(true))
           break
       }
     }

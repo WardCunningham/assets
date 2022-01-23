@@ -1,0 +1,21 @@
+<img src="http://plumbin.ward.wiki.org/assets/pages/plumbin-in-wiki/tiles/tank.png">
+<script type=module>
+  let assets = `http://plumbin.ward.wiki.org/assets/pages/plumbin-in-wiki/tanks`
+  let iota = Array.from({length: 27}, (_, i) => i + 1)
+  let tanks = await Promise.all(iota.map(i => 
+    new Promise(resolve => {
+      let img = new Image()
+      img.onload = resolve(img)
+      img.src = `${assets}/tank${i}.png`
+    })
+  ))
+
+  setInterval(show,16)
+
+  function show() {
+    let sin = Math.sin(2*Math.PI*Date.now()/1000)
+    let i = Math.round(26 * (sin+1)/2)
+    document.querySelector('img').replaceWith(tanks[i])
+  }
+
+</script>
