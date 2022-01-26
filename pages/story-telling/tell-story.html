@@ -1,0 +1,55 @@
+<p><button onclick=dotell(event)>tell story</button></p>
+<div id=result></div>
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const wordcount = story => story.reduce((sum,item) => sum + (item.text||'').split(/\s+/).length, 0)
+  let metrics = {words:0}
+
+  window.result.innerHTML = (await frame.context()).page.story
+    .filter(item => item.type == 'reference')
+    .map(ref => `
+      <input type="radio" id="${ref.title}" name="ref">
+      <label for="${ref.title}">${ref.title}</label><br>`).join("\n")
+
+  window.dotell = function(event) {
+    document.getElementsByName('ref').forEach((i) => {if(i.checked) tell(event,i.id)})
+  }
+
+  async function tell(event,selected) {
+    let item = (await frame.context()).page.story.find(item => item.title == selected)
+    console.log(selected,item)
+    let title = `Telling ${item.title}`
+    let story = [{type:'paragraph', text:'Tell more by including these pages.'}]
+    let site = item.site
+    try {
+      let page = await fetch(`//${site}/${frame.asSlug(item.title)}.json`).then(res => res.json())
+      let words = wordcount(page.story)
+      metrics.words += words
+      story.push({type:'paragraph', site, words, text:`[[${item.title}]] — ${item.text} (${words})`})
+      let outrefs = visit(page).map(title => ({type:'reference', title}))
+      story.push({type:'markdown',site,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
+      window.result.innerHTML += ' .'
+    } catch (err) {
+      window.result.innerHTML += ' x'
+      story.push({type:'code',text:`Trouble with ${selected}\n${err.message}`})
+    }
+    story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-story.html\nHEIGHT 100`})
+    frame.open({title,metrics,story},event.shiftKey,[site])
+  }
+
+  function visit(page) {
+    let links = []
+    const link = /\[\[(.*?)\]\]/g
+    let match
+    for (let item of page.story) {
+      if (item.type == 'reference') links.push(item.title)
+      let text = item.text
+      while (match = link.exec(text)) {
+        links.push(match[1])
+      }
+    }
+    return links
+  }
+
+</script>
