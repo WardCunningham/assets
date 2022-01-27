@@ -3,29 +3,31 @@
 <script type=module>
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  const wordcount = story => story.reduce((sum,item) => sum + (item.text||'').split(/\s+/).length, 0)
-  let context, instory, inlists
-  let metrics = {words:0}
+  import {wordcount, checks, visit} from './telling.js'
+  let context = await frame.context()
+  let instory, inlists
+  let metrics = {pages:0,words:0,links:0}
 
-  async function refresh() {
-    context = await frame.context()
+  function refresh() {
     let story = context.page.story
-    instory = story.filter(item => item.site && ['paragraph','pagefold'].includes(item.type))
+    instory = story.filter(item => item.type == 'paragraph' && item.site)
+    let pages = instory.length
     let words = instory.reduce((sum, item) => sum + (item.words||0), 0)
-    metrics.words = words
+    metrics = {pages, words,links:0}
     inlists = story.filter(item => item.type == 'markdown')
     window.result.innerHTML = `<p>
-      ${instory.length} pages with ${words} words so far.<br>
+      ${pages} pages with ${words} words so far.<br>
       ${inlists.map(checks).reduce((s,e) => s+e.length,0)} links to more pages.</p>`
   }
 
   window.domore = async function(event) {
+    context = await frame.context()
     let forks = new Set()
-    await refresh()
+    refresh()
     for (let action of context.page.journal)
       if(action.site) forks.add(action.site)
     let title = `More ${context.page.title}`
-    let story = [{type:'paragraph', text:'Tell more by including these pages.'},...instory]
+    let story = [...instory]
     for (let item of inlists) {
       let site = item.site
       forks.add(site)
@@ -36,10 +38,12 @@
           let page = await fetch(`//${site}/${frame.asSlug(title)}.json`).then(res => res.json())
           let words = wordcount(page.story)
           metrics.words += words
+          metrics.pages += 1
           story.push({type:'paragraph', site, words, text:`[[${title}]] — ${page.story[0].text.slice(0,140)} (${words})`})
           for (let item of page.story)
             if(item.site) forks.add(item.site)
           let outrefs = visit(page).map(title => ({type:'reference', title}))
+          metrics.links += outrefs.length
           story.push({type:'markdown',site,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
           window.result.innerHTML += ' .'
         } catch (err) {
@@ -49,27 +53,10 @@
       }
     }
     story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-story.html\nHEIGHT 100`})
+    story.unshift({type:'paragraph', text:`Story of ${metrics.pages} pages with ${metrics.words} words and ${metrics.links} more links.`})
     frame.open({title,metrics,story},event.shiftKey,[...forks])
   }
 
-  function checks(item) {
-    return item.text.split(/\n/).filter(line => line.startsWith('- [x]'))
-  }
-
-  function visit(page) {
-    let links = []
-    const link = /\[\[(.*?)\]\]/g
-    let match
-    for (let item of page.story) {
-      if (item.type == 'reference') links.push(item.title)
-      let text = item.text
-      while (match = link.exec(text)) {
-        links.push(match[1])
-      }
-    }
-    return links
-  }
-
-  await refresh()
+  refresh()
 
 </script>
