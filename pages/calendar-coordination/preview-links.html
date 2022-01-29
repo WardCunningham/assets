@@ -4,6 +4,10 @@
   let page = (await frame.context()).page
   let links = page.story.filter(item => item.text.startsWith('[https'))
   window.result.innerText += JSON.stringify(links,null,2)
+  let urls = links.map(link => link.text.split(/\[|\]/)[1].split(/ /)[0])
+  window.result.innerText += JSON.stringify(urls,null,2)
+  let icss = Promise.all(urls.map(url => fetch(url).then(res => res.text())))
+  window.result.innerText += JSON.stringify(icss,null,2)
 
     // let ics = await fetch(asset.url).then(res => res.text())+"\n\n"
     // window.result.innerText += ics

@@ -5,6 +5,41 @@
   for (let asset of assets) {
     window.result.innerText += JSON.stringify(asset,null,2)+"\n\n"
     let ics = await fetch(asset.url).then(res => res.text())+"\n\n"
-    window.result.innerText += ics
+    window.result.innerText += ics+"\n\n"
+    let struct = parse(ics.split(/\r?\n/))
+    window.result.innerText += JSON.stringify(struct,null,2)+"\n\n"
   }
+
+  // BEGIN:VCALENDAR
+  //   BEGIN:VTIMEZONE
+  //     BEGIN:DAYLIGHT
+  //     END:DAYLIGHT
+  //     BEGIN:STANDARD
+  //     END:STANDARD
+  //   END:VTIMEZONE
+  //   BEGIN:VEVENT
+  //     BEGIN:VALARM
+  //     END:VALARM
+  //   END:VEVENT
+  // END:VCALENDAR
+
+    function parse (list) {
+      let done = []
+      let doing = []
+      let kid = []
+      for (let line of list) {
+        if (line.startsWith('BEGIN:')) {
+          doing.push(kid)
+          kid = [line]
+        } else if (line.startsWith('END:')) {
+          kid.push(line)
+          done.push(kid)
+          kid = doing.pop()
+        } else {
+          kid.push(line)
+        }
+      }
+      return {kid,doing,done}
+    }
+
 </script>
