@@ -1,0 +1,76 @@
+<p><button onclick=doprint(event)>download for print</button></p>
+<div id=choices></div>
+<div id=result></div>
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {render} from './render.js'
+  window.choices.innerHTML = (await frame.context()).page.story
+    .filter(item => item.type == 'reference')
+    .map(ref => `
+      <input type="checkbox" id="${ref.title}" name="ref">
+      <label for="${ref.title}">${ref.title}</label><br>`).join("\n")
+
+  window.doprint = function(event) {
+    let selected = [...choices.querySelectorAll('input')]
+      .filter(input => input.checked)
+      .map(input => input.id)
+    start(event,selected)
+  }
+
+  async function start (event,selected) {
+    let html = [prolog]
+    window.result.innerText = ''
+    for (let want of selected) {
+      try {
+        let item = (await frame.context()).page.story.find(item => item.title == want)
+        let site = item.site
+        // forks.add(site)
+        let page = await fetch(`//${site}/${frame.asSlug(item.title)}.json`).then(res => res.json())
+        let contents = page.story.filter(item => item.type=='paragraph' && item.site)
+        await process(html, contents)
+        window.result.innerHTML += "<br>"
+      } catch (err) {
+        window.result.innerHTML += ` <span title="err.message">x</span>\n`
+        console.error(err)
+      }
+    }
+    frame.download(html.join("\n"),'preprint.html','text/html')
+  }
+
+  async function process (html, contents) {
+    const link = text => text.split(/\[\[|\]\]/)[1]
+    let toc = `<h2>Section Contents</h2>
+      ${contents.map(content => {
+        let title = link(content.text)
+        let slug = frame.asSlug(title)
+        return `<li><a href="#${slug}">${title}</a></li>`
+      }).join("\n")
+    }`
+    html.push(toc)
+    for (let content of contents) {
+      try {
+        let title = link(content.text)
+        let site = content.site
+        let slug = frame.asSlug(title)
+        let page = await fetch(`//${site}/${slug}.json`).then(res => res.json())
+        html.push(...render(site, page))
+        window.result.innerHTML += ' .'       
+      } catch (err) {
+        window.result.innerHTML += ` <span title="err.message">x</span>\n`
+        console.error(err)
+      }
+    }
+  }
+
+  let prolog = `
+    <meta charset="utf-8"/>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟢</text></svg>">
+    <style>
+      body { font-family:helvetica; width:550px; }
+      h2 { page-break-before:always; }
+      a { text-decoration:none; }
+    </style>`
+
+
+</script>

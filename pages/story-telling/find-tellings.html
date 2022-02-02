@@ -1,0 +1,76 @@
+<p><button onclick=dofind(event)>find pages</button></p>
+<p id=neighbors></p>
+<p id=result></p>
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  let neighbors = await frame.neighbors()
+  window.neighbors.innerHTML = neighbors.reverse()
+    .map(site =>`<img width=16 src="//${site}/favicon.png" title="${site}">`)
+    .join(' ')
+
+  window.dofind = async function(event) {
+    let sitemaps = await allmaps(neighbors)
+    let tellings = alltellings(sitemaps)
+    let references = tellings
+      .map(([site,infos]) => infos.map(info => ({
+        type:'reference',
+        site,
+        slug:info.slug,
+        title:info.title,
+        text:info.synopsis,
+        date:info.date
+      })))
+      .flat()
+      .sort((a,b) => b.date - a.date)
+    let title = 'Search for Tellings'
+    let text = `Tellings found as ${references.length} pages in ${tellings.length} of ${Object.keys(sitemaps).length} neighborhood sites.`
+    let story = [{type:'paragraph',text}, ...agebins(references)]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  function agebins (references) {
+    let story = []
+    let last = null
+    for (let item of references) {
+      let next = ago(item.date)
+      if (next != last) {
+        story.push({type:'pagefold', text:`${next} ago`})
+        last = next
+      }
+      story.push(item)
+    }
+    return story
+  }
+
+  function ago (then, now=Date.now()) {
+    let sign = then > now ? '-' : ''
+    let msec = Math.abs(now - then)
+    let sec = Math.floor(msec/1000); if(sec < 2) return `${sign}${msec} msec`
+    let min = Math.floor(sec/60); if(min < 2) return `${sign}${sec} seconds`
+    let hour = Math.floor(min/60); if(hour < 2) return `${sign}${min} minutes`
+    let day = Math.floor(hour/24); if(day < 2) return `${sign}${hour} hours`
+    let week = Math.floor(day/7); if(week < 2) return `${sign}${day} days`
+    let month = Math.floor(day/30); if(month < 2) return `${sign}${week} weeks`
+    let year = Math.floor(day/365); if(year < 2) return `${sign}${month} months`
+    return `${sign}${year} years`
+  }
+
+  async function allmaps(neighbors) {
+    let tick = () => window.result.innerText += ' .'
+    let entries = await Promise.all(neighbors.map(site => fetch(`//${site}/system/sitemap.json`)
+      .then(res => {tick(); return res.json()})
+      .then(infos => [site,infos])))
+    return Object.fromEntries(entries)
+  }
+
+  function alltellings(sitemaps) {
+    let entries = Object.entries(sitemaps)
+    let want = /^(more-)*telling-/
+    let tellings = entries.map(([site,infos]) => [site,infos.filter(info => want.test(info.slug))])
+    return tellings.filter(([site,infos]) => infos.length)
+  }
+
+
+</script>
