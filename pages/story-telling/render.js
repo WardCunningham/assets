@@ -54,7 +54,7 @@ export function render (site, page) {
 
       case 'markdown':
         // count(`words ${disposition} (render)`,words(item.text))
-        let text = item.text
+        let text = item.text.trim()
         text = text.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
         text = text.replace(/\*(.+?)\*/g,"<b>$1</b>")
         text = text.replace(/_(.+?)_/g,"<i>$1</i>")
