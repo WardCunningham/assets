@@ -3,7 +3,7 @@
 <script type=module>
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  import {wordcount, checks, visit} from './telling.js'
+  import {wordcount, checks, visit, getfrom} from './telling.js'
   let context = await frame.context()
   let instory, inlists
   let metrics = {pages:0,words:0,links:0}
@@ -29,13 +29,15 @@
     let title = `More ${context.page.title}`
     let story = [...instory]
     for (let item of inlists) {
-      let site = item.site
-      forks.add(site)
       for (let line of checks(item)) {
         try {
           console.log('checked', line)
           let title = line.split(/\[\[|\]\]/)[1]
-          let page = await fetch(`//${site}/${frame.asSlug(title)}.json`).then(res => res.json())
+          let {site,page,sites} = await getfrom(frame.asSlug(title),item.sites)
+          console.log('getfrom',title,site,sites)
+          if (!site) continue // not in sitemaps, eg about page
+          forks.add(site)
+          // let page = await fetch(`//${site}/${frame.asSlug(title)}.json`).then(res => res.json())
           let words = wordcount(page.story)
           metrics.words += words
           metrics.pages += 1
@@ -44,7 +46,8 @@
             if(item.site) forks.add(item.site)
           let outrefs = visit(page).map(title => ({type:'reference', title}))
           metrics.links += outrefs.length
-          story.push({type:'markdown',site,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
+          story.push({type:'roster',text:sites.join("\n")})
+          story.push({type:'markdown',sites,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
           window.result.innerHTML += ' .'
         } catch (err) {
           window.result.innerHTML += ' x'

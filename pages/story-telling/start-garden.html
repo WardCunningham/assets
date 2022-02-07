@@ -2,19 +2,20 @@
   <button onclick=dostart(event)>start garden</button>
   <input id=title type=text width=80 placeholder="Optional Garden Title">
 </p>
+<div id=menu></div>
 <div id=result></div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const wordcount = story => story.reduce((sum,item) => sum + (item.text||'').split(/\s+/).length, 0)
 
-  window.result.innerHTML = (await frame.context()).page.story
+  window.menu.innerHTML = (await frame.context()).page.story
     .filter(item => item.type == 'reference')
     .map(ref => `
       <input type="checkbox" id="${ref.title}" name="ref">
       <label for="${ref.title}">${ref.title}</label><br>`).join("\n")
 
   window.dostart = function(event) {
-    let selected = [...document.querySelectorAll('input')]
+    let selected = [...menu.querySelectorAll('input')]
       .filter(input => input.checked)
       .map(input => input.id)
     start(event,selected)
@@ -23,25 +24,33 @@
   async function start(event,selected) {
     let title = window.title.value || 'Garden'
     let story = [{type:'paragraph', text:'Choose these links to enlarge the garden.'}]
+    let garden = []
     let forks = new Set()
+    let sites = new Set()
+    window.result.innerHTML = ''
 
     for (let want of selected) {
       try {
         let item = (await frame.context()).page.story.find(item => item.title == want)
         console.log(want,item)
         let site = item.site
+        sites.add(site)
         forks.add(site)
         let page = await fetch(`//${site}/${frame.asSlug(item.title)}.json`).then(res => res.json())
         let words = page.metrics.words
         story.push({type:'paragraph', site, words, text:`[[${item.title}]] — ${item.text} (${words})`})
-        let outrefs = visit(page).map(title => ({type:'reference', title}))
-        story.push({type:'markdown',site,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
+        // let outrefs = visit(page).map(title => ({type:'reference', title}))
+        // story.push({type:'markdown',site,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
+        garden.push(...visit(page).map(title => ({type:'reference', title})))
         window.result.innerHTML += ' .'
       } catch (err) {
         window.result.innerHTML += ' x'
         story.push({type:'code',text:`Trouble with ${line}\n${err.message}`})
       }
-        }
+    }
+    garden.sort((a,b) => a.title.localeCompare(b.title))
+    sites = [...sites]
+    story.push({type:'markdown',sites,text:garden.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
     story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-story.html\nHEIGHT 100`})
     frame.open({title,story},event.shiftKey,[...forks])
   }

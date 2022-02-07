@@ -4,7 +4,7 @@
 <script type=module>
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  import {wordcount, visit} from './telling.js'
+  import {wordcount, visit, getfrom} from './telling.js'
   let context = await frame.context()
   let metrics = {pages:0,words:0,links:0}
 
@@ -25,15 +25,16 @@
     console.log(selected,item)
     let title = `Telling ${item.title}`
     let story = []
-    let site = item.site
     try {
-      let page = await fetch(`//${site}/${frame.asSlug(item.title)}.json`).then(res => res.json())
+      // let page = await fetch(`//${site}/${frame.asSlug(item.title)}.json`).then(res => res.json())
+      let {site, page, sites} = await getfrom(frame.asSlug(item.title),[item.site])
       let words = wordcount(page.story)
       metrics.words += words
       metrics.pages += 1
       story.push({type:'paragraph', site, words, text:`[[${item.title}]] — ${item.text} (${words})`})
+      story.push({type:'roster', text:sites.join("\n")})
       let outrefs = visit(page).map(title => ({type:'reference', title}))
-      story.push({type:'markdown',site,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
+      story.push({type:'markdown',sites,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
       metrics.links += outrefs.length
       window.result.innerText += ' .'
     } catch (err) {
@@ -42,7 +43,7 @@
     }
     story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-story.html\nHEIGHT 100`})
     story.unshift({type:'paragraph', text:`Story of ${metrics.pages} pages with ${metrics.words} words and ${metrics.links} more links.`})
-    frame.open({title,metrics,story},event.shiftKey,[site])
+    frame.open({title,metrics,story},event.shiftKey,[item.site])
   }
 
 </script>
