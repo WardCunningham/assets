@@ -46,8 +46,8 @@
             if(item.site) forks.add(item.site)
           let outrefs = visit(page).map(title => ({type:'reference', title}))
           metrics.links += outrefs.length
-          story.push({type:'roster',text:sites.join("\n")})
           story.push({type:'markdown',sites,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
+          story.push({type:'roster',text:sites.join("\n")})
           window.result.innerHTML += ' .'
         } catch (err) {
           window.result.innerHTML += ' x'

@@ -32,9 +32,9 @@
       metrics.words += words
       metrics.pages += 1
       story.push({type:'paragraph', site, words, text:`[[${item.title}]] — ${item.text} (${words})`})
-      story.push({type:'roster', text:sites.join("\n")})
       let outrefs = visit(page).map(title => ({type:'reference', title}))
       story.push({type:'markdown',sites,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
+      story.push({type:'roster', text:sites.join("\n")})
       metrics.links += outrefs.length
       window.result.innerText += ' .'
     } catch (err) {
