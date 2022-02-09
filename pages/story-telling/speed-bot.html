@@ -1,0 +1,53 @@
+<pre id=result></pre>
+<script type=module>
+import {visit,getfrom,sitemaps} from './telling.js'
+const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+const any = list => list[Math.floor(Math.random()*list.length)]
+
+let done = Date.now() + 10000
+let all = [await getfrom('field-guide-to-the-federation',['fed.wiki.org'])]
+let pick = all[0]
+let seen = new Set()
+
+window.doview = function (event) {
+  let [site,title] = event.target.innerText.split(' — ')
+  window.parent.postMessage({
+    action:"doInternalLink",
+    title,
+    site,
+    keepLineup: event.shiftKey
+  }, "*")
+}
+
+try {
+  while (Date.now() < done) {
+    let remain = Math.ceil((done - Date.now())/1000)
+    let links = visit(pick.page).filter(title => !seen.has(title))
+    if (links.length) {
+      let link = any(links)
+      seen.add(link)
+      let next = await getfrom(asSlug(link),pick.sites)
+      if (next && next.page) {
+        all.push(next)
+        window.result.innerHTML += `${remain} <span onclick=doview(event)>${next.site} — ${link}</span>\n`
+        pick = next 
+      } else {
+        window.result.innerHTML += `  <span style="color:gray;">fail ${link}</span>\n`
+        // pick = any(all) // can't find page for link
+      }
+    } else {
+      all = all.filter(place => !(place.site == pick.site && place.page.title == pick.page.title))
+      if (!all.length) break
+      window.result.innerHTML += `  <span style="color:gray;">done ${pick.page.title}</span>\n`
+      pick = any(all) // can't find new link on page
+    }
+  }
+}
+catch(err) {
+  window.result.innerHTML += `
+  ${err.message}
+  ${err.stack}`
+}
+window.result.innerHTML += "\n\n"+Object.entries(sitemaps).map(([site,infos]) => `${infos.length} — ${site}`).join("\n")
+
+</script>
