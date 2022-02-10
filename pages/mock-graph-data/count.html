@@ -1,0 +1,20 @@
+<table id=result></table>
+<style>
+  td, th { border: 1px solid gray; padding: 8px; }
+  table { border-collapse: collapse; }
+</style>
+<script type=module>
+  let path = `http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/raw`
+  let files = ['dataflow-diagram.json','organization-chart.json','service-traffic-reports.json','source-code-control.json']
+  let [dd, oc, str, scc] = await Promise.all(files.map(file => fetch(`${path}/${file}`).then(res => res.json())))
+  let p = scc.map(s => s.programs).flat()
+  let e = p.map(t => t.team).flat()
+  window.result.innerHTML = `
+    <tr><td>dataflow<td>${dd.length}
+    <tr><td>organization<td>${oc.length}
+    <tr><td>traffic<td>${str.length}
+    <tr><td>source<td>${scc.length}
+    <tr><td>programs<td>${p.length}
+    <tr><td>members<td>${e.length}
+  `
+</script>
