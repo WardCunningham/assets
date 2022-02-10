@@ -1,13 +1,16 @@
 <pre id=result></pre>
 <script type=module>
 import {visit,getfrom,sitemaps} from './telling.js'
+import {open} from 'http://code.fed.wiki/assets/v1/frame.js'
+
 const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 const any = list => list[Math.floor(Math.random()*list.length)]
 
-let done = Date.now() + 10000
+let done = Date.now() + 5000
 let all = [await getfrom('field-guide-to-the-federation',['fed.wiki.org'])]
 let pick = all[0]
 let seen = new Set()
+let dot = []
 
 window.doview = function (event) {
   let [site,title] = event.target.innerText.split(' — ')
@@ -28,6 +31,8 @@ try {
       seen.add(link)
       let next = await getfrom(asSlug(link),pick.sites)
       if (next && next.page) {
+        // dot.push(`"${next.site}\n${next.page.title}" [label="<IMG SRC=\\"http://${next.site}/favicon.png\\"/>${next.page.title}"]`)
+        dot.push(`"${pick.site}\n${pick.page.title}" -> "${next.site}\n${next.page.title}"`)
         all.push(next)
         window.result.innerHTML += `${remain} <span onclick=doview(event)>${next.site} — ${link}</span>\n`
         pick = next 
@@ -49,5 +54,13 @@ catch(err) {
   ${err.stack}`
 }
 window.result.innerHTML += "\n\n"+Object.entries(sitemaps).map(([site,infos]) => `${infos.length} — ${site}`).join("\n")
+let text = `digraph {\nnode [shape=box style=filled fillcolor=bisque]\n${dot.join("\n")}\n}`
+console.log(text)
+let story = [
+  {type:'paragraph', text: "This graph is for you."},
+  {type:'graphviz', text}
+]
+open({title:"Speed Bot Journey",story})
+
 
 </script>
