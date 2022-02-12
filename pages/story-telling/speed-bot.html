@@ -1,13 +1,19 @@
 <pre id=result></pre>
 <script type=module>
+
 import {visit,getfrom,sitemaps} from './telling.js'
-import {open} from 'http://code.fed.wiki/assets/v1/frame.js'
+import {open, context} from 'http://code.fed.wiki/assets/v1/frame.js'
 
 const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 const any = list => list[Math.floor(Math.random()*list.length)]
 
-let done = Date.now() + 5000
+let done = Date.now() + 10000
+
 let all = [await getfrom('field-guide-to-the-federation',['fed.wiki.org'])]
+let reference = (await context()).page.story.find(item => item.type == 'reference')
+if(reference) {
+  all = [await getfrom(reference.slug,[reference.site])]
+}
 let pick = all[0]
 let seen = new Set()
 let dot = []
@@ -53,14 +59,14 @@ catch(err) {
   ${err.message}
   ${err.stack}`
 }
+
 window.result.innerHTML += "\n\n"+Object.entries(sitemaps).map(([site,infos]) => `${infos.length} — ${site}`).join("\n")
 let text = `digraph {\nnode [shape=box style=filled fillcolor=bisque]\n${dot.join("\n")}\n}`
-console.log(text)
 let story = [
-  {type:'paragraph', text: "This graph is for you."},
+  {type:'paragraph', text: `Random journey rooted from ${reference.title} and proceeding for ${all.length} pages.`},
   {type:'graphviz', text}
 ]
-open({title:"Speed Bot Journey",story})
 
+open({title:"Speed Bot Journey",story})
 
 </script>

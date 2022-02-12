@@ -28,6 +28,7 @@
       if(action.site) forks.add(action.site)
     let title = `More ${context.page.title}`
     let story = [...instory]
+    let above = visit({story:[...instory,...inlists]})
     for (let item of inlists) {
       for (let line of checks(item)) {
         try {
@@ -44,9 +45,9 @@
           story.push({type:'paragraph', site, words, text:`[[${title}]] — ${page.story[0].text.slice(0,140)} (${words})`})
           for (let item of page.story)
             if(item.site) forks.add(item.site)
-          let outrefs = visit(page).map(title => ({type:'reference', title}))
+          let outrefs = visit(page)
           metrics.links += outrefs.length
-          story.push({type:'markdown',sites,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
+          story.push({type:'markdown',sites,text:outrefs.map(title => `- [${above.includes(title)?' ':'x'}] [[${title}]]`).join("\n")})
           story.push({type:'roster',text:sites.join("\n")})
           window.result.innerHTML += ' .'
         } catch (err) {
