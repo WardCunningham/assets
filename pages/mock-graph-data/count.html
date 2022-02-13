@@ -1,9 +1,12 @@
+<p><button onclick=dodownload(event)>download raw</button></p>
 <table id=result></table>
 <style>
   td, th { border: 1px solid gray; padding: 8px; }
   table { border-collapse: collapse; }
 </style>
 <script type=module>
+  import {download} from 'http://code.fed.wiki/assets/v1/frame.js'
+
   let path = `http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/raw`
   let files = ['dataflow-diagram.json','organization-chart.json','service-traffic-reports.json','source-code-control.json']
   let [dd, oc, str, scc] = await Promise.all(files.map(file => fetch(`${path}/${file}`).then(res => res.json())))
@@ -17,4 +20,15 @@
     <tr><td>programs<td>${p.length}
     <tr><td>members<td>${e.length}
   `
+
+  window.dodownload = function (event) {
+    let raw = {
+      dataflow: dd,
+      organization: oc,
+      traffic: str,
+      source: scc
+    }
+    download(JSON.stringify(raw,null,2),'raw.json','text/json')
+  }
+
 </script>
