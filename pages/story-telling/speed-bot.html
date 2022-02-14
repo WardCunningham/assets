@@ -6,6 +6,8 @@ import {open, context} from 'http://code.fed.wiki/assets/v1/frame.js'
 
 const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 const any = list => list[Math.floor(Math.random()*list.length)]
+const hsv = hue => `"${(hue%1).toFixed(3)} 0.2 1.0"`
+const quote = title => `"${title.replace(/ +/g,'\\n')}"`
 
 let done = Date.now() + 10000
 
@@ -15,8 +17,16 @@ if(reference) {
   all = [await getfrom(reference.slug,[reference.site])]
 }
 let pick = all[0]
-let seen = new Set()
+let seen = new Set([pick.page.title])
 let dot = []
+let hue = 0.0001
+let color = {} // site => hsv
+addcolor(pick.page.title, pick.site)
+
+function addcolor(title, site) {
+  color[site] ||= hsv(hue += 0.111)
+  dot.push(`${quote(title)} [ tooltip="${site}" fillcolor=${color[site]}]`)
+}
 
 window.doview = function (event) {
   let [site,title] = event.target.innerText.split(' — ')
@@ -28,6 +38,7 @@ window.doview = function (event) {
   }, "*")
 }
 
+
 try {
   while (Date.now() < done) {
     let remain = Math.ceil((done - Date.now())/1000)
@@ -37,8 +48,8 @@ try {
       seen.add(link)
       let next = await getfrom(asSlug(link),pick.sites)
       if (next && next.page) {
-        // dot.push(`"${next.site}\n${next.page.title}" [label="<IMG SRC=\\"http://${next.site}/favicon.png\\"/>${next.page.title}"]`)
-        dot.push(`"${pick.site}\n${pick.page.title}" -> "${next.site}\n${next.page.title}"`)
+        addcolor(next.page.title, next.site)
+        dot.push(`${quote(pick.page.title)} -> ${quote(next.page.title)}`)
         all.push(next)
         window.result.innerHTML += `${remain} <span onclick=doview(event)>${next.site} — ${link}</span>\n`
         pick = next 
@@ -61,12 +72,12 @@ catch(err) {
 }
 
 window.result.innerHTML += "\n\n"+Object.entries(sitemaps).map(([site,infos]) => `${infos.length} — ${site}`).join("\n")
-let text = `digraph {\nnode [shape=box style=filled fillcolor=bisque]\n${dot.join("\n")}\n}`
+let text = `digraph {\nnode [shape=box style=filled fillcolor=white]\n${dot.join("\n")}\n}`
 let story = [
   {type:'paragraph', text: `Random journey rooted from ${reference.title} and proceeding for ${all.length} pages.`},
   {type:'graphviz', text}
 ]
 
-open({title:"Speed Bot Journey",story})
+open({title:"Speed Bot Journey",story},false,Object.keys(color))
 
 </script>
