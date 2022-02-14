@@ -1,5 +1,7 @@
-<pre id=result></pre>
-<script type=module>
+
+<!-- saved from url=(0072)http://xp.kelley.asia.wiki.org/assets/pages/story-telling/speed-bot.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><pre id="result"></pre>
+<script type="module">
 
 import {visit,getfrom,sitemaps} from './telling.js'
 import {open, context} from 'http://code.fed.wiki/assets/v1/frame.js'
@@ -19,7 +21,7 @@ if(reference) {
 let pick = all[0]
 let seen = new Set([pick.page.title])
 let dot = []
-let hue = 0.0001
+let hue = 0.5001
 let color = {} // site => hsv
 addcolor(pick.page.title, pick.site)
 
@@ -74,10 +76,10 @@ catch(err) {
 window.result.innerHTML += "\n\n"+Object.entries(sitemaps).map(([site,infos]) => `${infos.length} — ${site}`).join("\n")
 let text = `digraph {\nnode [shape=box style=filled fillcolor=white]\n${dot.join("\n")}\n}`
 let story = [
-  {type:'paragraph', text: `Random journey rooted from ${reference.title} and proceeding for ${all.length} pages.`},
+  {type:'paragraph', text: `Random journey rooted from ${reference.title} and proceeding for ${all.length} pages travelling through ${Object.keys(color).length} sites.`},
   {type:'graphviz', text}
 ]
 
 open({title:"Speed Bot Journey",story},false,Object.keys(color))
 
-</script>
+</script></body></html>
