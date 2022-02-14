@@ -1,0 +1,13 @@
+<div id=result></div>
+<script type=module>
+
+  // raw = { dataflow, organization, traffic, source }
+  let assets = 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data'
+  let raw = await fetch(`${assets}/graphs/raw.json`).then(res => res.json())
+  let found = raw.organization.filter(node => node.name.includes('Flores'))
+  window.result.innerHTML = found.map(node => `
+    <details><summary>${node.name}</summary>
+    <pre>${JSON.stringify(node,null,2)}</pre>
+    </details>`).join("\n")
+
+</script>
