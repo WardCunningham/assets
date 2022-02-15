@@ -27,7 +27,7 @@
   function generate(layout) {
     let dot = []
     const quote = label => `"${label.split(/ /).join('\\n')}"`
-    dot.push('digraph {')
+    dot.push('strict digraph {')
     dot.push(`layout=${layout}; overlap = false; splines=true`)
     dot.push('node [style=filled fillcolor=bisque]')
     for (let node of highlights)
