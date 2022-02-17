@@ -1,4 +1,5 @@
-<p><button onclick=domatch(event)>match employees</button></p>
+<p><button onclick=doemployee(event)>match</button> employee reporting hierarchy</p>
+<p><button onclick=doproject(event)>match</button> project teams and service</p>
 
 <script type=module>
 
@@ -6,9 +7,9 @@
   let assets = `http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graphs`
   let {nodes, rels} = await fetch(`${assets}/graph.json`).then(res => res.json())
 
-  window.domatch = function(event) {
+  window.doemployee = function(event) {
     let n1 = nodes.filter(node => node.type=='Employee' && node.props.name.includes('Flores'))
-    let r1 = n1.map(node => node.in.map(rid => rels[rid])).flat()
+    let r1 = n1.map(node => node.in.filter(rid => nodes[rels[rid].from].type=='Employee').map(rid => rels[rid])).flat()
     let r2 = n1.map(node => node.out.map(rid => rels[rid])).flat()
 
     let dot = ['node [shape=box style=filled fillcolor=bisque]']
@@ -23,6 +24,29 @@
       {type:'graphviz', text:`strict digraph { rankdir=RL\n${dot.join("\n")}}`}
     ]
     let title = 'Finding Flores'
+    open({title, story},event.shiftKey)
+  }
+
+  const rev = (rel) => {let dup = JSON.parse(JSON.stringify(rel)); dup.from = rel.to; dup.to = rel.from; return dup}
+  window.doproject = function(event) {
+    let n1 = nodes.filter(node => node.props.name == 'Delta Xi')
+    let r1 = n1.map(node => node.out.filter(rid => rels[rid].type=='Manager').map(rid => rels[rid])).flat()
+    let r2 = n1.map(node => node.in.filter(rid => rels[rid].type=='Owner').map(rid => rels[rid])).flat()
+    let r3 = r2.map(rel => nodes[rel.from].out.filter(rid => rels[rid].type=='Team').map(rid => rev(rels[rid]))).flat()
+    console.log({n1,r1,r2,r3})
+
+    let dot = ['node [shape=box style=filled fillcolor=bisque]']
+    for (let rel of [r1, r2, r3].flat()) {
+      dot.push(`${rel.from} [label="${nodes[rel.from].props.name}"]`)
+      dot.push(`${rel.to} [label="${nodes[rel.to].props.name}"]`)
+      dot.push(`${rel.from} -> ${rel.to}`)
+    }
+
+    let story = [
+      {type:'paragraph', text:'We find management and engineering for all services of the Delta Xi project.'},
+      {type:'graphviz', text:`strict digraph { rankdir=RL\n${dot.join("\n")}}`}
+    ]
+    let title = 'Finding Delta Xi'
     open({title, story},event.shiftKey)
   }
 

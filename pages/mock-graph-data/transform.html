@@ -75,7 +75,34 @@
     }
   })
 
-  await raw('source-code-control', json => {})
+  // {
+  //   "project": "Delta Xi",
+  //   "manager": "tmbarnes@email.com",
+  //   "programs": [
+  //     {
+  //       "name": "Delta Graham scan",
+  //       "description": "Quickhull",
+  //       "team": [
+  //         "cgmoore@email.com",
+  //         "cjcollins@email.com",
+  //         "omcruz@email.com",
+  //         "aimyers@email.com"
+  //       ]
+  //     },
+
+  await raw('source-code-control', json => {
+    for (let proj of json) {
+      let p = node('Project', {name:proj.project})
+      rel('Manager', p, peeps[proj.manager])
+      for (let serv of proj.programs) {
+        let s = node('Service', {name:serv.name, description:serv.descriptoin})
+        rel('Owner',s,p)
+        for (let email of serv.team) {
+          rel('Team',s,peeps[email])
+        }
+      }
+    }
+  })
 
   await raw('dataflow-diagram', json => {})
 
