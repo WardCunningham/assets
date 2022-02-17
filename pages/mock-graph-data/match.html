@@ -1,5 +1,6 @@
 <p><button onclick=doemployee(event)>match</button> employee reporting hierarchy</p>
 <p><button onclick=doproject(event)>match</button> project teams and service</p>
+<p><button onclick=doschema(event)>match</button> all types as schema</p>
 
 <script type=module>
 
@@ -47,6 +48,22 @@
       {type:'graphviz', text:`strict digraph { rankdir=RL\n${dot.join("\n")}}`}
     ]
     let title = 'Finding Delta Xi'
+    open({title, story},event.shiftKey)
+  }
+
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  window.doschema = function(event) {
+    let dot = rels
+      .map(rel => `${nodes[rel.from].type} -> ${nodes[rel.to].type} [label=${rel.type}]`)
+      .filter(uniq)
+
+    dot.unshift('node [shape=box style=filled fillcolor=palegreen]')
+
+    let story = [
+      {type:'paragraph', text:'We construct a schema from type information in nodes and relations.'},
+      {type:'graphviz', text:`strict digraph { rankdir=TB\n${dot.join("\n")}}`}
+    ]
+    let title = 'Finding Graph Schema'
     open({title, story},event.shiftKey)
   }
 
