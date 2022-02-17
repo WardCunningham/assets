@@ -1,0 +1,86 @@
+<p><button onclick=dodownload(event)>download graph</button></p>
+<div id=result></div>
+<script type=module>
+
+  import {download} from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  let nodes = []
+  let rels = []
+
+  function node(type, props) {
+    let obj = {type, in:[], out:[], props}
+    nodes.push(obj)
+    return nodes.length-1
+  }
+
+  function rel(type, from, to, props={}) {
+    let obj = {type, from, to, props}
+    rels.push(obj)
+    let rid = rels.length-1
+    nodes[from].out.push(rid)
+    nodes[to].in.push(rid)
+    return rid
+  }
+
+  async function raw(file, build) {
+    const report = msg => {window.result.innerHTML += `<details><summary>${file}</summary><p>${msg}</p></details>`}
+    const tally = list => list.reduce((s,e)=>{s[e.type] = s[e.type] ? s[e.type]+1 : 1; return s}, {})
+    let assets = `http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/raw`
+    let json = await fetch(`${assets}/${file}.json`).then(res => res.json())
+    let had = {nodes:tally(nodes), rels:tally(rels)}
+    try {
+      build(json)
+      let now = {nodes:tally(nodes), rels:tally(rels)}
+      report(diff(had,now))
+    } catch(err) {
+      console.error(err.stack)
+      report(err.message)
+    }
+  }
+
+  function diff (had, now) {
+    let html = []
+    for (let list of ['nodes', 'rels']) {
+      for (let type in now[list]) {
+        if((had[list][type]||0) != now[list][type])
+          html.push(`${type}: ${now[list][type]-(had[list][type]||0)} ${list}`)
+      }
+    }
+    return html.join("<br>")
+  }
+
+  window.dodownload = function(event) {
+    let graph = [
+      '{"nodes":[',nodes.map(node => JSON.stringify(node)).join(",\n"), '],',
+      '"rels":[', rels.map(rel => JSON.stringify(rel)).join(",\n"),']}'
+    ]
+    download(graph.join("\n"),'graph.json','text/json')
+  }
+
+  // {
+  //   "name": "H. R. Collins",
+  //   "email": "hrcollins@email.com",
+  //   "manager": "erlee@email.com",
+  //   "start": "2002-10-11"
+  // },
+
+  let peeps = {}
+  await raw('organization-chart', json => {
+    for (let peep of json) {
+      peeps[peep.email] = node('Employee', peep)   
+    }
+    console.log(peeps)
+    for (let peep of json) {
+      if(peep.manager) rel('Manager', peeps[peep.email], peeps[peep.manager])
+    }
+  })
+
+  await raw('source-code-control', json => {})
+
+  await raw('dataflow-diagram', json => {})
+
+  await raw('service-traffic-reports', json => {})
+
+  console.log({nodes,rels})
+
+</script>

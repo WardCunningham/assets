@@ -1,0 +1,30 @@
+<p><button onclick=domatch(event)>match employees</button></p>
+
+<script type=module>
+
+  import {open} from 'http://code.fed.wiki/assets/v1/frame.js'
+  let assets = `http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graphs`
+  let {nodes, rels} = await fetch(`${assets}/graph.json`).then(res => res.json())
+
+  window.domatch = function(event) {
+    let n1 = nodes.filter(node => node.type=='Employee' && node.props.name.includes('Flores'))
+    let r1 = n1.map(node => node.in.map(rid => rels[rid])).flat()
+    let r2 = n1.map(node => node.out.map(rid => rels[rid])).flat()
+
+    let dot = ['node [shape=box style=filled fillcolor=bisque]']
+    for (let rel of [r1, r2].flat()) {
+      dot.push(`${rel.from} [label="${nodes[rel.from].props.name}"]`)
+      dot.push(`${rel.to} [label="${nodes[rel.to].props.name}"]`)
+      dot.push(`${rel.from} -> ${rel.to}`)
+    }
+
+    let story = [
+      {type:'paragraph', text:'We find all Employees named Flores and the folks above and below them.'},
+      {type:'graphviz', text:`strict digraph { rankdir=RL\n${dot.join("\n")}}`}
+    ]
+    let title = 'Finding Flores'
+    open({title, story},event.shiftKey)
+  }
+
+
+</script>
