@@ -13,6 +13,8 @@
     return nodes.length-1
   }
 
+  const nid = name => nodes.findIndex(node => node.props.name == name)
+
   function rel(type, from, to, props={}) {
     let obj = {type, from, to, props}
     rels.push(obj)
@@ -133,7 +135,6 @@
 
   await raw('dataflow-diagram', json => {
     for (let flow of json) {
-      const nid = name => nodes.findIndex(node => node.props.name == name)
       const merge = (name,props) => {let n = nid(); return n == -1 ? node('queue',props) : n}
       switch (flow.type) {
         case 'rest':
@@ -152,7 +153,25 @@
     }
   })
 
-  await raw('service-traffic-reports', json => {})
+
+  // {
+  //   "name": "Delta Sethi-Ullman algorithm (staging)",
+  //   "load": 1.31,
+  //   "ping": 2.01
+  // },
+  // {
+  //   "name": "Delta Sethi-Ullman algorithm (production)",
+  //   "load": 2629.36,
+  //   "ping": 3.27
+  // },
+
+  await raw('service-traffic-reports', json => {
+    for (let stat of json) {
+      let [name,environment] = stat.name.split(/ (?=\((staging|production))/)
+      let n = node('Statistic',stat)
+      rel('Traffic',nid(name),n,{environment})
+    }
+  })
 
   console.log({nodes,rels})
 
