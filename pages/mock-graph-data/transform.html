@@ -104,7 +104,53 @@
     }
   })
 
-  await raw('dataflow-diagram', json => {})
+
+  // {
+  //   "type": "store",
+  //   "store": "memcache",
+  //   "from": "Nu Steinhaus–Johnson–Trotter algorithm"
+  // },
+  // {
+  //   "type": "site",
+  //   "site": "google",
+  //   "from": "Nu Laplacian smoothing"
+  // },
+  // {
+  //   "type": "rest",
+  //   "from": "Sigma Lempel–Ziv–Oberhumer",
+  //   "to": "Upsilon Earley parser"
+  // },
+  // {
+  //   "type": "queue",
+  //   "queue": "smoothsort_delta_id3",
+  //   "write": "Upsilon Smoothsort"
+  // },
+  // {
+  //   "type": "queue",
+  //   "queue": "smoothsort_delta_id3",
+  //   "read": "Delta ID3 algorithm"
+  // },
+
+  await raw('dataflow-diagram', json => {
+    for (let flow of json) {
+      const nid = name => nodes.findIndex(node => node.props.name == name)
+      const merge = (name,props) => {let n = nid(); return n == -1 ? node('queue',props) : n}
+      switch (flow.type) {
+        case 'rest':
+          rel('Flow', nid(flow.from), nid(flow.to), {kind:'rest'})
+          break
+        // case 'queue':
+        //   console.log('queue',flow)
+        //   if(flow.read) rel('Queue')
+        //     rel('Flow', nid(flow.read), merge(flow.queue,{name:flow.queue}), {kind:'queue'})
+        //   if(flow.write) rel('Queue')
+        //     rel('Flow', merge(flow.queue,{name:flow.queue}), nid(flow.write), {kind:'queue'})
+        //   break
+        default:
+          console.log('flow',flow)
+      }
+    }
+  })
 
   await raw('service-traffic-reports', json => {})
 
