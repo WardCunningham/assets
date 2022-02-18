@@ -1,0 +1,61 @@
+<p id=summary></p>
+<ul id=result></ul>
+<script type=module>
+  // import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const rev = domain => domain.split(/\./).reverse()
+
+// Find the most recent search scrape log
+
+  let endpoint = `http://search.fed.wiki.org:3030/logs`
+  let logs = await fetch(endpoint).then(res => res.text())
+  let latest = logs.split(/\n/)[1].replace(/<.*?>/g,'')
+
+// Read sites exposing sitemaps, sort them by domain name sufix
+
+  let log = await fetch(`http://search.fed.wiki.org:3030/logs/${latest}.txt`).then(res => res.text())
+  log = log.split(/\n/)
+  log = log.filter(line => / pages$/.test(line))
+  log = log.map(line => line.match(/^(.*?), (\d+) pages$/).splice(1))
+  log = log.filter(line => line[1] > 0 && !line[0].includes('4010'))
+  log.sort((a,b) => rev(a[0]).join('.').localeCompare (rev(b[0]).join('.')))
+  log.shift()
+  window.summary.innerHTML = `<center>
+    ${log.reduce((sum,each) => sum+(+each[1]), 0).toLocaleString()} pages<br>
+    ${log.length.toLocaleString()} sites</center>`
+
+// List grouped by domain
+
+  let doing = log[0][0]
+  let html = []
+  let details = []
+  let pages = 0
+  let sites = 0
+  const emit = () => html.push(`<details><summary>${doing} — ${pages}/${sites}</summary><ul>${details.join("\n")}</details>`)
+  for (let [site, count] of log) {
+    let domain = site.split(/\./).slice(-2).join('.')
+    if (doing != domain) {
+      emit()
+      details = []
+      pages = 0
+      sites = 0
+      doing = domain
+    } 
+    details.push(`<li> <span onclick=dovisit(event)>${site}</span>  — ${count}`)
+    pages += +count
+    sites += 1
+  }
+  emit()
+  window.result.innerHTML = html.join("\n")
+
+// Show welcome pages
+
+  window.dovisit = function (event) {
+    let site = event.target.innerText
+    window.parent.postMessage({
+      action:"doInternalLink",
+      title: "Welcome Visitors",
+      site,
+      keepLineup: event.shiftKey
+    }, "*")
+  }
+</script>
