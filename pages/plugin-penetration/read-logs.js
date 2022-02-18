@@ -69,7 +69,7 @@
 
 // Record sha1 hash for each version
 
-// plugin=frame
+// plugin=present
 // curl -s http://asia.wiki.org/plugin/plugmatic/view/$plugin |\
 // jq -r '.versions[]' |\
 // while read v; do
@@ -79,22 +79,16 @@
 // done | pbcopy
 
   let versions = [
-    ['0.8.8','a01dcabe16e24982fc7e96ae8d8925f1092ca343'],
-    ['0.8.7','368c07f096c73a15454e4dd6a3bdf7d3723a5f23'],
-    ['0.8.6','add9b2be8510a85c3f51db25ec0b4c143dbdf3cb'],
-    ['0.8.5','f6225e5a1cbcb3b5ec26cf90d2eb9d5fd8f3e1bd'],
-    ['0.8.4','e6ba4da85d2b3b98d4204d6df9abcefcbeec6836'],
-    ['0.8.3','9c74300e0605f38e7a6be008be195a102d228f5a'],
-    ['0.8.2','b9f13652a43a0c2e3aada81c44ca44fcaac090ba'],
-    ['0.8.1','d2f61161fa875181ee5837bcf3b2cdd4c3b7d5b9'],
-    ['0.8.0','37d0594e7c1da8d3cd1871d53ad17ac323e44e71'],
-    ['0.7.0','a7a5cffecddf8ecdb71a1dc058e80f2435dad6a9'],
-    ['0.3.0','2670896e64aef6945d9afe5eb6f2dd976372c13d'],
-    ['0.2.2','50d1dbdd26801837d42000703cfbc3193c53378e'],
-    ['0.2.0','b4283e1e19a6f616bd3598671bdfe79bd19afdeb'],
-    ['0.1.3','ca8a991c3d09faf2187ab178f638b3fc08fe46f9'],
-    ['0.1.2','ca8a991c3d09faf2187ab178f638b3fc08fe46f9'],
-    ['0.1.1','ca8a991c3d09faf2187ab178f638b3fc08fe46f9']
+    ["0.1.0","9249d473bc1fb943d817b04552d26537c53274b5"],
+    ["0.1.1","98fcf5c787047a7b9467011302e03d876cec62fa"],
+    ["0.1.2","26a573ebcdf68934e4dc09996844aa4bbd2eb205"],
+    ["0.1.3","2fb74603c48bd07d7295575559bb5a896959c085"],
+    ["0.1.4","2f208eb6d8c108a4d9157d3024cdaa8e90c52d5a"],
+    ["0.1.5","8e1d0d18b5eb4620698ead6b578bcf4f09dd6bac"],
+    ["0.1.6","a9c3b601a7939f41a2d91976e041015f45d55c45"],
+    ["0.1.7","cc61cf34b11526a8057e087a693def5427b33ecb"],
+    ["1.0.0","a9bc1665651a85bbeb752d3540930ec6db30f715"],
+    ["1.1.0","892304c0e55e662d02ea63513b3ac0fd0a14180d"]
   ]
 
 
@@ -104,7 +98,7 @@
   async function examine(rows) {
     let site = rows[3][0]
     if (rows[4].length) {
-      let plugin = await fetch(`http://${site}/plugins/frame/frame.js`).then(res => res.ok ? res.text() : res.status)
+      let plugin = await fetch(`http://${site}/plugins/present/present.js`).then(res => res.ok ? res.text() : res.status)
       if (plugin.toString().length < 5) {
         rows.push(plugin)
       } else {
