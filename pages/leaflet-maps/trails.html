@@ -41,7 +41,7 @@
 
     fetch(`markers.json`).then(res => res.json()).then(trails => {
       for (trail in trails) {
-        let link = `<a href=http://trails.ward.asia.wiki.org/${asSlug(trail)}.html>${trail}</a>`
+        let link = `<a href=http://trails.ward.asia.wiki.org/${asSlug(trail)}.html target=_blank>${trail}</a>`
         let line = []
         for (latlon of trails[trail]) {
           line.push(latlon)
