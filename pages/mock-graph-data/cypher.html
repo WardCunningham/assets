@@ -1,0 +1,26 @@
+<p><textarea style="width:100%; height:100px;">match (n:Employee) <-[:Manager]- (:Project)</textarea></p>
+<button onclick=doquery(event)>query</button>
+<p><pre id=result></pre>
+<style>
+  pre {
+    white-space: pre-wrap;
+    word-break: keep-all
+  }
+</style>
+
+<script type=module>
+
+  import * as peg from './parser.js'
+
+  window.doquery = function(event) {
+    try {
+      let text = document.querySelector('textarea').value
+      let script = peg.parse(text)
+      window.result.innerText = script      
+    } catch (err) {
+      window.result.innerText = err.message
+    }
+  }
+
+
+</script>
