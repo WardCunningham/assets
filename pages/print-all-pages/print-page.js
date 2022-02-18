@@ -8,7 +8,7 @@ export function render (page, disposition, resolve) {
     switch (item.type) {
 
       case 'paragraph':
-        count(`words ${disposition}` ,words(item.text))
+        count(`words ${disposition} (render)` ,words(item.text))
         html.push(`<p>${resolve(page, disposition, item.text)}</p>`)
         break
 
@@ -27,7 +27,7 @@ export function render (page, disposition, resolve) {
         break
 
       case 'markdown':
-        count(`words ${disposition}`,words(item.text))
+        count(`words ${disposition} (render)`,words(item.text))
         let text = item.text
         text = text.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
         text = text.replace(/\*(.+?)\*/g,"<b>$1</b>")

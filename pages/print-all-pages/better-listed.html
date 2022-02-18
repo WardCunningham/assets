@@ -45,28 +45,32 @@ const line = title => `<span>${title}</span>${absent(title)}\n`
 const quote = label => `"${label.replace('-','- ').split(/ /).join('\\n')}"`
 
 
-window.dodownload = async function() {
-  frame.download(html.join("\n"),'draft-pages.html','text/html')
-}
-
 window.docollate = async function(event) {
   html = await collate()
   statistics(event)
 }
 
-window.dodiagram = diagram
+window.dodiagram = function(event) {
+  diagram(event)
+}
+
+window.dodownload = function() {
+  frame.download(html.join("\n"),'draft-pages.html','text/html')
+}
 
 await startup()
 
 function visit(page) {
+  let links = []
   const link = /\[\[(.*?)\]\]/g
   let match
   for (let item of page.story) {
     let text = item.text
     while (match = link.exec(text)) {
-      titles.push(match[1])
+      links.push(match[1])
     }
   }
+  return links
 }
 
 async function startup () {
@@ -77,8 +81,7 @@ async function startup () {
   neighborhood = {}
   for (let i = 0; i<sites.length; i++) neighborhood[sites[i]] = flights[i]
   present = Object.values(neighborhood).map(sitemap => sitemap.map(info => info.slug)).flat()
-  visit(context.page)
-  window.contents.innerHTML = titles.map(line).join("")
+  window.contents.innerHTML = visit(context.page).map(line).join("")
 
 }
 
@@ -86,12 +89,10 @@ async function collate() {
   document.getElementsByName('seq').forEach((i) => {if(i.checked) sequential = +i.value})
   document.getElementsByName('alp').forEach((i) => {if(i.checked) alphabetical = +i.value})
 
-  tier = 1
+  tier = 0
   refs = []
   recount()
-
   titles = []
-  visit(context.page)
 
   dot = []
   sections = {
@@ -101,28 +102,56 @@ async function collate() {
   }
 
   reference.innerText = ''
-  count(`1st sequential tiers`, sequential)
-  count(`2nd alphabetical tiers`, alphabetical)
-  let panels = await Promise.all(titles.filter(ispresent).map(title => getpanel(title)))
-  emit(panels, 'sequenced')
+  count(`1st sequential tiers (collate)`, sequential)
+  count(`2nd alphabetical tiers (collate)`, alphabetical)
 
-  tier = 2
-  dot.push(`{ rank=same; node [style=filled fillcolor=palegreen];`)
-  dot.push(...refs.map(e => `${quote(e)};`))
-  dot.push(...refs.slice(0,-1).map((e,i) => `${quote(e)} -> ${quote(refs[i+1])}`))
-  dot.push(`}`)
 
-  while(refs.length && tier <= sequential+alphabetical+1) {
-    let disposition = tier <= sequential ? 'sequenced' : tier <= sequential+alphabetical ? 'alphabetized' : 'omitted'
-    reference.innerHTML += `<i style="opacity:0.6">tier ${tier}</i><br>` + refs.map(line).join("")+"\n"
-    panels = await Promise.all(refs.filter(ispresent).map(title => getpanel(title)))
-    count(`tier ${tier} titles ${disposition}`, panels.length)
+
+  refs = visit(context.page)
+  await depth(0)
+
+  tier = sequential+1
+  while(refs.length && tier <= sequential+alphabetical) {
+    await breadth(tier)
+    tier += 1
+  }
+
+  async function depth(tier) {
+    console.log('start depth',tier,refs)
+    if (refs.length)
+      reference.innerHTML += `<i style="opacity:0.6">tier ${tier} (depth)</i><br>` + refs.map(line).join("")+"\n"
+    let panels = await Promise.all(refs.filter(ispresent).map(title => getpanel(title)))
     titles.push(...refs)
     refs = []
-    dot.push(`{ rank=tier${tier};`)
-    emit(panels, disposition)
-    dot.push(`}`)
-    tier += 1
+    let refsum = []
+    if (tier == sequential) {
+      dots(() => emit(panels, 'sequenced'))
+      refsum = refs
+    }
+    else if (tier < sequential) {
+      for (let panel of panels) {
+        refs = []
+        dots(() => emit([panel], 'sequenced'))
+        refsum.push(...refs)
+        titles.push(...refs)
+        await depth(tier+1)
+      }
+    }
+    console.log('end depth',tier, refsum)
+    refs = refsum
+  }
+
+  async function breadth(tier) {
+    console.log('start breadth',tier,refs)
+    let disposition = tier <= sequential+alphabetical ? 'alphabetized' : 'omitted'
+    if (refs.length)
+      reference.innerHTML += `<i style="opacity:0.6">tier ${tier} (breadth)</i><br>` + refs.map(line).join("")+"\n"
+    let panels = await Promise.all(refs.filter(ispresent).map(title => getpanel(title)))
+    count(`tier ${tier} titles ${disposition} (breadth)`, panels.length)
+    titles.push(...refs)
+    refs = []
+    dots(() => emit(panels, disposition))
+    console.log('end breadth',tier,refs)
   }
 
   const contents = (list, title) => `
@@ -152,7 +181,7 @@ function getpanel(title) {
   }
   candidates.sort((a,b) => a[1]-b[1])
   let site = candidates[0][0]
-  count(`pages from ${site}`)
+  count(`pages from ${site} (getpanel)`)
   return new Promise(async response => {
     let page = await fetch(`//${site}/${asSlug(title)}.json`).then(isjson)
     response({site,page})})
@@ -164,10 +193,10 @@ function emit(panels, disposition) {
     if (!page || !page.title) continue
     let html = []
     sections[disposition].push(html)
-    count('pages encountered')
+    count('pages encountered (emit)')
     let age = (Date.now() - page.journal.slice(-1)[0].date) / (24*60*60*1000)
     let when = age < 1 ? 'today' : age<7 ? 'this week' : age<30 ? 'this month' : age<365 ? 'this year' : 'years ago'
-    count(`pages revised ${when}`)
+    count(`pages revised ${when} (emit)`)
     let slug = asSlug(page.title)
     html.push(`<h2 id="${slug}">${page.title}<a href="http://${site}/${slug}.html" target=_blank> ⬀ </a></h2>`)
     html.push(...render(page, disposition, resolve))
@@ -182,8 +211,8 @@ function resolve(page, disposition, text) {
       refs.push(title)
     }
     if (ispresent(title)) {
-      console.log('present',disposition,page.title,'->',title)
-      if(disposition=='alphabetized')
+      // console.log('present',disposition,page.title,'->',title)
+      if(true) // disposition=='alphabetized')
         dot.push(`${quote(page.title)} -> ${quote(title)}`)
       return `<a href=#${asSlug(title)}>${title}</a>`
     }
@@ -204,10 +233,18 @@ function statistics(event) {
   frame.open({title:'Print Statistics',story},event.shiftKey,[...Object.keys(neighborhood)])
 }
 
+function dots(doit) {
+  dot.push(`{ rank=tier${tier};`)
+  dot.push(`edge [penwidth=${tier==sequential ? 3 : 1}]`)
+  dot.push(`node [fillcolor=${tier<=sequential ? 'palegreen' : 'white'}]`)
+  doit()
+  dot.push(`}`)
+}
+
 function diagram(event) {
   let story = [
     {type:'paragraph',text:'Structure of pages as collated for printing.'},
-    {type:'graphviz',text:`strict digraph {rankdir=LR; ${dot.join("\n")}}`}
+    {type:'graphviz',text:`strict digraph {rankdir=LR; node [style=filled]; ${dot.join("\n")}}`}
   ]
   frame.open({title:'Print Diagram',story},event.shiftKey,[...Object.keys(neighborhood)])
 }
