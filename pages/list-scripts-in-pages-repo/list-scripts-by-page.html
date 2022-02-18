@@ -27,7 +27,7 @@
   {
     let {data} = await octokit.rest.repos.getContent({owner,repo,path})
     console.log(data)
-    const check = dir => done[dir.name] ? ' <span style="color:palegreen;">✔︎</span>' : ''
+    const check = dir => done[dir.name] ? ' <span style="color:green;">✔︎</span>' : ''
 
     window.result.innerHTML = data.map(dir => `
       <details ontoggle="toggle(event)" data-path="${dir.path}">
@@ -47,13 +47,14 @@
   }
 
   window.skim = async function(event) {
+    const caps = string => string.charAt(0).toUpperCase() + string.slice(1)
     let path = event.target.getAttribute('data-path')
     let dir = path.split('/')[1]
     let {data} = await octokit.rest.repos.getContent({owner,repo,path})
-    let title = data.name
+    let title = data.name.split(/[.-]/).map(word => caps(word)).join(" ")
     let text = atob(data.content).split(/\n/).map(line => line.replace(/(^ *[\w\<\/\.]+)( \w+)?.*$/,'$1$2 ⋯')).join("\n")
     let story = [
-      {type:'paragraph',text:`Script from [${data.html_url} github]`},
+      {type:'paragraph',text:`Script ${data.name} from [${data.html_url} github]`},
       {type:'search',text:`SEARCH SLUGS ${dir}`},
       {type:'code',text}
     ]
