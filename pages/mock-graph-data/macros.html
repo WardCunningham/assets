@@ -21,6 +21,7 @@
   let {nodes,rels} = await fetch(`${site}/graph.json`).then(res => res.json())
   window.result.innerHTML = `${list(tally(nodes),'nodes')}<br><br>${list(tally(rels),'rels')}`
 
+
   // M A C R O S
 
   const nid = node => nodes.findIndex(maybe => maybe === node)
