@@ -1,0 +1,71 @@
+<p><div id=choices></div></p>
+<hr>
+<p><div id=result></div></p>
+
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const tally = list => list.reduce((s,e)=>{s[e.type] = s[e.type] ? s[e.type]+1 : 1; return s}, {})
+  const list = (hash,label) => Object.keys(hash).map(type => `${type}: ${hash[type]} ${label}`).join("<br>")
+
+  let context = await frame.context()
+  let codes = context.page.story
+    .filter(item => item.type == 'code')
+    .map(item => item.text)
+  window.choices.innerHTML = codes
+    .map(text => `<span onclick=doquery(event)>${text.split("\n")[0]}</span>`)
+    .join("<br>")
+
+  let site = `http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graphs`
+  let {nodes,rels} = await fetch(`${site}/graph.json`).then(res => res.json())
+  window.result.innerHTML = `${list(tally(nodes),'nodes')}<br><br>${list(tally(rels),'rels')}`
+
+  // M A C R O S
+
+  const nid = node => nodes.findIndex(maybe => maybe === node)
+  const nids = all => all.map(node => nid(node))
+
+  function n (type,name) {
+    return nodes.filter(node =>
+      node.type == type &&
+        (name ? node.props.name == name : true))
+  }
+
+  function i (to, type, from) {
+    return to.filter(node =>
+      node.in.find(rid => 
+        rels[rid].type == type &&
+          (from ? nids(from).includes(rels[rid].from) : true)))
+  }
+
+  function o (from, type, to) {
+    return from.filter(node =>
+      node.out.find(rid => 
+        rels[rid].type == type &&
+          (to ? nids(to).includes(rels[rid].to) : true)))
+  }
+
+  function w (all, pred) {
+    return all.filter(each => pred(each.props))
+  }
+
+  function p (all, prop='name') {
+    return all.map(thing => thing.props[prop])
+  }
+
+
+  // Q U E R Y
+
+  window.doquery = function(event) {
+    console.log(event.target)
+    let name = event.target.innerText
+    let code = codes.find(text => text.startsWith(name+"\n")).replace(name+"\n",'')
+    console.log({name,code})
+    try {
+      let result = eval(code)
+      window.result.innerHTML = `<pre>${JSON.stringify(result,null,2)}</pre>`
+    } catch(err) {
+      window.result.innerHTML = err.message
+    }
+  }
+
+</script>
