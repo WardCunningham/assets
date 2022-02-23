@@ -3,6 +3,7 @@
 <script type=module>
 
   import {download} from 'http://code.fed.wiki/assets/v1/frame.js'
+  const tally = list => list.reduce((s,e)=>{s[e.type] = s[e.type] ? s[e.type]+1 : 1; return s}, {})
 
   let nodes = []
   let rels = []
@@ -26,7 +27,6 @@
 
   async function raw(file, build) {
     const report = msg => {window.result.innerHTML += `<details><summary>${file}</summary><p>${msg}</p></details>`}
-    const tally = list => list.reduce((s,e)=>{s[e.type] = s[e.type] ? s[e.type]+1 : 1; return s}, {})
     let assets = `http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/raw`
     let json = await fetch(`${assets}/${file}.json`).then(res => res.json())
     let had = {nodes:tally(nodes), rels:tally(rels)}
@@ -71,7 +71,6 @@
     for (let peep of json) {
       peeps[peep.email] = node('Employee', peep)   
     }
-    console.log(peeps)
     for (let peep of json) {
       if(peep.manager) rel('Manager', peeps[peep.email], peeps[peep.manager])
     }
@@ -173,6 +172,8 @@
     }
   })
 
+
+  window.result.innerHTML += `<pre>${JSON.stringify({nodes:tally(nodes), rels:tally(rels)},null,2)}</pre>`
   console.log({nodes,rels})
 
 </script>
