@@ -1,6 +1,10 @@
 <p><div id=choices></div></p>
 <hr>
 <p><div id=result></div></p>
+<style>
+  td, th { border: 1px solid gray; padding: 8px; }
+  table { border-collapse: collapse; }
+</style>
 
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
@@ -26,6 +30,21 @@
 
   // M A C R O S
 
+  function avg (all) {
+    return all.reduce((s,e) => s+e)/all.length
+  }
+
+  function table (rels) {
+    let graph = rels.graph
+    let rids = rels.rids
+    let rows = rids.map(rid => {
+      let rel = graph.rels[rid]
+      let a = graph.nodes[rel.from].props['name']
+      let b = graph.nodes[rel.to].props['name']
+      return `<tr><td>${a}<td>${b}`
+    })
+    return `<table>${rows.join("")}</table>`
+  }
 
   // Q U E R Y
 
