@@ -1,0 +1,39 @@
+<p>
+  <input id=type type=text size=14 list=typelist placeholder="type">
+  <input id=prop type=text size=14 list=proplist placeholder="property">
+  <input id=word type=text size=14 list=wordlist placeholder="selection">
+  <datalist id=typelist></datalist>
+  <datalist id=typeprop></datalist>
+  <datalist id=typeword></datalist>
+</p>
+<div id=result><div>
+
+<script type=module>
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  let g = await Graph.fetch('http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graphs/graph.json')
+  window.result.innerHTML = show(g.tally())
+
+  document.querySelectorAll('input').forEach(input => {
+    let id = input.getAttribute('id')
+    let list = input.getAttribute('list')
+    if(id=='type') {
+      document.querySelector(`#${list}`)
+        .innerHTML = Object.keys(g.tally().nodes)
+          .map(key =>`<option value="${key}">`)
+          .join("\n")
+    }
+  })
+
+  function show (tally) {
+    let html = []
+    for (let list of ['nodes', 'rels']) {
+      for (let type in tally[list]) {
+        html.push(`${type}: ${tally[list][type]} ${list}`)
+      }
+    }
+    return html.join("<br>")
+  }
+
+
+
+</script>

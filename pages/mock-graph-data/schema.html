@@ -1,0 +1,102 @@
+<p>
+  <button onclick="doschema(event)">show schema</button>
+  <button onclick="dograph(event)">show details</button>
+  <button onclick="dodetails(event)">details in cypher</button>
+</p>
+<div id=result></div>
+<style>
+  pre {font-size: 10px;}
+</style>
+
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  let input = (await frame.context()).page.story.find(item => /\[\S+ graph\]/.test(item.text))
+  let m = input.text.match(/\[(\S+) graph\]/)
+  let url = m[1] || 'https://raw.githubusercontent.com/WardCunningham/graph/main/sample/whatcom.graph.json'
+  let aGraph = await Graph.fetch(url)
+  console.log(aGraph)
+  window.result.innerHTML = show(aGraph.tally())
+
+  function show (tally) {
+    let html = []
+    for (let list of ['nodes', 'rels']) {
+      for (let type in tally[list]) {
+        html.push(`${type}: ${tally[list][type]} ${list}`)
+      }
+    }
+    return html.join("<br>")
+  }
+
+  function name(node) {
+    let props = node.props
+    if(props['entity_name']) return 'entity_name'
+    if(props['program_name']) return 'program_name'
+    return 'name'
+  }
+
+  window.doschema = function(event) {
+    let rels = aGraph.rels
+    let nodes = aGraph.nodes
+    let dot = rels
+      .map(rel => `${nodes[rel.from].type} -> ${nodes[rel.to].type} [label=${rel.type}]`)
+      .filter(uniq)
+
+    dot.unshift('node [shape=box style=filled fillcolor=palegreen]')
+
+    let story = [
+      {type:'paragraph', text:'We construct a schema from type information in nodes and relations.'},
+      {type:'graphviz', text:`strict digraph { rankdir=TB\n${dot.join("\n")}}`}
+    ]
+    let title = 'Graph Schema'
+    console.log({title,story})
+    frame.open({title, story},event.shiftKey)
+  }
+
+  window.dograph = function(event) {
+    const quote = (title) => `"${title.replace(/ +/g,'\\n')}"`
+    let rels = aGraph.rels
+    let nodes = aGraph.nodes
+    let dot = rels
+      .map(rel => {
+        let fn = name(nodes[rel.from])
+        let tn = name(nodes[rel.to])
+        let f = quote(nodes[rel.from].props[fn])
+        let t = quote(nodes[rel.to].props[tn])
+        return `${f} -> ${t} [label=${rel.type}]`
+      })
+      .filter(uniq)
+
+    dot.unshift('node [shape=box style=filled fillcolor=palegreen]')
+
+    let story = [
+      {type:'paragraph', text:'We construct a graph from actual nodes with a selected field as label.'},
+      {type:'graphviz', text:`strict digraph { rankdir=LR\n${dot.join("\n")}}`}
+    ]
+    let title = 'Graph Details'
+    console.log({title,story})
+    frame.open({title, story},event.shiftKey)
+
+  }
+
+  window.dodetails = function(event) {
+    console.log(event)
+    let nodes = aGraph.nodes
+    let text = aGraph.rels.map(rel => {
+      console.log(rel)
+      let f = nodes[rel.from]
+      let t = nodes[rel.to]
+      let fn = name(f)
+      let tn = name(t)
+      return `
+(:${f.type}{${fn}:'${f.props[fn]}'})
+  -[:${rel.type}]->
+    (:${t.type}{${tn}:'${t.props[tn]}'})`
+    }).join("\n")
+    window.result.innerHTML = `<pre>${text}</pre>`
+  }
+  
+</script> 
+
