@@ -60,6 +60,7 @@
     let rels = aGraph.rels
     let nodes = aGraph.nodes
     let dot = rels
+      .slice(0,30)
       .map(rel => {
         let fn = name(nodes[rel.from])
         let tn = name(nodes[rel.to])
@@ -84,7 +85,7 @@
   window.dodetails = function(event) {
     console.log(event)
     let nodes = aGraph.nodes
-    let text = aGraph.rels.map(rel => {
+    let text = aGraph.rels.slice(0,30).map(rel => {
       console.log(rel)
       let f = nodes[rel.from]
       let t = nodes[rel.to]
