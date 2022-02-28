@@ -64,8 +64,8 @@
       .map(rel => {
         let fn = name(nodes[rel.from])
         let tn = name(nodes[rel.to])
-        let f = quote(nodes[rel.from].props[fn])
-        let t = quote(nodes[rel.to].props[tn])
+        let f = quote(nodes[rel.from].type +" "+ nodes[rel.from].props[fn])
+        let t = quote(nodes[rel.to].type +" "+ nodes[rel.to].props[tn])
         return `${f} -> ${t} [label=${rel.type}]`
       })
       .filter(uniq)
