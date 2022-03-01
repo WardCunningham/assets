@@ -1,6 +1,6 @@
 // Construct Fork Network Graph
 // Usage: cd .wiki/ward.dojo.fed.wiki/assets/pages/fork-network-graph;
-//        deno run --allow-read forks.js > forks.json
+//        deno run --allow-read --allow-net forks.js > forks.json
 
 import {Graph} from 'https://raw.githubusercontent.com/WardCunningham/graph/main/src/graph.js'
 let g = new Graph()
@@ -25,8 +25,16 @@ const relid = (type,from,to) => {
   return g.addRel(type,from,to)
 }
 
+const nodemap = (nodes, doit) => {
+  let nids = nodes.nids
+  return nids.map(nid => {
+    let props = nodes.graph.nodes[nid].props
+    return doit(props)
+  })
+}
+
 function record(site,slug,action) {
-  console.error(JSON.stringify({site,slug,remote:action.site}))
+  // console.error(JSON.stringify({site,slug,remote:action.site}))
   const datename = epoch => epoch ? new Date(epoch).toLocaleDateString() : 'missing-date'
   let siteid = nodeid('Site',site)
   let slugid = nodeid('Page',slug)
@@ -55,5 +63,12 @@ for await(let site of Deno.readDir(root)) {
   }
 }
 
+await Promise.all(nodemap(g.n('Site'), props =>
+  Deno.resolveDns(props['name'],"A")
+    .then(ip => {props['ip'] = ip.join(", ")})
+    .catch(err => null)
+  )
+)
 
+console.error(g.tally())
 console.log(JSON.stringify({nodes:g.nodes, rels:g.rels},null,2))
