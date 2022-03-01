@@ -1,5 +1,6 @@
 // Construct Fork Network Graph
-// Usage: cd assets/pages/fork-network-graph; deno run --allow-read forks.js > forks.json
+// Usage: cd .wiki/ward.dojo.fed.wiki/assets/pages/fork-network-graph;
+//        deno run --allow-read forks.js > forks.json
 
 import {Graph} from 'https://raw.githubusercontent.com/WardCunningham/graph/main/src/graph.js'
 let g = new Graph()
@@ -24,14 +25,15 @@ const relid = (type,from,to) => {
   return g.addRel(type,from,to)
 }
 
-function record(site,slug,remote) {
-  console.error(JSON.stringify({site,slug,remote}))
+function record(site,slug,action) {
+  console.error(JSON.stringify({site,slug,remote:action.site}))
+  const datename = epoch => epoch ? new Date(epoch).toLocaleDateString() : 'missing-date'
   let siteid = nodeid('Site',site)
   let slugid = nodeid('Page',slug)
   relid('Slug',siteid,slugid)
-  let forkid = nodeid('Fork',`${site}/${slug}`)
+  let forkid = g.addNode('Fork',{name:datename(action.date)})
   relid('Action',slugid,forkid)
-  let remoteid = nodeid('Site',remote)
+  let remoteid = nodeid('Site',action.site)
   relid('Remote',forkid,remoteid)
 }
 
@@ -47,7 +49,7 @@ for await(let site of Deno.readDir(root)) {
     let page = JSON.parse(text)
     for (let action of (page.journal)) {
       if (action.type=='fork' && action.site) {
-        record(site.name, slug.name, action.site)
+        record(site.name, slug.name, action)
       }
     }
   }
