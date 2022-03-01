@@ -1,9 +1,14 @@
-<p><button onclick=domore(event)>do more</button></p>
+<p>
+  <button onclick=domore(event)>do more</button>
+  <button onclick=doprint(event)>print this</button>
+</p>
 <div id=result></div>
 <script type=module>
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import {wordcount, checks, visit, getfrom} from './telling.js'
+  import {render} from './render.js'
+
   let context = await frame.context()
   let instory, inlists
   let metrics = {pages:0,words:0,links:0}
@@ -59,6 +64,26 @@
     story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-story.html\nHEIGHT 100`})
     story.unshift({type:'paragraph', text:`Story of ${metrics.pages} pages with ${metrics.words} words and ${metrics.links} more links.`})
     frame.open({title,metrics,story},event.shiftKey,[...forks])
+  }
+
+  window.doprint = async function(event) {
+    let html = []
+    for (let item of instory) {
+      try {
+        let site = item.site
+        let title = item.text.split(/\[\[|\]\]/)[1]
+        let slug = frame.asSlug(title)
+        console.log({site,title,slug})
+        let page = await fetch(`//${site}/${slug}.json`).then(res => res.json())
+        html.push(render(site,page).join("\n"))
+        window.result.innerHTML += ' .'
+      } catch (err) {
+        window.result.innerHTML += ' x'
+        console.error(err)
+      }
+
+    }
+    frame.download(html.join("\n"),'preprint.html','text/html')
   }
 
   refresh()
