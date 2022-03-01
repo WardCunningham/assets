@@ -30,7 +30,7 @@
     return html.join("<br>")
   }
 
-  function name(node) {
+  function propname(node) {
     let props = node.props
     if(props['entity_name']) return 'entity_name'
     if(props['program_name']) return 'program_name'
@@ -56,19 +56,28 @@
   }
 
   window.dograph = function(event) {
-    const quote = (title) => `"${title.replace(/ +/g,'\\n')}"`
     let rels = aGraph.rels
     let nodes = aGraph.nodes
-    let dot = rels
+    let dot = []
+    let done = new Set()
+    // const quote = (title) => `"${title.replace(/ +/g,'\\n')}"`
+    const defn = nid => {
+      if(!done.has(nid)) {
+        let node = nodes[nid]
+        let name = node.props[propname(node)]
+        dot.push(`${nid} [label="${node.type}\n${name}"]`)
+      }
+      return nid
+    }
+    dot.push(...rels
       .slice(0,30)
       .map(rel => {
-        let fn = name(nodes[rel.from])
-        let tn = name(nodes[rel.to])
-        let f = quote(nodes[rel.from].type +" "+ nodes[rel.from].props[fn])
-        let t = quote(nodes[rel.to].type +" "+ nodes[rel.to].props[tn])
-        return `${f} -> ${t} [label=${rel.type}]`
+        let fnid = defn(rel.from)
+        let tnid = defn(rel.to)
+        return `${fnid} -> ${tnid} [label=${rel.type}]`
       })
       .filter(uniq)
+    )
 
     dot.unshift('node [shape=box style=filled fillcolor=palegreen]')
 
@@ -89,8 +98,8 @@
       console.log(rel)
       let f = nodes[rel.from]
       let t = nodes[rel.to]
-      let fn = name(f)
-      let tn = name(t)
+      let fn = propname(f)
+      let tn = propname(t)
       return `
 (:${f.type}{${fn}:'${f.props[fn]}'})
   -[:${rel.type}]->
