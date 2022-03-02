@@ -70,5 +70,13 @@ await Promise.all(nodemap(g.n('Site'), props =>
   )
 )
 
+await Promise.all(nodemap(g.n('Site'), props =>
+  Deno.readTextFile(`${root}/${props['name']}/status/owner.json`)
+    .then(text => JSON.parse(text))
+    .then(owner => {props['owner'] = owner.name})
+    .catch(err => null)
+  )
+)
+
 console.error(g.tally())
 console.log(JSON.stringify({nodes:g.nodes, rels:g.rels},null,2))
