@@ -7,6 +7,7 @@
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const wordcount = story => story.reduce((sum,item) => sum + (item.text||'').split(/\s+/).length, 0)
+  const uniq = (value, index, self) => self.indexOf(value) === index
 
   window.menu.innerHTML = (await frame.context()).page.story
     .filter(item => item.type == 'reference')
@@ -28,6 +29,7 @@
     let forks = new Set()
     let sites = new Set()
     window.result.innerHTML = ''
+    story.push({type:'pagefold',text:'story'})
 
     for (let want of selected) {
       try {
@@ -39,19 +41,21 @@
         let page = await fetch(`//${site}/${frame.asSlug(item.title)}.json`).then(res => res.json())
         let words = page.metrics.words
         story.push({type:'paragraph', site, words, text:`[[${item.title}]] — ${item.text} (${words})`})
-        // let outrefs = visit(page).map(title => ({type:'reference', title}))
-        // story.push({type:'markdown',site,text:outrefs.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
-        garden.push(...visit(page).map(title => ({type:'reference', title})))
+        garden.push(...visit(page))
         window.result.innerHTML += ' .'
       } catch (err) {
         window.result.innerHTML += ' x'
         story.push({type:'code',text:`Trouble with ${line}\n${err.message}`})
       }
     }
-    garden.sort((a,b) => a.title.localeCompare(b.title))
+
+    story.push({type:'pagefold',text:'garden'})
+    story.push({type:'pagefold',text:'more'})
+    garden = garden.filter(uniq)
+    garden.sort((a,b) => a.localeCompare(b))
     sites = [...sites]
-    story.push({type:'markdown',sites,text:garden.map(ref => `- [x] [[${ref.title}]]`).join("\n")})
-    story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-story.html\nHEIGHT 100`})
+    story.push({type:'markdown',sites,text:garden.map(title => `- [x] [[${title}]]`).join("\n")})
+    story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-garden.html\nHEIGHT 100`})
     frame.open({title,story},event.shiftKey,[...forks])
   }
 

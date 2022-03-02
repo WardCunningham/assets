@@ -4,7 +4,7 @@
 <script type=module>
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  import {render} from './render.js'
+  import {prolog, render} from './render.js'
   window.choices.innerHTML = (await frame.context()).page.story
     .filter(item => item.type == 'reference')
     .map(ref => `
@@ -62,15 +62,5 @@
       }
     }
   }
-
-  let prolog = `
-    <meta charset="utf-8"/>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟢</text></svg>">
-    <style>
-      body { font-family:helvetica; width:550px; }
-      h2 { page-break-before:always; }
-      a { text-decoration:none; }
-    </style>`
-
 
 </script>

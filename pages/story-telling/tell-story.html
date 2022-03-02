@@ -24,7 +24,7 @@
     let item = (await frame.context()).page.story.find(item => item.title == selected)
     console.log(selected,item)
     let title = `Telling ${item.title}`
-    let story = []
+    let story = [{type:'pagefold',text:'more'}]
     try {
       // let page = await fetch(`//${site}/${frame.asSlug(item.title)}.json`).then(res => res.json())
       let {site, page, sites} = await getfrom(frame.asSlug(item.title),[item.site])
