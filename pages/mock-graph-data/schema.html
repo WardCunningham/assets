@@ -34,6 +34,7 @@
     let props = node.props
     if(props['entity_name']) return 'entity_name'
     if(props['program_name']) return 'program_name'
+    if(props['caption']) return 'caption'
     return 'name'
   }
 
@@ -65,7 +66,8 @@
       if(!done.has(nid)) {
         let node = nodes[nid]
         let name = node.props[propname(node)]
-        dot.push(`${nid} [label="${node.type}\n${name}"]`)
+        let tips = Object.entries(node.props).map(e => `${e[0]}: ${e[1]}`).join("\n")
+        dot.push(`${nid} [label="${node.type}\n${name}" tooltip="${tips}"]`)
       }
       return nid
     }
