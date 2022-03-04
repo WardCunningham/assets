@@ -24,12 +24,13 @@
 
   async function start(event,selected) {
     let title = window.title.value || 'Garden'
-    let story = [{type:'paragraph', text:'Choose these links to enlarge the garden.'}]
+    let story = []
     let garden = []
     let forks = new Set()
     let sites = new Set()
+    let metrics = {stories:selected.length,pages:0,words:0,length:0}
     window.result.innerHTML = ''
-    story.push({type:'pagefold',text:'story'})
+    story.push({type:'pagefold',text:'stories'})
 
     for (let want of selected) {
       try {
@@ -43,9 +44,11 @@
         story.push({type:'paragraph', site, words, text:`[[${item.title}]] — ${item.text} (${words})`})
         garden.push(...visit(page))
         window.result.innerHTML += ' .'
+        metrics.pages += page.metrics.pages
+        metrics.words += page.metrics.words
       } catch (err) {
         window.result.innerHTML += ' x'
-        story.push({type:'code',text:`Trouble with ${line}\n${err.message}`})
+        story.push({type:'code',text:`Trouble with ${want}\n${err.message}`})
       }
     }
 
@@ -53,9 +56,15 @@
     story.push({type:'pagefold',text:'more'})
     garden = garden.filter(uniq)
     garden.sort((a,b) => a.localeCompare(b))
+    metrics.links = garden.length
     sites = [...sites]
     story.push({type:'markdown',sites,text:garden.map(title => `- [x] [[${title}]]`).join("\n")})
     story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-garden.html\nHEIGHT 100`})
+    story.unshift({type:'paragraph', text:`Garden founded on
+      ${metrics.stories} stories totaling
+      ${metrics.pages} pages and
+      ${metrics.words} words.
+      ${metrics.links} unique links can expand into the garden.`})
     frame.open({title,story},event.shiftKey,[...forks])
   }
 

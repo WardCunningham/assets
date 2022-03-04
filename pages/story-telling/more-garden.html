@@ -10,18 +10,34 @@
   import {prolog, render} from './render.js'
 
   let context = await frame.context()
-  let instory, inlists
-  let metrics = {pages:0,words:0,links:0}
+  let inauthors, ingarden, inlists
+  let metrics = {stories:0,pages:0,words:0,links:0}
 
   function refresh() {
     let story = context.page.story
-    instory = story.filter(item => item.type == 'paragraph' && item.site)
-    let pages = instory.length
-    let words = instory.reduce((sum, item) => sum + (item.words||0), 0)
-    metrics = {pages, words,links:0}
-    inlists = story.filter(item => item.type == 'markdown')
+    let folds = story
+      .filter(item => item.type == 'pagefold')
+      .map(item => [item.text, story.indexOf(item)])
+    let want = 'stories, garden, more'
+    console.log({folds})
+    if(folds.map(fold=>fold[0]).join(', ') != want) {
+      window.result.innerHTML = `Unexpected pagefolds.<br>Wanted ${want}.`
+      return
+    }
+
+    inauthors = story.slice(folds[0][1]+1, folds[1][1])
+    ingarden = story.slice(folds[1][1]+1, folds[2][1])
+    inlists = story.slice(folds[2][1]+1).filter(item => item.type == 'markdown')
+    console.log({inauthors, ingarden, inlists})
+
+    // instory = story.filter(item => item.type == 'paragraph' && item.site)
+    // let pages = instory.length
+    // let words = instory.reduce((sum, item) => sum + (item.words||0), 0)
+    // metrics = {pages, words,links:0}
+
     window.result.innerHTML = `<p>
-      ${pages} pages with ${words} words so far.<br>
+      ${inauthors.length} stories<br>
+      ${ingarden.length} pages in the garden so far<br>
       ${inlists.map(checks).reduce((s,e) => s+e.length,0)} links to more pages.</p>`
   }
 
@@ -70,13 +86,31 @@
   }
 
   window.doprint = async function(event) {
-    let html = [prolog]
-    for (let item of instory) {
+    let html = [prolog,`<h2 id="contents">Contents</h2>`]
+    let contents = inauthors.map(item => {
+      let site = item.site
+      let title = item.text.split(/\[\[|\]\]/)[1]
+      let slug = frame.asSlug(title)
+      let work = title.replace(/^(More |Telling )+/,'')
+      html.push(`<li><a href=#${frame.asSlug(work)}>${work}</a></li>`)
+      return {site,title,slug,work}
+    })
+    for (let con of contents) {
+      let page = await(fetch(`//${con.site}/${con.slug}.json`).then(res => res.json()))
+      let items = page.story.filter(item => item.type=='paragraph' && item.site)
+      await section(html,items)
+      window.result.innerHTML += '<br>'
+    }
+    frame.download(html.join("\n"),'preprint.html','text/html')
+  }
+
+  async function section (html,items) {
+    // render list of charmed items with resolved site
+    for (let item of items) {
       try {
         let site = item.site
         let title = item.text.split(/\[\[|\]\]/)[1]
         let slug = frame.asSlug(title)
-        console.log({site,title,slug})
         let page = await fetch(`//${site}/${slug}.json`).then(res => res.json())
         html.push(render(site,page).join("\n"))
         window.result.innerHTML += ' .'
@@ -84,9 +118,7 @@
         window.result.innerHTML += ' x'
         console.error(err)
       }
-
     }
-    frame.download(html.join("\n"),'preprint.html','text/html')
   }
 
   refresh()
