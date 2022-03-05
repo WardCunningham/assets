@@ -1,6 +1,8 @@
-
-<!-- saved from url=(0072)http://xp.kelley.asia.wiki.org/assets/pages/story-telling/speed-bot.html -->
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><pre id="result"></pre>
+<p>
+  <button onclick=dostart(event)>start</button>
+  <span id=startat></span>
+</p>
+<pre id="result"></pre>
 <script type="module">
 
 import {visit,getfrom,sitemaps} from './telling.js'
@@ -18,16 +20,20 @@ let reference = (await context()).page.story.find(item => item.type == 'referenc
 if(reference) {
   all = [await getfrom(reference.slug,[reference.site])]
 }
+window.startat.innerText = all[0].page.title
 let pick = all[0]
 let seen = new Set([pick.page.title])
 let dot = []
 let hue = 0.5001
 let color = {} // site => hsv
-addcolor(pick.page.title, pick.site)
+addcolor(pick)
 
-function addcolor(title, site) {
+function addcolor(pick) {
+  let title = pick.page.title
+  let site = pick.site
+  let sites = pick.sites
   color[site] ||= hsv(hue += 0.111)
-  dot.push(`${quote(title)} [ tooltip="${site}" fillcolor=${color[site]}]`)
+  dot.push(`${quote(title)} [ tooltip="${site}\n\n${sites.join("\n")}" fillcolor=${color[site]}]`)
 }
 
 window.doview = function (event) {
@@ -40,6 +46,16 @@ window.doview = function (event) {
   }, "*")
 }
 
+window.dostart = async function (event) {
+done = Date.now() + 10000
+window.result.innerText = ''
+all = [all[0]]
+pick = all[0]
+seen = new Set([pick.page.title])
+dot = []
+hue = 0.5001
+color = {} // site => hsv
+addcolor(pick)
 
 try {
   while (Date.now() < done) {
@@ -50,7 +66,7 @@ try {
       seen.add(link)
       let next = await getfrom(asSlug(link),pick.sites)
       if (next && next.page) {
-        addcolor(next.page.title, next.site)
+        addcolor(next)
         dot.push(`${quote(pick.page.title)} -> ${quote(next.page.title)}`)
         all.push(next)
         window.result.innerHTML += `${remain} <span onclick=doview(event)>${next.site} — ${link}</span>\n`
@@ -80,6 +96,8 @@ let story = [
   {type:'graphviz', text}
 ]
 
-open({title:"Speed Bot Journey",story},false,Object.keys(color))
+open({title:"Speed Bot Journey",story},event.shiftKey,Object.keys(color))
+
+}
 
 </script></body></html>
