@@ -1,0 +1,101 @@
+<p>
+  <button onclick="dodownload(event)">download csv</button>
+</p>
+<div id=result></div>
+<style>
+  pre {font-size: 10px;}
+</style>
+
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  import {downloadZip} from "https://cdn.jsdelivr.net/npm/client-zip/index.js"
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  let test = {story:[{text:'[http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graphs/graph.json graph]'}]}
+  let context = await frame.context()
+  let input = (context.page || test).story.find(item => /\[\S+ graph\]/.test(item.text))
+  let m = input.text.match(/\[(\S+) graph\]/)
+  let url = m[1] || 'https://raw.githubusercontent.com/WardCunningham/graph/main/sample/whatcom.graph.json'
+  let aGraph = await Graph.fetch(url)
+
+  let tables = {} // type => {prefix, pnames, rnames}
+  extract()
+
+
+  // D I S C O V E R   C O L U M N   H E A D I N G S
+
+  function extract () {
+    let rels = aGraph.rels
+    let nodes = aGraph.nodes
+    for (let node of nodes) {
+      let type = node.type
+      let table = tables[type] = tables[type] || {prefix:'?', pnames:new Set(),rnames:new Set()}
+      for (let name in node.props) table.pnames.add(name)
+    }
+    for (let rel of rels) {
+      let type = rel.type
+      let table = tables[nodes[rel.from].type]
+      table.rnames.add(type)
+    }
+
+    let letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+    let todo = []
+    for (let type in tables) {
+      let table = tables[type]
+      let prefix = type[0]
+      if (letters.includes(prefix)) {
+        table.prefix = prefix
+        letters.splice(letters.indexOf(prefix),1)        
+      } else
+        todo.push(table)
+    }
+    for (let table of todo)
+      table.prefix = letters.pop()
+
+    window.result.innerHTML = Object.keys(tables).map(type => {
+      let table = tables[type]
+      let cols = [...table.pnames, ...table.rnames]
+      return `${type} (${table.prefix}) ⇒<br> &nbsp; id, ${cols.join(", ")}`
+    }).join("<br><br>")
+  }
+
+
+  // E N C O D E D   A N D   A S S E M B L E   R O W S
+
+  window.dodownload = async function (event) {
+    let nodes = aGraph.nodes
+    let rels = aGraph.rels
+    let files = []
+    const relids = (col, node) => node.out
+      .map(out => rels[out])
+      .filter(rel => rel.type == col)
+      .map(rel => nodes[rel.to])
+      .map(node => tables[node.type].prefix + nodes.indexOf(node))
+      .join(" ")
+    for (let type in tables) {
+      let table = tables[type]
+      let cols = [...table.pnames, ...table.rnames]
+      let rows = [['id',...cols]]
+      let prefix = table.prefix
+      for (let nid of aGraph.n(type).nids) {
+        let node = nodes[nid]
+        let row = cols.map(col => /^[a-z]/.test(col) ? node.props[col] : relids(col,node))
+        row.unshift(prefix+nid)
+        rows.push(row)
+      }
+      console.table(rows)
+      let text = rows.map(row => row.join(",")).join("\n")
+      files.push({name:`${type}.csv`,input:text})
+      // frame.download(text,`${type}.csv`,'text/csv')
+    }
+    let blob = await downloadZip(files).blob()
+    // frame.download(blob,'graph.zip','application/zip')
+    let link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    link.download = "graph.zip"
+    link.click()
+    link.remove()
+  }
+
+</script>
