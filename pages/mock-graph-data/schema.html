@@ -64,6 +64,7 @@
     // const quote = (title) => `"${title.replace(/ +/g,'\\n')}"`
     const defn = nid => {
       if(!done.has(nid)) {
+        done.add(nid)
         let node = nodes[nid]
         let name = node.props[propname(node)]
         let tips = Object.entries(node.props).map(e => `${e[0]}: ${e[1]}`).join("\n")
