@@ -67,6 +67,7 @@
     let nodes = aGraph.nodes
     let rels = aGraph.rels
     let files = []
+    const quote = text => /[,"\r\n]/.test(text) ? `"${text.replace(/"/g,'""')}"` : text
     const relids = (col, node) => node.out
       .map(out => rels[out])
       .filter(rel => rel.type == col)
