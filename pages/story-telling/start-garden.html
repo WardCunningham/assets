@@ -26,6 +26,7 @@
     let title = window.title.value || 'Garden'
     let story = []
     let garden = []
+    let works = []
     let forks = new Set()
     let sites = new Set()
     let metrics = {stories:selected.length,pages:0,words:0,length:0}
@@ -42,10 +43,13 @@
         let page = await fetch(`//${site}/${frame.asSlug(item.title)}.json`).then(res => res.json())
         let words = page.metrics.words
         story.push({type:'paragraph', site, words, text:`[[${item.title}]] — ${item.text} (${words})`})
+
+        works.push(page)
         garden.push(...visit(page))
         window.result.innerHTML += ' .'
         metrics.pages += page.metrics.pages
         metrics.words += page.metrics.words
+
       } catch (err) {
         window.result.innerHTML += ' x'
         story.push({type:'code',text:`Trouble with ${want}\n${err.message}`})
@@ -54,12 +58,29 @@
 
     story.push({type:'pagefold',text:'garden'})
     story.push({type:'pagefold',text:'more'})
-    garden = garden.filter(uniq)
-    garden.sort((a,b) => a.localeCompare(b))
-    metrics.links = garden.length
-    sites = [...sites]
-    story.push({type:'markdown',sites,text:garden.map(title => `- [x] [[${title}]]`).join("\n")})
-    story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-garden.html\nHEIGHT 100`})
+
+    // garden = garden.filter(uniq)
+    // garden.sort((a,b) => a.localeCompare(b))
+    // metrics.links = garden.length
+
+    // sites = [...sites]
+    // story.push({type:'markdown',sites,text:garden.map(title => `- [x] [[${title}]]`).join("\n")})
+    for (let work of works) {
+      let folds = work.story
+        .filter(item => item.type == 'pagefold')
+        .map(item => [item.text, work.story.indexOf(item)])
+      let want = 'told, more'
+      if(folds.map(fold=>fold[0]).join(', ') != want) {
+        window.result.innerHTML = `Unexpected pagefolds.<br>Wanted ${want}.`
+        return
+      }
+      let inlists = work.story.slice(folds[1][1]+1).filter(item => item.type != 'frame')
+      story.push(...inlists)
+      console.log({work,folds,inlists})
+    }
+
+
+    story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-garden.html\nHEIGHT 200`})
     story.unshift({type:'paragraph', text:`Garden founded on
       ${metrics.stories} stories totaling
       ${metrics.pages} pages and
