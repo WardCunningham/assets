@@ -48,17 +48,25 @@
       let log = logs[i]
       let date = new Date(log.clock)
       let results = log.result
+      let expect = Object.keys(traces)
+      let have = new Set()
       for (var j=0; j<results.length; j++) {
         let result = results[j]
         let name = result.name
         if (name) {
           let readings = result.data
           if (readings.exit == 0) {
+            have.add(name)
             trace = traces[name] = traces[name] || {x:[],y:[],name:name}
             trace.x.push(date)
             trace.y.push(readings.time)
           }
         }
+      }
+      let missing = expect.filter(name => !have.has(name))
+      for (name of missing) {
+        traces[name].x.push(date)
+        traces[name].y.push(null)
       }
     }
     Plotly.plot('graph', Object.values(traces))
