@@ -6,6 +6,7 @@
 <div id=result></div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {folded, linked} from './telling.js'
   const wordcount = story => story.reduce((sum,item) => sum + (item.text||'').split(/\s+/).length, 0)
   const uniq = (value, index, self) => self.indexOf(value) === index
 
@@ -66,19 +67,11 @@
     // sites = [...sites]
     // story.push({type:'markdown',sites,text:garden.map(title => `- [x] [[${title}]]`).join("\n")})
     for (let work of works) {
-      let folds = work.story
-        .filter(item => item.type == 'pagefold')
-        .map(item => [item.text, work.story.indexOf(item)])
-      let want = 'told, more'
-      if(folds.map(fold=>fold[0]).join(', ') != want) {
-        window.result.innerHTML = `Unexpected pagefolds.<br>Wanted ${want}.`
-        return
-      }
-      let inlists = work.story.slice(folds[1][1]+1).filter(item => item.type != 'frame')
+      let folds = folded(work.story, ['told','more'])
+      let inlists = folds.more.filter(item => item.type != 'frame')
       story.push(...inlists)
       console.log({work,folds,inlists})
     }
-
 
     story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-garden.html\nHEIGHT 200`})
     story.unshift({type:'paragraph', text:`Garden founded on

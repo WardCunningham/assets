@@ -6,7 +6,35 @@ export const wordcount = story => story.reduce((sum,item) => sum + (item.text||'
 
 export const checks = item => item.text.split(/\n/).filter(line => line.startsWith('- [x]'))
 
-export function visit(page) {
+export function folded(story, wanted) {
+  let have = story
+    .filter(item => item.type == 'pagefold')
+    .map(item => [item.text, story.indexOf(item)])
+  let entries = wanted.map(label => {
+    let got = have.findIndex(fold => fold[0] == label)
+    if (got == -1) {throw `can't find expected pagefold: "${label}"`}
+    let start = have[got][1]+1
+    let end = got+1<have.length ? have[got+1][1]+1 : story.length+1
+    return [label, story.slice(start,end)]
+  })
+  return Object.fromEntries(entries)
+}
+
+export function linked(story) {
+  let links = []
+  const link = /\[\[(.*?)\]\]/g
+  let match
+  for (let item of story) {
+    if (item.type == 'reference') links.push(item.title)
+    let text = item.text
+    while (match = link.exec(text)) {
+      links.push(match[1])
+    }
+  }
+  return links
+}
+
+export function visit(page) { // deprecated, use links
   let links = []
   const link = /\[\[(.*?)\]\]/g
   let match
