@@ -28,7 +28,7 @@
     let story = []
     let works = []
     let sites = new Set()
-    let metrics = {stories:selected.length,pages:0,words:0,length:0}
+    let metrics = {stories:selected.length,pages:0,words:0,links:0}
     window.result.innerHTML = ''
 
     story.push({type:'pagefold',text:'stories'})
@@ -57,13 +57,15 @@
 
     for (let work of works) {
       let folds = folded(work.story, ['told','more'])
-      let inlists = folds.more.filter(item => item.type != 'frame')
-      story.push(...inlists)
-      let rosters = inlists.filter(item => item.type == 'roster')
+      let more = folds.more.filter(item => item.type != 'frame')
+      story.push(...more)
+      let rosters = more.filter(item => item.type == 'roster')
       rosters.forEach(roster =>
         roster.text.split('\n').forEach(site =>
           sites.add(site)))
-      console.log({work,folds,inlists})
+      let markdowns = more.filter(item => item.type == 'markdown')
+      metrics.links += linked(markdowns).length
+      console.log({work,folds,more})
     }
 
     story.push({type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/more-garden.html\nHEIGHT 200`})
@@ -71,22 +73,8 @@
       ${metrics.stories} stories totaling
       ${metrics.pages} pages and
       ${metrics.words} words.
-      ${metrics.links} unique links can expand into the garden.`})
+      ${metrics.links} links can expand into the garden.`})
     frame.open({title,story},event.shiftKey,[...sites])
-  }
-
-  function visit(page) {
-    let links = []
-    const link = /\[\[(.*?)\]\]/g
-    let match
-    for (let item of page.story) {
-      if (item.type == 'reference') links.push(item.title)
-      let text = item.text
-      while (match = link.exec(text)) {
-        links.push(match[1])
-      }
-    }
-    return links
   }
 
 </script>

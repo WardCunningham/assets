@@ -36,9 +36,9 @@
     // metrics = {pages, words,links:0}
 
     window.result.innerHTML = `<p>
-      ${inauthors.length} stories<br>
+      ${inauthors.length} stories begin this garden<br>
       ${ingarden.length} pages in the garden so far<br>
-      ${inlists.map(checks).reduce((s,e) => s+e.length,0)} links to more pages.</p>`
+      ${inlists.map(checks).reduce((s,e) => s+e.length,0)} checked links to more pages.</p>`
   }
 
   window.domore = async function(event) {
