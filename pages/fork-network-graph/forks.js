@@ -29,7 +29,7 @@ const nodemap = (nodes, doit) => {
   let nids = nodes.nids
   return nids.map(nid => {
     let props = nodes.graph.nodes[nid].props
-    return doit(props)
+    return doit(props, nid)
   })
 }
 
@@ -63,17 +63,21 @@ for await(let site of Deno.readDir(root)) {
   }
 }
 
-await Promise.all(nodemap(g.n('Site'), props =>
+await Promise.all(nodemap(g.n('Site'), (props,nid) =>
   Deno.resolveDns(props['name'],"A")
-    .then(ip => {props['ip'] = ip.join(", ")})
+    // .then(ip => {props['ip'] = ip[0]})
+    .then(ip => nodeid('Farm',ip[0]))
+    .then(from => relid('Hosts',from,nid))
     .catch(err => null)
   )
 )
 
-await Promise.all(nodemap(g.n('Site'), props =>
+await Promise.all(nodemap(g.n('Site'), (props,nid) =>
   Deno.readTextFile(`${root}/${props['name']}/status/owner.json`)
     .then(text => JSON.parse(text))
-    .then(owner => {props['owner'] = owner.name})
+    // .then(owner => {props['owner'] = owner.name})
+    .then(owner => nodeid('Author',owner.name))
+    .then(from => relid('Owns',from,nid))
     .catch(err => null)
   )
 )
