@@ -1,39 +1,59 @@
-<p>
-  <input id=type type=text size=14 list=typelist placeholder="type">
-  <input id=prop type=text size=14 list=proplist placeholder="property">
-  <input id=word type=text size=14 list=wordlist placeholder="selection">
-  <datalist id=typelist></datalist>
-  <datalist id=typeprop></datalist>
-  <datalist id=typeword></datalist>
-</p>
-<div id=result><div>
+<div id=result><p>Navigating</p><div>
 
 <script type=module>
   import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
   let g = await Graph.fetch('http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graphs/graph.json')
-  window.result.innerHTML = show(g.tally())
 
-  document.querySelectorAll('input').forEach(input => {
-    let id = input.getAttribute('id')
-    let list = input.getAttribute('list')
-    if(id=='type') {
-      document.querySelector(`#${list}`)
-        .innerHTML = Object.keys(g.tally().nodes)
-          .map(key =>`<option value="${key}">`)
-          .join("\n")
-    }
-  })
+  let stride = {}
+  let lineup = []
 
-  function show (tally) {
-    let html = []
-    for (let list of ['nodes', 'rels']) {
-      for (let type in tally[list]) {
-        html.push(`${type}: ${tally[list][type]} ${list}`)
+  stride.tally = {
+    render: div => {
+      let line = div.dataset.line
+      let graph = lineup[line].data.graph
+      let counts = graph.tally().nodes
+      let keys = Object.keys(counts)
+      div.innerHTML = `<hr><p>${keys.map(type =>
+        `<span>${type}</span>: ${counts[type]}`).join("<br>")}</p>`
+    },
+    click: event => {
+      let target = event.target
+      if(target.tagName=='SPAN') {
+        let parent = target.parentElement.parentElement
+        let line = parent.dataset.line
+        let graph = lineup[line].data.graph
+        let name = target.innerText
+        drill(line, stride.props,{props:graph.n(name).props()})
       }
     }
-    return html.join("<br>")
+  }
+
+  stride.props = {
+    render: div => {
+      let line = div.dataset.line
+      let props = lineup[line].data.props
+      div.innerHTML = `<hr><p>${props.join(`<br>`)}</p>`
+    },
+    click: event => {
+      let target = event.target
+      console.log(target.tagName)
+    }
   }
 
 
+  function drill(line,step,data) {
+    while (lineup.length > line+1) {
+      lineup.pop().div.remove()
+    }
+    let div = document.createElement('div')
+    lineup.push({step,data,div})
+    div.setAttribute('data-line',lineup.length-1)
+    div.addEventListener('click', step.click)
+    step.render(div)
+    window.result.append(div)
+  }
+
+
+  drill(-1,stride.tally, {graph:g})
 
 </script>
