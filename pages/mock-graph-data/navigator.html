@@ -1,4 +1,4 @@
-<div id=result><p>Navigating</p><div>
+<div id=result><p>Navigating graph.json</p><div>
 
 <script type=module>
   import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
@@ -19,11 +19,11 @@
     click: event => {
       let target = event.target
       if(target.tagName=='SPAN') {
-        let parent = target.parentElement.parentElement
-        let line = parent.dataset.line
+        let line = event.target.closest("[data-line]").dataset.line
         let graph = lineup[line].data.graph
         let name = target.innerText
-        drill(line, stride.props,{props:graph.n(name).props()})
+        let nodes = graph.n(name)
+        drill(line, stride.props,{nodes})
       }
     }
   }
@@ -31,13 +31,37 @@
   stride.props = {
     render: div => {
       let line = div.dataset.line
-      let props = lineup[line].data.props
-      div.innerHTML = `<hr><p>${props.join(`<br>`)}</p>`
+      let props = lineup[line].data.nodes.props('name')
+      div.innerHTML = `<hr><p><input type=text placeholder="search"></input></p>
+        <div>${props.map(name => `<span>${name}</span>`).join(`<br>`)}</div>`
     },
     click: event => {
       let target = event.target
-      console.log(target.tagName)
+      if(target.tagName=='SPAN') {
+        let line = event.target.closest("[data-line]").dataset.line
+        let have = lineup[line].data.nodes
+        let name = target.innerText
+        let nodes = have.filter((type,props) => props['name'] == name)
+        drill(line,stride.draw,{nodes})
+      }
+    },
+    input: event => {
+      let line = event.target.closest("[data-line]").dataset.line
+      let have = lineup[line].data.nodes
+      let name = event.target.value
+      let nodes = have.filter((type,props) => props['name'].includes(name))
+      if(event.type=='change') {return drill(line,stride.draw,{nodes})}
+      lineup[line].div.querySelector('div').innerHTML = nodes.props().map(name => `<span>${name}</span>`).join("<br>")
     }
+  }
+
+  stride.draw = {
+    render: div => {
+      let line = div.dataset.line
+      let props = lineup[line].data.nodes.props('name')
+      div.innerHTML = `<hr><p>${props.map(name => `<span>${name}</span>`).join(`<br>`)}</p>`
+    },
+    click: event => {}
   }
 
 
@@ -49,10 +73,11 @@
     lineup.push({step,data,div})
     div.setAttribute('data-line',lineup.length-1)
     div.addEventListener('click', step.click)
+    div.addEventListener('input', step.input)
+    div.addEventListener('change', step.input)
     step.render(div)
     window.result.append(div)
   }
-
 
   drill(-1,stride.tally, {graph:g})
 
