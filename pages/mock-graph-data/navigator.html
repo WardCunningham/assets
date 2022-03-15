@@ -1,4 +1,4 @@
-<div id=result><p>Navigating <span>graph.json</span></p><div>
+<div id=result><p>Navigating <span></span></p><div>
 <style>
   body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
   td, th { border: 1px solid gray; padding: 8px; }
@@ -6,9 +6,16 @@
 </style>
 
 <script type=module>
-  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
-  let g = await Graph.fetch('http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graphs/graph.json')
   const delay = msec => new Promise(done => setTimeout(done, msec))
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+
+  let context = await frame.context()
+  let input = context.page.story.find(item => /\[\S+ graph\]/.test(item.text))
+  let m = input.text.match(/\[(\S+) graph\]/)
+  window.result.querySelector('span').innerText = m[1].split(/\//).pop()
+  let g = await Graph.fetch(m[1])
 
   let stride = {}
   let lineup = []
