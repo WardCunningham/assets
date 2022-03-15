@@ -1,8 +1,14 @@
-<div id=result><p>Navigating graph.json</p><div>
+<div id=result><p>Navigating <span>graph.json</span></p><div>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+  td, th { border: 1px solid gray; padding: 8px; }
+  table { border-collapse: collapse; }
+</style>
 
 <script type=module>
   import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
   let g = await Graph.fetch('http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graphs/graph.json')
+  const delay = msec => new Promise(done => setTimeout(done, msec))
 
   let stride = {}
   let lineup = []
@@ -42,7 +48,7 @@
         let have = lineup[line].data.nodes
         let name = target.innerText
         let nodes = have.filter((type,props) => props['name'] == name)
-        drill(line,stride.draw,{nodes})
+        drill(line,stride.choice,{nodes})
       }
     },
     input: event => {
@@ -50,25 +56,46 @@
       let have = lineup[line].data.nodes
       let name = event.target.value
       let nodes = have.filter((type,props) => props['name'].includes(name))
-      if(event.type=='change') {return drill(line,stride.draw,{nodes})}
+      if(event.type=='change') {return drill(line,stride.choice,{nodes})}
       lineup[line].div.querySelector('div').innerHTML = nodes.props().map(name => `<span>${name}</span>`).join("<br>")
     }
   }
 
-  stride.draw = {
+  stride.table = {
     render: div => {
       let line = div.dataset.line
-      let props = lineup[line].data.nodes.props('name')
-      div.innerHTML = `<hr><p>${props.map(name => `<span>${name}</span>`).join(`<br>`)}</p>`
+      let nodes =lineup[line].data.nodes
+      let rows = nodes.nids.map(nid => `<tr>
+        <td>${nodes.graph.nodes[nid].in.join(', ')}
+        <td>${nodes.graph.nodes[nid].props['name']}
+        <td>${nodes.graph.nodes[nid].out.join(', ')}`).join("\n")
+      div.innerHTML = `<hr><p><table>${rows}</table></p>`
     },
     click: event => {}
   }
 
-
-  function drill(line,step,data) {
-    while (lineup.length > line+1) {
-      lineup.pop().div.remove()
+  stride.choice = {
+    render: div => {
+      div.innerHTML = `<hr><p>${
+        ['inputs','outputs','open graph'].map(choice =>
+        `<button>${choice}</button>`).join(" ")
+      }</p>`
+    },
+    click: event => {
+      let line = event.target.closest("[data-line]").dataset.line
+      let have = lineup[line].data.nodes
+      console.log(line, event.target.innerText)
+      switch (event.target.innerText) {
+        case 'inputs': drill(line, stride.props, {nodes:have.i().f()})
+        case 'outputs': drill(line, stride.props, {nodes:have.o().t()})
+      }
     }
+  }
+
+
+  async function drill(line,step,data) {
+    while (lineup.length-1 > line) lineup.pop().div.remove()
+    await delay(100)
     let div = document.createElement('div')
     lineup.push({step,data,div})
     div.setAttribute('data-line',lineup.length-1)
