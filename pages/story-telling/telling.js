@@ -14,7 +14,7 @@ export function folded(story, wanted) {
     let got = have.findIndex(fold => fold[0] == label)
     if (got == -1) {throw `can't find expected pagefold: "${label}"`}
     let start = have[got][1]+1
-    let end = got+1<have.length ? have[got+1][1]+1 : story.length+1
+    let end = got+1<have.length ? have[got+1][1] : story.length+1
     return [label, story.slice(start,end)]
   })
   return Object.fromEntries(entries)
