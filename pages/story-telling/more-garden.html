@@ -6,29 +6,33 @@
 <script type=module>
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  import {wordcount, checks, visit, getfrom} from './telling.js'
+  import {wordcount, checks, getfrom, folded, linked} from './telling.js'
   import {prolog, render} from './render.js'
 
   let context = await frame.context()
-  let inauthors, ingarden, inlists
+  let folds
   let metrics = {stories:0,pages:0,words:0,links:0}
 
-  function refresh() {
-    let story = context.page.story
-    let folds = story
-      .filter(item => item.type == 'pagefold')
-      .map(item => [item.text, story.indexOf(item)])
-    let want = 'stories, garden, more'
-    console.log({folds})
-    if(folds.map(fold=>fold[0]).join(', ') != want) {
-      window.result.innerHTML = `Unexpected pagefolds.<br>Wanted ${want}.`
-      return
-    }
+  async function refresh() {
+    context = await frame.context()
+    let folds = folded(context.page.story,['stories','garden','more'])
+    console.log(folds)
 
-    inauthors = story.slice(folds[0][1]+1, folds[1][1])
-    ingarden = story.slice(folds[1][1]+1, folds[2][1])
-    inlists = story.slice(folds[2][1]+1).filter(item => item.type == 'markdown')
-    console.log({inauthors, ingarden, inlists})
+    // let story = context.page.story
+    // let folds = story
+    //   .filter(item => item.type == 'pagefold')
+    //   .map(item => [item.text, story.indexOf(item)])
+    // let want = 'stories, garden, more'
+    // console.log({folds})
+    // if(folds.map(fold=>fold[0]).join(', ') != want) {
+    //   window.result.innerHTML = `Unexpected pagefolds.<br>Wanted ${want}.`
+    //   return
+    // }
+
+    // inauthors = story.slice(folds[0][1]+1, folds[1][1])
+    // ingarden = story.slice(folds[1][1]+1, folds[2][1])
+    // inlists = story.slice(folds[2][1]+1).filter(item => item.type == 'markdown')
+    // console.log({inauthors, ingarden, inlists})
 
     // instory = story.filter(item => item.type == 'paragraph' && item.site)
     // let pages = instory.length
@@ -36,21 +40,26 @@
     // metrics = {pages, words,links:0}
 
     window.result.innerHTML = `<p>
-      ${inauthors.length} stories begin this garden<br>
-      ${ingarden.length} pages in the garden so far<br>
-      ${inlists.map(checks).reduce((s,e) => s+e.length,0)} checked links to more pages.</p>`
+      ${folds.stories.length} stories begin this garden<br>
+      ${folds.garden.length} pages in the garden so far<br>
+      ${folds.more
+        .filter(item => item.type == 'markdown')
+        .map(checks)
+        .reduce((s,e) => s+e.length,0)} checked links to more pages.</p>`
   }
 
   window.domore = async function(event) {
-    context = await frame.context()
+    await refresh()
     let forks = new Set()
-    refresh()
     for (let action of context.page.journal)
       if(action.site) forks.add(action.site)
     let title = `More ${context.page.title}`
-    let story = [{type:'pagefold',text:'told'}]
-    story.push(...instory)
-    let above = visit({story:[...instory,...inlists]})
+    let story = [
+      {type:'pagefold',text:'stories'},
+      ...folds.stories,
+      {type:'pagefold',text:'garden'}]
+
+    let above = linked([...instory,...inlists])
 
     story.push({type:'pagefold',text:'more'})
     for (let item of inlists) {
@@ -69,7 +78,7 @@
           story.push({type:'paragraph', site, words, text:`[[${title}]] — ${page.story[0].text.slice(0,140)} (${words})`})
           for (let item of page.story)
             if(item.site) forks.add(item.site)
-          let outrefs = visit(page)
+          let outrefs = linked(page.story)
           metrics.links += outrefs.length
           story.push({type:'markdown',sites,text:outrefs.map(title => `- [${above.includes(title)?' ':'x'}] [[${title}]]`).join("\n")})
           story.push({type:'roster',text:sites.join("\n")})
@@ -86,6 +95,7 @@
   }
 
   window.doprint = async function(event) {
+    await refresh()
     let html = [prolog,`<h2 id="contents">Contents</h2>`]
     let contents = inauthors.map(item => {
       let site = item.site
@@ -122,6 +132,6 @@
     }
   }
 
-  refresh()
+  await refresh()
 
 </script>
