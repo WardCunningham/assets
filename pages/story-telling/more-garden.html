@@ -8,6 +8,7 @@
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import {wordcount, checks, getfrom, folded, linked} from './telling.js'
   import {prolog, render} from './render.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
 
   let folds
   let context = await frame.context()
@@ -55,28 +56,37 @@
       if(action.site) forks.add(action.site)
 
     let title = `More ${context.page.title}`
-    let story = [
-      {type:'pagefold',text:'stories'},
-      ...folds.stories,
-      {type:'pagefold',text:'garden'}]
+    let story = [{type:'pagefold',text:'stories'}]
+    story.push(...folds.stories)
 
     // #1 every title in a story, #2 titles in the garden, and #3 titles in more being expanded
-    let above = await lookabove()
+    let abovewhere = await lookabove()
+    let above = Object.values(abovewhere).flat().filter(uniq)
 
     async function lookabove() {
-      let storyed = await Promise.all(folds.stories.map(async item => {
+      let storyed = (await Promise.all(folds.stories.map(async item => {
         let site = item.site
         let title = item.text.split(/\[\[|\]\]/)[1]
         let slug = frame.asSlug(title)
         let page = await(fetch(`//${site}/${slug}.json`).then(res => res.json()))
         let items = page.story.filter(item => item.type=='paragraph' && item.site)
         return items.map(item => item.text.split(/\[\[|\]\]/)[1])
-      }))
+      }))).flat()
       let gardened = folds.garden.map(item => item.text.split(/\[\[|\]\]/)[1])
-      let moreed = linked(folds.more.filter(item => item.type == 'markdown'))
+      let moreed = folds.more
+        .filter(item => item.type=='paragraph' && item.site)
+        .map(item => item.text.split(/\[\[|\]\]/)[1])
       console.log({storyed,gardened,moreed})
-      return [...storyed.flat(), ...gardened, ...moreed]
+      return {storyed,gardened,moreed}
     }
+
+    story.push({type:'pagefold',text:'garden'})
+    // add moreed to the garden that are not storied
+    story.push(...folds.more
+        .filter(item => item.type=='paragraph' && item.site)
+        .filter(item => !abovewhere.storyed.includes(item.text.split(/\[\[|\]\]/)[1])))
+
+
 
     story.push({type:'pagefold',text:'more'})
     for (let item of folds.more) {
