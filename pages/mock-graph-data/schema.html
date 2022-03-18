@@ -42,7 +42,7 @@
     let rels = aGraph.rels
     let nodes = aGraph.nodes
     let dot = rels
-      .map(rel => `${nodes[rel.from].type} -> ${nodes[rel.to].type} [label=${rel.type}]`)
+      .map(rel => `"${nodes[rel.from].type}" -> "${nodes[rel.to].type}" [label="${rel.type}"]`)
       .filter(uniq)
 
     dot.unshift('node [shape=box style=filled fillcolor=palegreen]')
@@ -77,7 +77,7 @@
       .map(rel => {
         let fnid = defn(rel.from)
         let tnid = defn(rel.to)
-        return `${fnid} -> ${tnid} [label=${rel.type}]`
+        return `${fnid} -> ${tnid} [label="${rel.type}"]`
       })
       .filter(uniq)
     )
