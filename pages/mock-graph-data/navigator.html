@@ -7,6 +7,7 @@
 
 <script type=module>
   const delay = msec => new Promise(done => setTimeout(done, msec))
+  const uniq = (value, index, self) => self.indexOf(value) === index
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
@@ -87,6 +88,12 @@
         ['inputs','outputs','open graph'].map(choice =>
         `<button>${choice}</button>`).join(" ")
       }</p>`
+      let line = div.dataset.line
+      let have = lineup[line].data.nodes
+      div.innerHTML += `<table><tr>
+        <td>${have.i().rids.map(rid => have.graph.rels[rid].type).filter(uniq).join("<br")}</td>
+        <td>${have.o().rids.map(rid => have.graph.rels[rid].type).filter(uniq).join("<br")}</td>
+      </table>`
     },
     click: event => {
       let line = event.target.closest("[data-line]").dataset.line
