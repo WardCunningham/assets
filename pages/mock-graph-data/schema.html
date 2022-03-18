@@ -1,7 +1,8 @@
 <p>
-  <button onclick="doschema(event)">show schema</button>
-  <button onclick="dograph(event)">show details</button>
-  <button onclick="dodetails(event)">details in cypher</button>
+  <button onclick="doschema(event)">schema</button>
+  <button onclick="dograph(event)">nodes</button>
+  <button onclick="domap(event)">map</button>
+  <button onclick="docypher(event)">cypher</button>
 </p>
 <div id=result></div>
 <style>
@@ -17,7 +18,6 @@
   let m = input.text.match(/\[(\S+) graph\]/)
   let url = m[1] || 'https://raw.githubusercontent.com/WardCunningham/graph/main/sample/whatcom.graph.json'
   let aGraph = await Graph.fetch(url)
-  console.log(aGraph)
   window.result.innerHTML = show(aGraph.tally())
 
   function show (tally) {
@@ -49,10 +49,9 @@
 
     let story = [
       {type:'paragraph', text:'We construct a schema from type information in nodes and relations.'},
-      {type:'graphviz', text:`strict digraph { rankdir=TB\n${dot.join("\n")}}`}
+      {type:'graphviz', text:`digraph { rankdir=TB\n${dot.join("\n")}}`}
     ]
     let title = 'Graph Schema'
-    console.log({title,story})
     frame.open({title, story},event.shiftKey)
   }
 
@@ -89,16 +88,27 @@
       {type:'graphviz', text:`strict digraph { rankdir=LR\n${dot.join("\n")}}`}
     ]
     let title = 'Graph Details'
-    console.log({title,story})
     frame.open({title, story},event.shiftKey)
 
   }
 
-  window.dodetails = function(event) {
-    console.log(event)
+  window.domap = function(event) {
+    let marks = aGraph.nodes
+      .filter(node => node.props['lat'])
+      .map(node => `${node.props['lat']}, ${node.props['lon']} ${node.props['name']}`)
+    let prefix = `WEBLINK https://www.google.com/search?q={LAT},%20{LON}
+      Double-click marker for Google map`
+    let story = [
+      {type:'paragraph', text:'We construct a map from nodes with lat and lon properties.'},
+      {type:'map', text:`${prefix}\n${marks.join("\n")}`}
+    ]
+    let title = 'Located Nodes'
+    frame.open({title, story},event.shiftKey)
+  }
+
+  window.docypher = function(event) {
     let nodes = aGraph.nodes
     let text = aGraph.rels.slice(0,30).map(rel => {
-      console.log(rel)
       let f = nodes[rel.from]
       let t = nodes[rel.to]
       let fn = propname(f)
@@ -108,7 +118,14 @@
   -[:${rel.type}]->
     (:${t.type}{${tn}:'${t.props[tn]}'})`
     }).join("\n")
-    window.result.innerHTML = `<pre>${text}</pre>`
+    // window.result.innerHTML = `<pre>${text}</pre>`
+    let story = [
+      {type:'paragraph', text:'We show that we can express nodes and relations in the cypher query language.'},
+      {type:'code', text}
+    ]
+    let title = 'Nodes in Cypher'
+    frame.open({title, story},event.shiftKey)
+
   }
   
 </script> 
