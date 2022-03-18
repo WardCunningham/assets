@@ -93,8 +93,8 @@
       let have = lineup[line].data.nodes
       console.log(line, event.target.innerText)
       switch (event.target.innerText) {
-        case 'inputs': drill(line, stride.props, {nodes:have.i().f()})
-        case 'outputs': drill(line, stride.props, {nodes:have.o().t()})
+        case 'inputs': drill(line, stride.props, {nodes:have.i().f()}); break
+        case 'outputs': drill(line, stride.props, {nodes:have.o().t()}); break
       }
     }
   }
