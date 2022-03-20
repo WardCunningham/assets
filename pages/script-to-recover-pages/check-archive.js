@@ -3,7 +3,7 @@
 
 const asSlug = title => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 const asCopy = obj => JSON.parse(JSON.stringify(obj))
-
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 // S L U G S   F R O M   S E A R C H
 
@@ -29,22 +29,21 @@ console.error(rows.filter(row => row.available).length, 'pages available in wayb
 
 // F E T C H   A R C H I V E   H T M L
 
-await Promise.all(
-  rows
-    .filter(row => row.available)
-    .map(row =>
-      fetch(row.url)
-        .then(res => res.text())
-        .then(text => {row.html = text})
-    )
-)
+for (const row of rows) {
+  if(!row.available) continue
+  await delay(100)
+  row.html = await fetch(row.url)
+    .then(res => res.text())
+    .catch(err => {console.error(err); return null})
+}
 console.error(rows.filter(row => row.html).length, 'html pages retrieved')
+
 
 // A P P R O X I M A T E   P A G E   J S O N
 
 const exportfile = {}
 for (const row of rows) {
-  if(!row.available) continue
+  if(!row.available || !row.html) continue
   const [_,YYYY,MM,DD,hh,mm,ss] = row.timestamp.match(/(....)(..)(..)(..)(..)(..)/)
   const date = Date.parse(`${YYYY}-${MM}-${DD} ${hh}:${mm}:${ss}Z`)
   const title = row.html.match(/<title>(.*?)<\/title>/)[1]
