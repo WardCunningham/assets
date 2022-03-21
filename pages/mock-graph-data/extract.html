@@ -77,7 +77,7 @@
     for (let type in tables) {
       let table = tables[type]
       let cols = [...table.pnames, ...table.rnames]
-      let rows = [['id',...cols]]
+      let rows = [[type,...cols]]
       let prefix = table.prefix
       for (let nid of aGraph.n(type).nids) {
         let node = nodes[nid]
@@ -86,7 +86,7 @@
         rows.push(row)
       }
       console.table(rows)
-      let text = rows.map(row => row.join(",")).join("\n")
+      let text = rows.map(row => row.map(quote).join(",")).join("\n")
       files.push({name:`${type}.csv`,input:text})
       // frame.download(text,`${type}.csv`,'text/csv')
     }
