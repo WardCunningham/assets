@@ -98,7 +98,6 @@
           console.log('getfrom',title,site,sites)
           if (!site) continue // not in sitemaps, eg about page
           forks.add(site)
-          // let page = await fetch(`//${site}/${frame.asSlug(title)}.json`).then(res => res.json())
           let words = wordcount(page.story)
           metrics.words += words
           metrics.pages += 1
@@ -123,6 +122,8 @@
 
   window.doprint = async function(event) {
     await refresh()
+
+    // Contents: links to stories and garden
     let html = [prolog,`<h2 id="contents">Contents</h2>`]
     let contents = folds.stories.map(item => {
       let site = item.site
@@ -132,12 +133,20 @@
       html.push(`<li><a href=#${frame.asSlug(work)}>${work}</a></li>`)
       return {site,title,slug,work}
     })
+    html.push(`<li><a href=#garden>Garden</a></li>`)
+
+    // Sections: stories and garden
     for (let con of contents) {
       let page = await(fetch(`//${con.site}/${con.slug}.json`).then(res => res.json()))
       let items = page.story.filter(item => item.type=='paragraph' && item.site)
       await section(html,items)
       window.result.innerHTML += '<br>'
     }
+    let garden = [...folds.garden, ...folds.more.filter(item => item.type=='paragraph' && item.site)]
+    garden.sort((a,b) => a.text < b.text ? -1 : 1)
+    html.push(`<h2 id="garden">Garden</h2>Alphebetical garden index to appear here.`)
+    await section(html,garden)
+
     frame.download(html.join("\n"),'preprint.html','text/html')
   }
 
