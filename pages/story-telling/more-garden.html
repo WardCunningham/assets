@@ -16,7 +16,7 @@
 
   async function refresh() {
     context = await frame.context()
-    folds = folded(context.page.story,['stories','garden','more'])
+    folds = folded(context.page.story,['stories','told','more'])
     console.log(folds)
 
     // let story = context.page.story
@@ -42,7 +42,7 @@
 
     window.result.innerHTML = `<p>
       ${folds.stories.length} stories begin this garden<br>
-      ${folds.garden.length} pages in the garden so far<br>
+      ${folds.told.length} pages in the garden so far<br>
       ${folds.more
         .filter(item => item.type == 'markdown')
         .map(checks)
@@ -72,7 +72,7 @@
         let items = page.story.filter(item => item.type=='paragraph' && item.site)
         return items.map(item => item.text.split(/\[\[|\]\]/)[1])
       }))).flat()
-      let gardened = folds.garden.map(item => item.text.split(/\[\[|\]\]/)[1])
+      let gardened = folds.told.map(item => item.text.split(/\[\[|\]\]/)[1])
       let moreed = folds.more
         .filter(item => item.type=='paragraph' && item.site)
         .map(item => item.text.split(/\[\[|\]\]/)[1])
@@ -80,7 +80,7 @@
       return {storyed,gardened,moreed}
     }
 
-    story.push({type:'pagefold',text:'garden'})
+    story.push({type:'pagefold',text:'told'})
     // add moreed to the garden that are not storied
     story.push(...folds.more
         .filter(item => item.type=='paragraph' && item.site)
@@ -142,7 +142,7 @@
       await section(html,items)
       window.result.innerHTML += '<br>'
     }
-    let garden = [...folds.garden, ...folds.more.filter(item => item.type=='paragraph' && item.site)]
+    let garden = [...folds.told, ...folds.more.filter(item => item.type=='paragraph' && item.site)]
     garden.sort((a,b) => a.text < b.text ? -1 : 1)
     html.push(`<h2 id="garden">Garden</h2>Alphebetical garden index to appear here.`)
     await section(html,garden)
