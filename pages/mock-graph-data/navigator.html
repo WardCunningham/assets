@@ -73,10 +73,10 @@
     render: div => {
       let line = div.dataset.line
       let nodes =lineup[line].data.nodes
-      let rows = nodes.nids.map(nid => `<tr>
-        <td>${nodes.graph.nodes[nid].in.join(', ')}
-        <td>${nodes.graph.nodes[nid].props['name']}
-        <td>${nodes.graph.nodes[nid].out.join(', ')}`).join("\n")
+      let rows = nodes.map(node => `<tr>
+        <td>${node.in.join(', ')}
+        <td>${node.props['name']}
+        <td>${node.out.join(', ')}`).join("\n")
       div.innerHTML = `<hr><p><table>${rows}</table></p>`
     },
     click: event => {}
@@ -91,8 +91,8 @@
       let line = div.dataset.line
       let have = lineup[line].data.nodes
       div.innerHTML += `<table><tr>
-        <td>${have.i().rids.map(rid => have.graph.rels[rid].type).filter(uniq).join("<br")}</td>
-        <td>${have.o().rids.map(rid => have.graph.rels[rid].type).filter(uniq).join("<br")}</td>
+        <td>${have.i().map(rel => rel.type).filter(uniq).join("<br")}</td>
+        <td>${have.o().map(rel => rel.type).filter(uniq).join("<br")}</td>
       </table>`
     },
     click: event => {
