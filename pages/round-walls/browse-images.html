@@ -1,0 +1,24 @@
+<p><div id=result></div></p>
+<script type=module>
+  import {asSlug,link} from 'http://code.fed.wiki/assets/v1/frame.js'
+  const site = 'http://round.asia.wiki.org'
+  const page = await fetch(`${site}/round-walls.json`).then(res => res.json())
+  const titles = page.story
+    .filter(item => item.text.startsWith('[['))
+    .map(item => item.text.split(/\[\[|\]\]/)[1])
+  const pages = await Promise.all(titles.map(title =>
+    fetch(`${site}/${asSlug(title)}.json`).then(res => res.json())))
+  for (const page of pages) {
+    window.result.innerHTML += `<h3 style="cursor:pointer;">${page.title}</h3>`
+    const html = page.story.find(item => item.type=='html' && item.text.includes('<img'))
+    const image = page.story.find(item => item.type=='image' && item.url)
+    if(html) window.result.innerHTML += html.text
+    else if (image) window.result.innerHTML += `<img width=100% src=${image.url}>`
+    else console.error("can't find image",page)
+  }
+  document.querySelectorAll('h3')
+    .forEach(elem => elem.addEventListener('click',event => {
+      const title = event.target.innerText
+      link(title,event.shiftKey)
+    }))
+</script>
