@@ -122,6 +122,7 @@
 
   window.doprint = async function(event) {
     await refresh()
+    let done = new Set()
 
     // Contents: links to stories and garden
     let html = [prolog,`<h2 id="contents">Contents</h2>`]
@@ -139,25 +140,29 @@
     for (let con of contents) {
       let page = await(fetch(`//${con.site}/${con.slug}.json`).then(res => res.json()))
       let items = page.story.filter(item => item.type=='paragraph' && item.site)
-      await section(html,items)
+      await section(html,items,done)
       window.result.innerHTML += '<br>'
     }
     let garden = [...folds.told, ...folds.more.filter(item => item.type=='paragraph' && item.site)]
     garden.sort((a,b) => a.text < b.text ? -1 : 1)
     html.push(`<h2 id="garden">Garden</h2>Alphebetical garden index to appear here.`)
-    await section(html,garden)
+    await section(html,garden,done)
 
     frame.download(html.join("\n"),'preprint.html','text/html')
   }
 
-  async function section (html,items) {
+  async function section (html,items,done) {
     // render list of charmed items with resolved site
     for (let item of items) {
       try {
         let site = item.site
         let title = item.text.split(/\[\[|\]\]/)[1]
         let slug = frame.asSlug(title)
-        console.log({site,title,slug})
+        if(done.has(slug)) {
+          console.log('Trouble: Print encountered duplicate slug', {site,title,slug})
+          continue
+        }
+        done.add(slug)
         let page = await fetch(`//${site}/${slug}.json`).then(res => res.json())
         html.push(render(site,page).join("\n"))
         window.result.innerHTML += ' .'
