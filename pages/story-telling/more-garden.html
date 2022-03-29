@@ -1,5 +1,6 @@
 <p>
   <button onclick=domore(event)>do more</button>
+  <button onclick=docontent(event)>do content</button>
   <button onclick=doprint(event)>print this</button>
 </p>
 <div id=result></div>
@@ -171,6 +172,80 @@
         console.error(err)
       }
     }
+  }
+
+
+  window.docontent = async function(event) {
+    // create an table of content page for the growing garden.
+    // reasoning: identify where each potential page in the garden comes from.
+    await refresh()
+
+    let title = `Contents of ${context.page.title}`
+    let story = []
+    let contents = []
+
+    for (let item of folds.more.filter(item => item.type == 'markdown')) {
+      // all or only ticked garden pages? for now only ticked
+      for (let line of checks(item)) {
+        let title = line.split(/\[\[|\]\]/)[1]
+        let {site, page, sites} = await getfrom(frame.asSlug(title),item.sites)
+        contents.push({title, site, id: item.id, page})
+        window.result.innerHTML += ' .'
+      }
+    }
+
+    function compareTitle(a,b) {
+      if (a.title < b.title) {
+        return -1
+      } else if (a.title > b.title) {
+        return 1
+      } else
+      return 0
+    }
+
+    contents.sort(compareTitle)
+    console.info(contents)
+
+    for (let item of contents) {
+      let synopsis, words
+      if (item.page != undefined && item.page.story != undefined) {
+        synopsis = item.page.story[0].text.slice(0,140)
+        words = wordcount(item.page.story)
+      } else {
+        synopsis = 'Page Not Found'
+        words = '-'
+      }
+      story.push({
+        type:'reference',
+        id: item.id,
+        site: item.site,
+        slug: frame.asSlug(item.title),
+        title: item.title,
+        text: `${synopsis} (${words})`
+      })
+    }
+
+    const targets = new Map()
+
+    contents.forEach(item => {
+      if (targets.has(item.title)) {
+        targets.set(item.title, new Set([...targets.get(item.title), item.site]))
+      } else {
+        targets.set(item.title, new Set([item.site]))
+      }
+    })
+
+    console.info(targets)
+    //const multi = targets.map(item => {item.})
+
+    story.unshift({type:'paragraph', text:`Garden has
+      ${contents.length} checked links to
+      ${targets.size} possible garden pages. With
+      ${[...targets.values()].filter(item => item.has(undefined)).length} links to pages that can't be found, and
+      ${[...targets.values()].filter(item => item.length > 1).length} pages that can be found in more than one place.`})
+
+    frame.open({title,story},event.shiftKey)
+
   }
 
   await refresh()
