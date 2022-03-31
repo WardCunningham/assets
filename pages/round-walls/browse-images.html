@@ -1,6 +1,10 @@
 <p><div id=result></div></p>
 <script type=module>
-  import {asSlug,link} from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {asSlug,link,open} from 'http://code.fed.wiki/assets/v1/frame.js'
+
+
+  // C O L L E C T   P A G E S
+
   const site = 'http://round.asia.wiki.org'
   const page = await fetch(`${site}/round-walls.json`).then(res => res.json())
   const titles = page.story
@@ -8,6 +12,10 @@
     .map(item => item.text.split(/\[\[|\]\]/)[1])
   const pages = await Promise.all(titles.map(title =>
     fetch(`${site}/${asSlug(title)}.json`).then(res => res.json())))
+
+
+  // P O S T   P I C T U R E S
+
   for (const page of pages) {
     window.result.innerHTML += `<h3 style="cursor:pointer;">${page.title}</h3>`
     const html = page.story.find(item => item.type=='html' && item.text.includes('<img'))
@@ -16,9 +24,25 @@
     else if (image) window.result.innerHTML += `<img width=100% src=${image.url}>`
     else console.error("can't find image",page)
   }
-  document.querySelectorAll('h3')
-    .forEach(elem => elem.addEventListener('click',event => {
-      const title = event.target.innerText
-      link(title,event.shiftKey)
-    }))
+  const heads = document.querySelectorAll('h3')
+  heads.forEach(elem => elem.addEventListener('click',event =>
+    link(event.target.innerText,event.shiftKey)))
+
+
+  // M A P   A L L   L O C A T I O N S
+
+  const markup = pages.map(page => {
+    const map = page.story.find(item => item.type == 'map')
+    const mark = map.text.split("\n").find(line => line.includes('Round Wall'))
+    return (mark||'').replace('Round Wall',`[[${page.title}]]`)})
+    .concat(['BOUNDARY 45.3674870, -123.0163862', 'BOUNDARY 45.6308195, -122.5033547'])
+    .reverse()
+    .join("\n")
+  const story = [
+    {type:'paragraph',text:'Round walls we have visited.'},
+    {type:'map',text:markup}]
+  const title = 'All Locations'
+  window.result.innerHTML += '<p><button onclick=domap(event)>map walls</button>'
+  window.domap = event => open({title,story},event.shiftKey)
+
 </script>
