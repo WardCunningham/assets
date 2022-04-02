@@ -49,6 +49,12 @@
       div.innerHTML = `<hr><p>${entries.map(entry =>
         `<span>${entry[0]}</span><br><input type=text value="${entry[1]}" size=50>`).join("<br>")}</p><button>+</button>`
     },
+    click: event => {
+      let target = event.target
+      if(target.tagName != 'BUTTON') return
+      let line = target.closest("[data-line]").dataset.line
+      drill(line, stride.add, {})
+    },
     input: event => {
       let target = event.target
       let line = target.closest("[data-line]").dataset.line
@@ -58,89 +64,105 @@
     }
   }
 
-  stride.tally = {
+  stride.add = {
     render: div => {
       let line = div.dataset.line
-      let graph = lineup[line].data.graph
-      let counts = graph.tally().nodes
-      let keys = Object.keys(counts)
-      div.innerHTML = `<hr><p>${keys.map(type =>
-        `<span>${type}</span>: ${counts[type]}`).join("<br>")}</p>`
-    },
-    click: event => {
-      let target = event.target
-      if(target.tagName=='SPAN') {
-        let line = event.target.closest("[data-line]").dataset.line
-        let graph = lineup[line].data.graph
-        let name = target.innerText
-        let nodes = graph.n(name)
-        drill(line, stride.props,{nodes})
-      }
-    }
-  }
-
-  stride.props = {
-    render: div => {
-      let line = div.dataset.line
-      let props = lineup[line].data.nodes.props('name')
-      div.innerHTML = `<hr><p><input type=text placeholder="search"></input></p>
-        <div>${props.map(name => `<span>${name}</span>`).join(`<br>`)}</div>`
-    },
-    click: event => {
-      let target = event.target
-      if(target.tagName=='SPAN') {
-        let line = event.target.closest("[data-line]").dataset.line
-        let have = lineup[line].data.nodes
-        let name = target.innerText
-        let nodes = have.filter((type,props) => props['name'] == name)
-        drill(line,stride.choice,{nodes})
-      }
+      div.innerHTML = `<hr><p><input type=text size=50 placeholder="new property"></p>`
     },
     input: event => {
-      let line = event.target.closest("[data-line]").dataset.line
-      let have = lineup[line].data.nodes
-      let name = event.target.value
-      let nodes = have.filter((type,props) => props['name'].includes(name))
-      if(event.type=='change') {return drill(line,stride.choice,{nodes})}
-      lineup[line].div.querySelector('div').innerHTML = nodes.props().map(name => `<span>${name}</span>`).join("<br>")
+      if (event.type != 'change') return
+      let target = event.target
+      let line = target.closest("[data-line]").dataset.line
+      let key = target.value.replace(/\W/g,'').toLowerCase()
+      let props = lineup[line-1].data.props
+      if(key) props[key] = ''
+      drill(line-2, stride.fill, {props})
     }
   }
 
-  stride.table = {
-    render: div => {
-      let line = div.dataset.line
-      let nodes =lineup[line].data.nodes
-      let rows = nodes.map(node => `<tr>
-        <td>${node.in.join(', ')}
-        <td>${node.props['name']}
-        <td>${node.out.join(', ')}`).join("\n")
-      div.innerHTML = `<hr><p><table>${rows}</table></p>`
-    },
-    click: event => {}
-  }
-
-  stride.choice = {
-    render: div => {
-      div.innerHTML = `<hr><p>${
-        ['inputs','outputs','open graph'].map(choice =>
-        `<button>${choice}</button>`).join(" ")
-      }</p>`
-      let line = div.dataset.line
-      let have = lineup[line].data.nodes
-      div.innerHTML += `<table><tr>
-        <td>${have.i().map(rel => rel.type).filter(uniq).join("<br")}</td>
-        <td>${have.o().map(rel => rel.type).filter(uniq).join("<br")}</td>
-      </table>`
-    },
-    click: event => {
-      let line = event.target.closest("[data-line]").dataset.line
-      let have = lineup[line].data.nodes
-      switch (event.target.innerText) {
-        case 'inputs': drill(line, stride.props, {nodes:have.i().f()}); break
-        case 'outputs': drill(line, stride.props, {nodes:have.o().t()}); break
-      }
-    }
-  }
+  // stride.tally = {
+  //   render: div => {
+  //     let line = div.dataset.line
+  //     let graph = lineup[line].data.graph
+  //     let counts = graph.tally().nodes
+  //     let keys = Object.keys(counts)
+  //     div.innerHTML = `<hr><p>${keys.map(type =>
+  //       `<span>${type}</span>: ${counts[type]}`).join("<br>")}</p>`
+  //   },
+  //   click: event => {
+  //     let target = event.target
+  //     if(target.tagName=='SPAN') {
+  //       let line = event.target.closest("[data-line]").dataset.line
+  //       let graph = lineup[line].data.graph
+  //       let name = target.innerText
+  //       let nodes = graph.n(name)
+  //       drill(line, stride.props,{nodes})
+  //     }
+  //   }
+  // }
+  //
+  // stride.props = {
+  //   render: div => {
+  //     let line = div.dataset.line
+  //     let props = lineup[line].data.nodes.props('name')
+  //     div.innerHTML = `<hr><p><input type=text placeholder="search"></input></p>
+  //       <div>${props.map(name => `<span>${name}</span>`).join(`<br>`)}</div>`
+  //   },
+  //   click: event => {
+  //     let target = event.target
+  //     if(target.tagName=='SPAN') {
+  //       let line = event.target.closest("[data-line]").dataset.line
+  //       let have = lineup[line].data.nodes
+  //       let name = target.innerText
+  //       let nodes = have.filter((type,props) => props['name'] == name)
+  //       drill(line,stride.choice,{nodes})
+  //     }
+  //   },
+  //   input: event => {
+  //     let line = event.target.closest("[data-line]").dataset.line
+  //     let have = lineup[line].data.nodes
+  //     let name = event.target.value
+  //     let nodes = have.filter((type,props) => props['name'].includes(name))
+  //     if(event.type=='change') {return drill(line,stride.choice,{nodes})}
+  //     lineup[line].div.querySelector('div').innerHTML = nodes.props().map(name => `<span>${name}</span>`).join("<br>")
+  //   }
+  // }
+  //
+  // stride.table = {
+  //   render: div => {
+  //     let line = div.dataset.line
+  //     let nodes =lineup[line].data.nodes
+  //     let rows = nodes.map(node => `<tr>
+  //       <td>${node.in.join(', ')}
+  //       <td>${node.props['name']}
+  //       <td>${node.out.join(', ')}`).join("\n")
+  //     div.innerHTML = `<hr><p><table>${rows}</table></p>`
+  //   },
+  //   click: event => {}
+  // }
+  //
+  // stride.choice = {
+  //   render: div => {
+  //     div.innerHTML = `<hr><p>${
+  //       ['inputs','outputs','open graph'].map(choice =>
+  //       `<button>${choice}</button>`).join(" ")
+  //     }</p>`
+  //     let line = div.dataset.line
+  //     let have = lineup[line].data.nodes
+  //     div.innerHTML += `<table><tr>
+  //       <td>${have.i().map(rel => rel.type).filter(uniq).join("<br")}</td>
+  //       <td>${have.o().map(rel => rel.type).filter(uniq).join("<br")}</td>
+  //     </table>`
+  //   },
+  //   click: event => {
+  //     let line = event.target.closest("[data-line]").dataset.line
+  //     let have = lineup[line].data.nodes
+  //     switch (event.target.innerText) {
+  //       case 'inputs': drill(line, stride.props, {nodes:have.i().f()}); break
+  //       case 'outputs': drill(line, stride.props, {nodes:have.o().t()}); break
+  //     }
+  //   }
+  // }
 
 
   async function drill(line,step,data) {
