@@ -47,7 +47,7 @@
       let line = div.dataset.line
       let entries = Object.entries(lineup[line].data.props)
       div.innerHTML = `<hr><p>${entries.map(entry =>
-        `<span>${entry[0]}</span><br><input type=text value="${entry[1]}" size=50>`).join("<br>")}</p>`
+        `<span>${entry[0]}</span><br><input type=text value="${entry[1]}" size=50>`).join("<br>")}</p><button>+</button>`
     },
     input: event => {
       let target = event.target
@@ -145,7 +145,7 @@
 
   async function drill(line,step,data) {
     while (lineup.length-1 > line) lineup.pop().div.remove()
-    await delay(100)
+    await delay(300)
     let div = document.createElement('div')
     lineup.push({step,data,div})
     div.setAttribute('data-line',lineup.length-1)
