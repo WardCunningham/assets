@@ -1,5 +1,6 @@
 <div id=result><p>
   Creating from Schema &nbsp; &nbsp;
+  <button onclick=dopreview(event)>preview</button>
   <button onclick=dodownload(event)>download</button>
 </p><div>
 <style>
@@ -99,7 +100,7 @@
     click: event => {
       const newNode = type => {
         let model = s.n(type).map(node => node)[0]
-        return g.addNode(model.type,model.props)
+        return g.addNode(model.type,dup(model.props))
       }
       let target = event.target
       if(target.tagName=='SPAN') {
@@ -226,6 +227,23 @@
     let obj = {nodes:g.nodes, rels:g.rels}
     let text = JSON.stringify(obj,null,2)
     frame.download(text,'neighborhood.json','application/json')
+  }
+
+  window.dopreview = function (event) {
+    let nodes = g.nodes.map((node,id) => `${id} [label="${node.type}\n${node.props['name']}"]`)
+    let edges = g.rels.map(rel => `${rel.from}->${rel.to} [label="${rel.type}"]`)
+    let text = [
+      'digraph {',
+      'node [shape=box style=filled fillcolor=lightgreen]',
+      'rankdir=LR',
+      ...nodes,
+      ...edges,
+      '}'].join("\n")
+    let story = [
+      {type:'paragraph',text:'Graph as created so far.'},
+      {type:'graphviz',text}
+    ]
+    frame.open({title:'Graph Preview',story},event.shiftKey)
   }
 
 </script>
