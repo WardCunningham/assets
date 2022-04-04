@@ -29,7 +29,7 @@
 
   window.dodownload = function (event) {
     const text = JSON.stringify(graph, null, 2)
-    const file = diagram.diagramName.toLowerCase() + '.json'
+    const file = diagram.diagramName.toLowerCase() + '.schema.json'
     frame.download(text, file, 'application/json')
   }
 
