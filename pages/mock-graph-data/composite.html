@@ -1,0 +1,89 @@
+<p id=choices></p>
+<p></button><p>
+  <button onclick=domerge(event)>merge</button>
+  <button onclick=dopreview(event)>preview</button>
+  <button onclick=dodownload(event)>download</button>
+</p>
+<div id=result></div>
+<script type=module>
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const assets = await frame.assets()
+  const graphs = await assets.filter(asset => asset.file.endsWith('.graph.json'))
+  await Promise.all(graphs.map(asset => Graph.fetch(asset.url).then(graph => {asset['graph'] = graph})))
+  window.choices.innerHTML = graphs.map((asset,idx) =>
+    `<input type=checkbox value=${idx}> ${asset.file}`).join("<br>")
+
+  let comp = new Graph()
+  let merging = []
+  let merged = {nids:[]}
+
+  function merge(comp,incr) {
+    const nids = {}  // incr => comp
+    incr.nodes.forEach((node,id) => {
+      const match = comp.nodes.find(each =>
+        each.type == node.type &&
+        each.props['name'] == node.props['name'])
+      if(match) {
+        window.result.innerHTML += `Same ${match.type} ${match.props['name']}<br>`
+        nids[id] = comp.nodes.findIndex(node => node === match)
+        merged.nids.push(nids[id])
+      } else {
+        nids[id] = comp.addNode(node.type,node.props)
+      }
+    })
+    incr.rels.forEach(rel => {
+      const match = comp.rels.find(each => {
+        each.type == rel.type &&
+        each.from == nids[rel.from] &&
+        each.to == nids[rel.to]
+      })
+      if(match) {
+        window.result.innerHTML += `Same
+          ${comp.rels[match.from].type}
+          ${match.type}
+          ${comp.rels[match.to].type}<br>`
+      } else {
+        comp.addRel(rel.type, nids[rel.from], nids[rel.to], rel.props)
+      }
+    })
+  }
+
+  window.domerge = function (event) {
+    const checks = window.choices.querySelectorAll('input[type=checkbox]:checked')
+    merging = [...checks].map(elem => graphs[elem.value])
+    merged = {nids:[]}
+    comp = new Graph()
+    window.result.innerHTML = `<p>Merging ${merging.length} Graphs</p>`
+    for (const asset of merging) {
+      merge(comp,asset.graph)
+    }
+  }
+
+  window.dodownload = function (event) {
+    const obj = {nodes:comp.nodes, rels:comp.rels}
+    const text = JSON.stringify(obj,null,2)
+    frame.download(text,'comp.graph.json','application/json')
+  }
+
+  window.dopreview = function (event) {
+    const nodes = comp.nodes.map((node,id) => `${id} [label="${node.type}\n${node.props['name']}"]`)
+    const edges = comp.rels.map(rel => `${rel.from}->${rel.to} [label="${rel.type}"]`)
+    const text = [
+      'digraph {',
+      'node [shape=box style=filled fillcolor=gold]',
+      'rankdir=LR',
+      ...merged.nids,
+      'node [fillcolor=lightgreen]',
+      ...nodes,
+      ...edges,
+      '}'].join("\n")
+    const story = [
+      {type:'paragraph',text:`Composite of ${merging.length} graphs merged at ${merged.nids.length} nodes.`},
+      {type:'graphviz',text}
+    ]
+    frame.open({title:'Composite Graph Preview',story},event.shiftKey)
+  }
+
+</script>
