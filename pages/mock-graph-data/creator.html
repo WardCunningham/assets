@@ -33,6 +33,7 @@
     click: event => {
       let target = event.target
       if(target.tagName=='SPAN') {
+        bold(target)
         let line = event.target.closest("[data-line]").dataset.line
         let name = target.innerText
         let model = s.n(name).map(node => node)[0]
@@ -104,6 +105,7 @@
       }
       let target = event.target
       if(target.tagName=='SPAN') {
+        bold(event.target)
         let line = event.target.closest("[data-line]").dataset.line
         let nid = lineup[line].data.nid
         let seq = target.innerText.split(/ +/)
@@ -219,14 +221,22 @@
     div.addEventListener('change', step.input)
     step.render(div)
     window.result.append(div)
+    window.parent.postMessage({action: "resize",height: document.body.offsetHeight}, "*")
   }
 
   drill(-1,stride.new, {})
 
+  function bold(target) {
+    target.closest('p').querySelectorAll('span').forEach(span =>
+      span.style.cssText = 'font-weight:400')
+    target.style.cssText = 'font-weight:900'
+  }
+
   window.dodownload = function (event) {
     let obj = {nodes:g.nodes, rels:g.rels}
     let text = JSON.stringify(obj,null,2)
-    frame.download(text,'neighborhood.json','application/json')
+    let file = (g.nodes[0].props['name']||'thing') + '.graph.json'
+    frame.download(text,file,'application/json')
   }
 
   window.dopreview = function (event) {
