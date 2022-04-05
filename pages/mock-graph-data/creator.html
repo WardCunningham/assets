@@ -235,7 +235,7 @@
   window.dodownload = function (event) {
     let obj = {nodes:g.nodes, rels:g.rels}
     let text = JSON.stringify(obj,null,2)
-    let file = (g.nodes[0].props['name']||'thing') + '.graph.json'
+    let file = (g.nodes[0].props['name']||'thing').replace(/\W/g,'').toLowerCase() + '.graph.json'
     frame.download(text,file,'application/json')
   }
 
