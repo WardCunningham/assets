@@ -19,7 +19,7 @@
   let merging = []
   let merged = {nids:[]}
 
-  function merge(comp,incr) {
+  function merge(comp,incr,source) {
     const nids = {}  // incr => comp
     incr.nodes.forEach((node,id) => {
       const match = comp.nodes.find(each =>
@@ -45,6 +45,7 @@
           ${match.type}
           ${comp.rels[match.to].type}<br>`
       } else {
+        rel.props.source = source
         comp.addRel(rel.type, nids[rel.from], nids[rel.to], rel.props)
       }
     })
@@ -57,7 +58,7 @@
     comp = new Graph()
     window.result.innerHTML = `<p>Merging ${merging.length} Graphs</p>`
     for (const asset of merging) {
-      merge(comp,asset.graph)
+      merge(comp,asset.graph,asset.file)
     }
   }
 
@@ -69,7 +70,7 @@
 
   window.dopreview = function (event) {
     const nodes = comp.nodes.map((node,id) => `${id} [label="${node.type}\n${node.props['name']}"]`)
-    const edges = comp.rels.map(rel => `${rel.from}->${rel.to} [label="${rel.type}"]`)
+    const edges = comp.rels.map(rel => `${rel.from}->${rel.to} [label="${rel.type}" labeltooltip="${rel.props.source}"]`)
     const text = [
       'digraph {',
       'node [shape=box style=filled fillcolor=gold]',
