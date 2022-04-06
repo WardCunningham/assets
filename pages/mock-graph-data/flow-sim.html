@@ -1,0 +1,60 @@
+<p><div id=result></div></p>
+<p><div id=controls>
+  Fertility<br>
+  <input type=range id=Fertility min=50 max=200 style="width: 300px">
+</div></p>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+</style>
+
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+
+  const delay = msec => new Promise(done => setTimeout(done, msec))
+  const inputs = (sum,rid) => sum + nodes[rels[rid].from].props.value||0
+
+  let assets = await frame.assets()
+  let file = assets.find(asset => asset.file.endsWith('.graph.json'))
+  let g = await Graph.fetch(file.url)
+
+  while(true) {
+    reset()
+    report()
+    await delay(1000)
+    for (let i = 0; i<=90; i++) {
+      step()
+      report()
+      await delay(100)      
+    }
+  }
+
+  function reset() {
+    g.n().map(node => {
+      let value = +node.props.initially || +node.props.normal || 100
+      node.props.value = value
+    })
+  }
+
+  function step() {
+    let nodes = g.nodes
+    let rels = g.rels
+    g.n('Rate').map(node => {
+      node.props.value = document.querySelector('#'+node.props.name).value*1
+    })
+    g.n('Flow').map(node => {
+      node.props.value = node.in.reduce(inputs, 0)
+    })
+    g.n('Stock').map(node => {
+      node.props.value = node.in.reduce(inputs, 0)
+    })
+  }
+
+  function report() {
+    let state =g.n().map(node => `${node.props.name}: ${node.props.value}`)
+    window.result.innerHTML = state.join("<br>")
+  }
+
+
+</script>
