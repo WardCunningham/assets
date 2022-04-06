@@ -17,8 +17,10 @@
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
 
-  let assets = `http://ward.dojo.fed.wiki/assets`
-  let s = await Graph.fetch(`${assets}/pages/navigator-schema/community.schema.json`)
+  let assets = await frame.assets()
+  let schema = assets.find(asset => asset.file.endsWith('.schema.json'))
+
+  let s = await Graph.fetch(schema.url)
   let g = new Graph()
 
   let stride = {}
