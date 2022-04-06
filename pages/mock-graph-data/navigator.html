@@ -33,6 +33,7 @@
     click: event => {
       let target = event.target
       if(target.tagName=='SPAN') {
+        bold(target)
         let line = event.target.closest("[data-line]").dataset.line
         let graph = lineup[line].data.graph
         let name = target.innerText
@@ -52,6 +53,7 @@
     click: event => {
       let target = event.target
       if(target.tagName=='SPAN') {
+        bold(target)
         let line = event.target.closest("[data-line]").dataset.line
         let have = lineup[line].data.nodes
         let name = target.innerText
@@ -109,7 +111,7 @@
 
   async function drill(line,step,data) {
     while (lineup.length-1 > line) lineup.pop().div.remove()
-    await delay(100)
+    await delay(300)
     let div = document.createElement('div')
     lineup.push({step,data,div})
     div.setAttribute('data-line',lineup.length-1)
@@ -118,8 +120,17 @@
     div.addEventListener('change', step.input)
     step.render(div)
     window.result.append(div)
+    window.parent.postMessage({action: "resize",height: document.body.offsetHeight}, "*")
   }
 
   drill(-1,stride.tally, {graph:g})
+
+  function bold(target) {
+    target.closest('p').querySelectorAll('span').forEach(span =>
+      span.style.cssText = 'font-weight:400')
+    target.style.cssText = 'font-weight:900'
+  }
+
+
 
 </script>
