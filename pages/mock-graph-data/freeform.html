@@ -1,0 +1,38 @@
+<p><button onclick=dodownload(event)>download</button><p>
+<pre id=result></pre>
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  const context = await frame.context()
+  const code = context.page.story
+    .filter(item => item.type=='code')
+    .map(item => item.text)
+    .join("\n")
+
+  const g = new Graph()
+  let here
+  for (const line of code.split(/\n+/)) {
+    const words = line.split(/ +/)
+    if (words[0].includes(':')) {
+      const [type,name] = words[0].split(/:/)
+      const match = node => node.type==type && node.props[name]==name
+      here = g.nodes.find(match) || g.addNode(type,{name})
+    } else {
+      const [type,name] = words[1].split(/:/)
+      const there = g.addNode(type,{name})
+      const cap = word => word[0].toUpperCase() + word.slice(1)
+      g.addRel(cap(words[0]),here,there,{})
+      here = there
+    }
+  }
+  window.result.innerText = JSON.stringify(g.tally(),null,2)
+
+  window.dodownload = function(event) {
+    const nodes = g.nodes
+    const rels = g.rels
+    const text = JSON.stringify({nodes,rels},null,2)
+    frame.download(text,'parse.graph.json','application/json')
+  }
+
+</script>

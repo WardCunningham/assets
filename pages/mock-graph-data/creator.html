@@ -2,6 +2,7 @@
   Creating from Schema &nbsp; &nbsp;
   <button onclick=dopreview(event)>preview</button>
   <button onclick=dodownload(event)>download</button>
+  <button onclick=dodebug(event)>?</button>
 </p><div>
 <style>
   body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
@@ -82,9 +83,9 @@
       let target = event.target
       let line = target.closest("[data-line]").dataset.line
       let key = target.value.replace(/\W/g,'').toLowerCase()
-      let props = lineup[line-1].data.props
-      if(key) props[key] = ''
-      drill(line-2, stride.fill, {props})
+      let data = lineup[line-1].data
+      if(key) data.props[key] = ''
+      drill(line-2, stride.fill, data)
     }
   }
 
@@ -256,6 +257,19 @@
       {type:'graphviz',text}
     ]
     frame.open({title:'Graph Preview',story},event.shiftKey)
+  }
+
+  window.dodebug = function (event) {
+    let story = lineup.map ((each,line) => {
+      let step = Object.keys(stride).find(key => stride[key] === each.step)
+      let data = each.data
+      return {
+        type:'paragraph',
+        text:`${line}: ${step}\n${JSON.stringify(data)}`,
+        id: 123450+line}
+    })
+    story.unshift({type:'paragraph',text:'Navigator lineup snapshot. [http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/navigator.pdf pdf]'})
+    frame.open({title:'Lineup Snapshot',story},event.shiftKey)
   }
 
 </script>
