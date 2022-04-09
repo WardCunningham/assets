@@ -24,9 +24,9 @@
     incr.nodes.forEach((node,id) => {
       const match = comp.nodes.find(each =>
         each.type == node.type &&
-        each.props['name'] == node.props['name'])
+        each.props.name == node.props.name)
       if(match) {
-        window.result.innerHTML += `Same ${match.type} ${match.props['name']}<br>`
+        window.result.innerHTML += `Same ${match.type} ${match.props.name}<br>`
         nids[id] = comp.nodes.findIndex(node => node === match)
         merged.nids.push(nids[id])
       } else {
@@ -34,16 +34,16 @@
       }
     })
     incr.rels.forEach(rel => {
-      const match = comp.rels.find(each => {
+      const match = comp.rels.find(each =>
         each.type == rel.type &&
         each.from == nids[rel.from] &&
         each.to == nids[rel.to]
-      })
+      )
       if(match) {
         window.result.innerHTML += `Same
-          ${comp.rels[match.from].type}
+          ${comp.nodes[match.from].type} ${comp.nodes[match.from].props.name}
           ${match.type}
-          ${comp.rels[match.to].type}<br>`
+          ${comp.nodes[match.to].type} ${comp.nodes[match.to].props.name}<br>`
       } else {
         rel.props.source = source
         comp.addRel(rel.type, nids[rel.from], nids[rel.to], rel.props)
