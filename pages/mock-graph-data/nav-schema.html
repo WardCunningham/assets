@@ -9,18 +9,19 @@
   const arrows = context.page.story.find(item => item.text.includes('arrows'))
   const data = arrows.text.split(/json=| arrows/)[1]
   const diagram = JSON.parse(atob(data))
+  const trim = obj => Object.fromEntries(Object.entries(obj).map(e => [e[0].trim(),e[1].trim()]))
 
   const graph = new Graph()
   const nids = {}
   for (const node of diagram.graph.nodes) {
-    const type = node.caption
-    const props = node.properties
+    const type = node.caption.trim()
+    const props = trim(node.properties)
     nids[node.id] = graph.addNode(type,props)
     window.result.innerText += `${type}: ${Object.keys(props).join(", ")}\n`
   }
   for (const rel of diagram.graph.relationships) {
-    const type = rel.type
-    const props = rel.properties
+    const type = rel.type.trim()
+    const props = trim(rel.properties)
     const from = nids[rel.fromId]
     const to = nids[rel.toId]
     graph.addRel(type,from,to,props)
