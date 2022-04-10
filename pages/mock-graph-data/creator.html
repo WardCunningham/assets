@@ -69,7 +69,7 @@
       let line = target.closest("[data-line]").dataset.line
       let props = lineup[line].data.props
       let key = target.previousSibling.previousSibling.innerText
-      props[key] = target.value
+      props[key] = target.value.trim()
     }
   }
 
