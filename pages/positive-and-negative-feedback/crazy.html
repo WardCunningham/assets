@@ -37,7 +37,7 @@ function main() {
   const radius = 0.2
   const detail = 2
   const geometry = new THREE.IcosahedronBufferGeometry(radius,detail);
-  const material = new THREE.MeshPhongMaterial({color: 0xffc0a0});
+  const material = new THREE.MeshPhongMaterial({color: 0xc0ffa0});
 
   const dot = new THREE.Mesh(geometry, material);
   scene.add(dot);
@@ -59,6 +59,7 @@ function main() {
   }
 
   for (let [x,y,z] of m) {
+    const material = new THREE.MeshPhongMaterial({color: 0xffc0a0});
     let mag = new THREE.Mesh(geometry, material)
     mag.position.x = x
     mag.position.y = y
