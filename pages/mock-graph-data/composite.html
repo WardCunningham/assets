@@ -10,6 +10,8 @@
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
 
   const assets = await frame.assets()
+  const neighbors = await frame.neighbors()
+  const sitemap = await fetch(`//${neighbors[0]}/system/sitemap.json`).then(res => res.json())
   const graphs = await assets.filter(asset => asset.file.endsWith('.graph.json'))
   await Promise.all(graphs.map(asset => Graph.fetch(asset.url).then(graph => {asset['graph'] = graph})))
   window.choices.innerHTML = graphs.map((asset,idx) =>
@@ -69,8 +71,16 @@
   }
 
   window.dopreview = function (event) {
-    const nodes = comp.nodes.map((node,id) => `${id} [label="${node.type}\n${node.props['name']}"]`)
-    const edges = comp.rels.map(rel => `${rel.from}->${rel.to} [label="${rel.type}" labeltooltip="${rel.props.source}"]`)
+    const nodes = comp.nodes.map((node,id) => {
+      const label = `${node.type}\n${node.props['name']}`
+      const slug = frame.asSlug(label.replace(/\W+/g,' '))
+      const bold = sitemap.find(info => info.slug == slug) ? 'penwidth=3' : ''
+      console.log({label,slug,bold})
+      return `${id} [label="${label}" ${bold}]`
+    })
+    const edges = comp.rels.map(rel => {
+      return `${rel.from}->${rel.to} [label="${rel.type}" labeltooltip="${rel.props.source}"]`
+    })
     const text = [
       'digraph {',
       'node [shape=box style=filled fillcolor=gold]',
