@@ -1,0 +1,25 @@
+<div id=result></div>
+<style>body {background-color: #f8f8f8; margin: 0} </style>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/g9/1.0.16/g9.js'></script>
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const script = context.page.story
+    .filter(item => item.type=='code')
+    .map(item => item.text)
+    .join("\n")
+
+  const run = `
+    g9(initialData, render)
+      .align('center', 'center')
+      .insertInto('#result')`
+
+  try {
+    eval(script+run)
+  } catch (e) {
+    console.log(e)
+    window.result.innerText = e.message
+  }
+
+</script>
