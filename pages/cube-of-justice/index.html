@@ -1,0 +1,152 @@
+<html>
+<body style="margin:0;" onclick='location="/view/welcome-visitors/view/ward-cunningham/view/cube-of-justice"'>
+<script type=module>
+
+import * as THREE from 'https://unpkg.com/three@0.124.0/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three@0.124.0/examples/jsm/controls/OrbitControls.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(2);
+document.body.appendChild(renderer.domElement);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 15);
+camera.position.z = 3;
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.autoRotate = true
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("rgb(25,40,50)")
+
+window.addEventListener( 'resize', onWindowResize, false )
+function onWindowResize(){
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+
+// C U B E
+
+const geo = new THREE.BoxGeometry(1, 1, 1)
+const mat = new THREE.MeshNormalMaterial()
+const box = new THREE.Mesh(geo, mat)
+scene.add(box)
+
+
+// G R A V E Y A R D
+
+const rn = (v) => v * (Math.random()-.5)
+
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.2))
+let light = new THREE.DirectionalLight('white', 0.3)
+light.position.set(2, 2, -1)
+light.castShadow = true
+scene.add(light)
+
+let mat2 = new THREE.MeshStandardMaterial()
+let slab = new THREE.CubeGeometry(.3,.6,.1)
+for (let i=0; i<30; i++) {
+  let grave = new THREE.Mesh(slab,mat2)
+  grave.castShadow = true
+  grave.position.set(rn(5), -1, rn(5))
+  grave.rotation.set(0, rn(1), rn(.5))
+  scene.add(grave)
+}
+
+let table = new THREE.Mesh(
+  new THREE.PlaneGeometry(6, 6), mat2)
+table.rotation.x = - Math.PI/2
+table.position.y = - 1.2
+table.receiveShadow = true
+scene.add(table)
+
+let ghosts =
+  [{c:'#ffff00'},{c:'#ff00ff'},{c:'#00ffff'}]
+for (let g of ghosts) {
+  g.l = new THREE.PointLight(g.c, 1, 2)
+  g.l.position.set(rn(4), 0, rn(4))
+  g.l.castShadow = true
+  g.r = rn(3)+3
+  g.v = rn(2)
+  scene.add(g.l)
+}
+
+
+// J U D G E M E N T
+
+let judgements = [  // https://en.wikipedia.org/wiki/Magic_8-Ball
+  "It is certain.",
+  "It is decidedly so.",
+  "Without a doubt.",
+  "Yes definitely.",
+  "You may rely on it.",
+  "As I see it, yes.",
+  "Most likely.",
+  "Outlook good.",
+  "Yes.",
+  "Signs point to yes.",
+  "Reply hazy, try again.",
+  "Ask again later.",
+  "Better not tell you now.",
+  "Cannot predict now.",
+  "Concentrate and ask again.",
+  "Don't count on it.",
+  "My reply is no.",
+  "My sources say no.",
+  "Outlook not so good.",
+  "Very doubtful."
+]
+
+judgement()
+
+async function judgement() {
+  let fonts = `https://threejs.org/examples/fonts`
+  let face = `droid/droid_sans_regular`
+  let url = `${fonts}/${face}.typeface.json`
+  let loader = new THREE.FontLoader()
+  let font = await new Promise(res => loader.load(url, res))
+  let lastcast = null
+
+  setInterval(judge, 15000)
+  async function judge() {
+    let cast = Math.floor(Math.random()*judgements.length)
+    if (cast == lastcast) return judge()
+    lastcast = cast
+    let params = {font, size:0.2, height:0.1, curveSegments:2}
+    let text = new THREE.TextGeometry(judgements[cast], params)
+    text.center()
+    let answer = new THREE.Mesh(text, mat)
+    answer.position.y = 1
+    answer.lookAt(camera.position)
+    scene.add(answer)
+    await new Promise(res => setTimeout(res, 3000))
+    scene.remove(answer)
+    answer.geometry.dispose()
+  }
+}
+
+
+// A N I M A T I O N
+
+renderer.setAnimationLoop(() => {
+  controls.update();
+  box.rotation.x += 0.02
+  box.rotation.y += 0.005
+
+  for (let g of ghosts) {
+    let a = g.v * Date.now() / 1000
+    g.l.position.set(Math.sin(a*6),0,Math.cos(a*3))
+  }
+
+  renderer.render(scene, camera);
+})
+
+</script>
+</body>
+</html>
