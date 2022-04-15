@@ -1,0 +1,26 @@
+<pre id=markup>working</pre>
+
+<script>
+
+  const here = (slug) => fetch(`http://cactus.asia.wiki.org/${slug}.json`).then(res => res.json())
+  const there = (slug) => fetch(`http://cactus.asia.wiki.org/${slug}.json`).then(res => res.json())
+  const item = (page, type) => page.story.find(item => item.type == type)
+  const title = (line) => line.match(/\[\[(.*)\]\]/)[1]
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const fix = (title) => title.replace(/Home Sweet Home/,'Crossing Wiki Creek')
+  const coord = (markup) => markup.split(/\n/).filter(line => line.match(/^\d/)).join("\n")
+  const rounded = (coord) => coord.split(/, /).map(num => Number.parseFloat(num).toFixed(9)).join(', ')
+
+  generate()
+
+  async function generate() {
+    console.log()
+    const texts = (await here('cactus-league-baseball')).story.map(item => item.text)
+    const titles = texts.filter(line => line.match(/^\[\[/)).map(line => title(line))
+    const trails = await Promise.all(titles.map(title => there(asSlug(fix(title)))))
+    const coords = trails.map(trail => coord(item(trail, 'map').text)).join("\n")
+    const pretty = coords.split(/\n/).map(line => rounded(line)).join("\n")
+    markup.innerHTML = pretty
+  }
+
+</script>
