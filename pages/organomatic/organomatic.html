@@ -1,0 +1,59 @@
+<p><button id=preview>preview</button>
+<button id=download>download</button></p>
+<table id=specifics><tr><th>id<th>role<th>sysnopsis</tr></table>
+
+<style>
+  td, th { border: 1px solid gray; padding: 8px; }
+  td input {width: 100%; border-width:0; padding: 4px}
+  table { border-collapse: collapse; }
+</style>
+
+<script type=module>
+
+const inp = (id, text) => `<input type=text placeholder="${text}">`
+const role = n => nodes[n].toLowerCase()
+
+const nodes = {
+  1: "CUSTOMER",
+  2: "STAFFING",
+  3: "STRUCTURE",
+  4: "SALES",
+  5: "DEVELOPMENT",
+  6: "OPERATIONS",
+  7: "RESOURCES",
+  8: "STRATEGY",
+  9: "MARKETING",
+  10: "LEADERSHIP",
+  11: "CULTURE"
+}
+
+const heads = {
+  1:[4,3,2],
+  2:[1,3,4,5,6,7],
+  3:[1,2,4,5,6,11],
+  4:[1,2,3,5,7,11],
+  5:[2,3,4,6,7,8,9,11],
+  6:[2,3,5,8,7,10,11],
+  7:[2,4,5,6,9,11,10],
+  8:[5,6,9,10,11],
+  9:[5,7,8,10,11],
+  10:[6,7,8,9,11],
+  11:[3,4,5,6,7,8,9,10]
+}
+
+for (let t = 11; t>=1; t--) {
+  window.specifics.innerHTML += `<tr><td colspan=3>&nbsp;</tr>`
+  window.specifics.innerHTML += `<tr>
+    <td>S-${t}
+    <td class=fill>${inp(t,nodes[t])}
+    <td class=fill width=640>${inp('d'+t,`describe nature of ${role(t)}'s role`)}
+  </tr>`
+  for (let h of heads[t].reverse()) {
+    window.specifics.innerHTML += `<tr>
+      <td>${t}->${h}
+      <td>${role(h)}
+      <td class=fill>${inp([t,h],`describe conversation with ${role(h)}`)}
+    </tr>`
+  }
+}
+</script>
