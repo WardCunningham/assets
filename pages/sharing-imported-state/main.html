@@ -1,0 +1,15 @@
+<span>see console.log</span>
+<script type=module>
+  import {count} from './stats.js'
+  import {simple, complex} from './print.js'
+
+  count('one')
+  count('two')
+  simple()
+  count('three')
+  complex(helper)
+
+  function helper() {
+    count('helper')
+  }
+</script>
