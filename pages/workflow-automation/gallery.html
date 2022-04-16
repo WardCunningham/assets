@@ -62,7 +62,7 @@
   }
 
   function fold (item) {
-    let text = item.text
+    let text = item.text.split(/ /)[0]
     let month = months.find(name => name.startsWith(text))
     if (month) {
       if (month == 'january') year++
