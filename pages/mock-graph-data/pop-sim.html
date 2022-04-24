@@ -1,0 +1,63 @@
+<svg viewBox="0 0 100 100">
+  <polyline
+    id="grid"
+    points="0,0 0,100 100,100 100,0 0,0 0,50 100,50"
+    stroke="#ccc" fill="none"/>
+  <polyline
+    id="growing"
+    points=""
+    fill="none"
+    stroke="brown"
+    stroke-width=".5"
+    stroke-linejoin="round"/>
+</svg>
+<p><div id=controls>
+  birth rate <span id=birthratereadout></span><br>
+  <input type=range id=birthrate min=700 max=900 style="width: 300px"><br>
+  lifespan <span id=lifespanreadout></span><br>
+  <input type=range id=lifespan min=700 max=900 style="width: 300px">
+</div></p>
+
+<script type=module>
+  import {rate,state,step} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/pop-sim.js'
+
+  let x = 0
+  let y = 50
+
+  const rn = () => Math.random()-Math.random()
+  const nx = () => [x+=1, Math.round(y+=rn()*5)]
+
+  function start () {
+    state.year = 0
+    state.pop = 1000
+  }
+
+  function inputs () {
+    function read(range,scale) {
+      const input = document.querySelector(range)
+      const value = scale(input.value)
+      document.querySelector(range+'readout').innerText = value.toFixed(3)
+      return value
+    }
+    rate.birthrate = read('#birthrate', r => 1/((900-(r-700))/100))
+    rate.lifetime = read('#lifespan', r => r/100)
+  }
+
+  function grow () {
+    let points = growing.getAttribute('points')
+    if (x > 130) {x=0; points=''; save(); start()}
+    inputs()
+    step()
+    y = 100 - state.pop * 50/1000
+    growing.setAttribute('points', points+' '+[x+=1, y])
+  }
+
+  function save () {
+    let hist = growing.cloneNode()
+    hist.setAttribute('id','')
+    hist.setAttribute('stroke','#ddd')
+    grid.before(hist)
+  }
+
+  setInterval(grow, 16)
+</script>
