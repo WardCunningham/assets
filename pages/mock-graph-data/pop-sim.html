@@ -13,16 +13,16 @@
 </svg>
 <p><div id=controls>
   birth rate <span id=birthratereadout></span><br>
-  <input type=range id=birthrate min=700 max=900 style="width: 300px"><br>
+  <input type=range id=birthrate min=0 max=300 style="width: 300px"><br>
   lifespan <span id=lifespanreadout></span><br>
-  <input type=range id=lifespan min=700 max=900 style="width: 300px">
+  <input type=range id=lifespan min=0 max=300 style="width: 300px">
 </div></p>
 
 <script type=module>
   import {rate,state,step} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/pop-sim.js'
 
-  let x = 0
-  let y = 50
+  const px = v => 100 * (v/30)
+  const py = v => 100 - 100 * (v/2000)
 
   function start () {
     state.year = 0
@@ -30,23 +30,23 @@
   }
 
   function inputs () {
-    function read(range,scale) {
-      const input = document.querySelector(range)
-      const value = scale(input.value)
-      document.querySelector(range+'readout').innerText = value.toFixed(3)
-      return value
+    function read(range,min,max) {
+      const value = document.querySelector(range).value
+      const setting = min + (max-min)*(value/300)
+      document.querySelector(range+'readout').innerText = setting.toFixed(3)
+      return setting
     }
-    rate.birthrate = read('#birthrate', r => 1/((900-(r-700))/100))
-    rate.lifetime = read('#lifespan', r => r/100)
+    rate.birthrate = read('#birthrate', 1/16, 3/16)
+    rate.lifetime = read('#lifespan', 5, 11)
   }
 
   function grow () {
     let points = growing.getAttribute('points')
-    if (x > 130) {x=0; points=''; save(); start()}
+    if (px(state.year) > 100) {points=''; save(); start()}
     inputs()
     step()
-    y = 100 - state.pop * 50/1000
-    growing.setAttribute('points', points+' '+[x+=1, y])
+    const point = [px(state.year), py(state.pop)]
+    growing.setAttribute('points', points+' '+point)
   }
 
   function save () {
