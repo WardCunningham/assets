@@ -1,0 +1,74 @@
+<meta charset="utf-8"/>
+<p><table id=choose></table></p>
+<p><div id=chart></div></p>
+<script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
+<script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+<script type=module>
+
+  import { Graph } from 'https://wardcunningham.github.io/graph/graph.js'
+
+  let graph = new Graph()
+  const city = name => {
+    const nid = graph.nodes.findIndex(node => node.props.name == name)
+    return nid >= 0 ? nid : graph.addNode('City', {name})
+  }
+
+  const travel = ['⚪️', '🚗', '🚢', '✈️']
+  const modes = [null, 'Car', 'Boat', 'Plane']
+  const places = [
+    {city: "Los Angeles", latlon: [33.9539576, -118.2523996]},
+    {city: "Phoenix", latlon: [33.5100852, -112.0803013]},
+    {city: "Washington", latlon: [38.6954814, -77.0316964]},
+    {city: "New York", latlon: [40.7236385, -74.0434152]},
+    {city: "Ottawa", latlon: [45.4690906, -75.7133371]},
+    {city: "Cancun", latlon: [21.1426763, -86.8638512]},
+    {city: "Mexico City", latlon: [19.4318802, -99.1375979]},
+    {city: "Panama City", latlon: [8.9813670, -79.5291707]},
+    {city: "Santiago", latlon: [-33.4328697, -70.6671202]},
+    {city: "London", latlon: [51.5404954, -0.1311305]},
+    {city: "Paris", latlon: [48.7825845, 2.3078343]},
+    {city: "Rome", latlon: [41.9029622, 12.4793267]},
+    {city: "Mumbai", latlon: [19.0720781, 72.8642695]},
+    {city: "Nairobi", latlon: [-1.3032695, 36.8561187]},
+    {city: "Hong Kong", latlon: [22.3149020, 114.1639516]},
+    {city: "Cape Town", latlon: [-33.9660600, 18.4720657]},
+    {city: "Sydney", latlon: [-33.8931934, 151.1459682]},
+    {city: "Auckland", latlon: [-36.8605866, 174.7657487]},
+    {city: "Honolulu", latlon: [21.3121392, 202.1439139]}
+  ].sort((a,b) => a.city > b.city ? 1 : -1)
+
+  window.choose.innerHTML = places.map (from =>
+    `<tr><th>${from.city}${places.map (to =>
+      `<td title="${from.city}⇒${to.city}">⚪️`).join('')}`
+    ).join('')
+
+  window.choose.addEventListener('click', event => {
+    const target = event.target
+    if (target.nodeName != 'TD') return
+    const has = target.innerText
+    const wants = travel[(travel.indexOf(has)+1)%travel.length]
+    target.innerText = wants
+
+    graph = new Graph()
+    window.choose.querySelectorAll('td').forEach(td => {
+      const has = td.innerText
+      if (has != '⚪️') {
+        const mode = modes[travel.indexOf(has)]
+        const [from, to] = td.title.split('⇒')
+        graph.addRel('Travel', city(from), city(to), {mode})
+      }
+    })
+    graphviz(window.chart, graph)
+  })
+
+  function graphviz(chart, graph) {
+    const quote = nid => `"${graph.nodes[nid].props.name.replace(/ /,'\n')}"`
+    let edges = graph.rels.map(rel => `${quote(rel.from)}->${quote(rel.to)} [label="${rel.props.mode}"]`)
+    let dot = `digraph { rankdir=LR; node [shape=box style=filled fillcolor=bisque]; \n${edges.join("\n")} }`
+    hpccWasm.graphviz.layout(dot, "svg", "dot").then(svg => {
+      chart.innerHTML = svg.replace(/width="\d+pt" height="\d+pt"/,'');
+      window.parent.postMessage({action: "resize",height: document.body.offsetHeight}, "*")
+    })
+  }
+
+</script>
