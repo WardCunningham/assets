@@ -1,6 +1,11 @@
 <meta charset="utf-8"/>
 <p><table id=choose></table></p>
 <p><div id=chart></div></p>
+<style>
+  td { cursor:pointer; }
+  th { font-weight:lighter; font-family:sans-serif; font-size:smaller; white-space:nowrap;}
+  th span { writing-mode:vertical-rl; }
+</style>
 <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
 <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
 <script type=module>
@@ -10,34 +15,35 @@
   let graph = new Graph()
   const city = name => {
     const nid = graph.nodes.findIndex(node => node.props.name == name)
-    return nid >= 0 ? nid : graph.addNode('City', {name})
+    return nid >= 0 ? nid : graph.addNode('City', places.find(place => place.name == name))
   }
 
   const travel = ['⚪️', '🚗', '🚢', '✈️']
   const modes = [null, 'Car', 'Boat', 'Plane']
   const places = [
-    {city: "Los Angeles", latlon: [33.9539576, -118.2523996]},
-    {city: "Phoenix", latlon: [33.5100852, -112.0803013]},
-    {city: "Washington", latlon: [38.6954814, -77.0316964]},
-    {city: "New York", latlon: [40.7236385, -74.0434152]},
-    {city: "Ottawa", latlon: [45.4690906, -75.7133371]},
-    {city: "Mexico City", latlon: [19.4318802, -99.1375979]},
-    {city: "Santiago", latlon: [-33.4328697, -70.6671202]},
-    {city: "London", latlon: [51.5404954, -0.1311305]},
-    {city: "Paris", latlon: [48.7825845, 2.3078343]},
-    {city: "Rome", latlon: [41.9029622, 12.4793267]},
-    {city: "Hong Kong", latlon: [22.3149020, 114.1639516]},
-    {city: "Cape Town", latlon: [-33.9660600, 18.4720657]},
-    {city: "Sydney", latlon: [-33.8931934, 151.1459682]},
-    {city: "Honolulu", latlon: [21.3121392, 202.1439139]}
+    {name:"Cape Town",lat:-33.966,lon:18.472},
+    {name:"Hong Kong",lat:22.315,lon:114.164},
+    {name:"Honolulu",lat:21.312,lon:202.144},
+    {name:"London",lat:51.54,lon:-0.131},
+    {name:"Los Angeles",lat:33.954,lon:-118.252},
+    {name:"Mexico City",lat:19.432,lon:-99.138},
+    {name:"New York",lat:40.724,lon:-74.043},
+    {name:"Ottawa",lat:45.469,lon:-75.713},
+    {name:"Paris",lat:48.783,lon:2.308},
+    {name:"Rome",lat:41.903,lon:12.479},
+    {name:"Santiago",lat:-33.433,lon:-70.667},
+    {name:"Sydney",lat:-33.893,lon:151.146},
+    {name:"Washington",lat:38.695,lon:-77.032}
   ]
 
-  console.log(places.sort((a,b) => a.city > b.city ? 1 : -1))
-
-  window.choose.innerHTML = places.map (from =>
-    `<tr><th>${from.city}${places.map (to =>
-      `<td title="${from.city}⇒${to.city}">⚪️`).join('')}`
-    ).join('')
+  window.choose.innerHTML = [
+    `<tr><th>`,
+    ...places.map (to =>
+      `<th><span>${to.name}</span>`),
+    ...places.map (from =>
+      `<tr><th>${from.name}${places.map (to =>
+        `<td title="${from.name}⇒${to.name}">⚪️`).join('')}`
+      )].join('')
 
   window.choose.addEventListener('click', event => {
     const target = event.target
