@@ -1,0 +1,27 @@
+<pre id=result></pre>
+<style>
+  pre {font-weight: lighter;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const dot = context.page.story.find(item => item.type == 'code').text
+  const rels = dot.split("\n").map(line => {
+    const m = line.match(/"(\w+)" -> "(\w+)" \[label="(\w+)"\]/)
+    return {from:m[1], to:m[2], rel:m[3]}
+  })
+
+  for (const r of rels) {
+    emit(short(r.to), `(${short(r.from)}:${r.from}{name:"\${name}}"})\n-[:${r.rel}]->(${short(r.rel)}:${r.to})`)
+  }
+
+  function short (type) {
+    return type.slice(0,4).toLowerCase()
+  }
+
+  function emit(key, query) {
+    window.result.innerText += `${key}:\n\`${query}\`,\n\n`
+  }
+
+
+</script>
