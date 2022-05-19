@@ -1,0 +1,83 @@
+<p><button onclick=dodoctor(event)>parse doctor</button></p>
+<p><div id=result>working</div></p>
+<style>
+  body { font-family: verdana, helvetica, sans; font-size: smaller; }
+  td, th { border: 1px solid gray; padding: 4px; text-align:center;  }
+  td { cursor:pointer }
+  table { border-collapse: collapse; }
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import { Graph } from 'https://wardcunningham.github.io/graph/graph.js'
+  import { search } from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/cypher.js'
+  const graph = await Graph.fetch('http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graphs/graph.json')
+  window.result.innerHTML = `<pre>${JSON.stringify(graph.tally(),null,2)}</pre>`
+
+  window.dodoctor = function (event) {
+    const param = btoa(query)
+    const doctor = 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/doctor.html'
+    const url = `${doctor}?${param}`
+    const title = "Parse Doctor"
+    const story = [
+      {type:'paragraph',text:`We run the query with logging turned on. [${url} expand]`},
+      {type: 'frame',text:`${url}\nHEIGHT 600`}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }  
+
+  const context = await frame.context()
+  const query = context.page.story.find(item => item.type == 'code').text
+  const errors = []
+  const result = search(graph,query,{errors})
+  if(errors.length) {
+    window.result.innerHTML = errors.join("<br>")
+  } else {
+      window.result.innerHTML = `<pre>${JSON.stringify(result,null,2)}</pre>`
+      display(result)
+  }
+
+  function display (result) {
+    const html = []
+    const heads = Object.keys(result[0])
+    html.push(`<tr>${heads.map(head => `<th>${head}`).join('')}`)
+    result.forEach((row,i) => 
+      html.push(`<tr row=${i}>${heads.map(head => {
+        const node = row[head]
+        const name = node.props.name
+        if (name.length <= 20 && !name.includes('"')) {
+          return `<td head=${head} style="color:blue">${name}`
+        }
+        return `<td>${name}`})
+      .join('')}`))
+    window.result.innerHTML = `<table onclick=domore(event)>${html.join("\n")}</table>`
+  }
+
+  const drill = (type, head, name) => {
+    const catalog = {
+      Service:`match (source:Service {name:"${name}"})-[:Team]-> (team:Employee)`,
+      team:`match (engr:Employee{name:"${name}"})<-[:Team]-(srvc:Service)`,
+      Project:`match (Project{name:"${name}"})<-[:Owner]-(svce:Service)`,
+      Employee:`match (boss:Employee{name:"${name}"})<-[]-(reports:Employee)`
+
+    }
+    return catalog[head] || catalog[type] || `match(all:${type})`
+  }
+
+  window.domore = function (event) {
+    const target = event.target
+    const head = target.getAttribute('head')
+    const row = result[target.parentElement.getAttribute('row')]
+    const type = row[head].type
+    const name = target.innerText
+    const down = drill(type,head, name)
+    const text = `We've constructed this query specifically for one binding of the "${head}" variable in the previous query.`
+    const story = [
+      {type:'paragraph', text},
+      {type:'code',text:down},
+      {type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/mock-el-dorado.html
+HEIGHT 600`}
+    ]
+    frame.open({title:`${type}: ${name}`,story},event.shiftKey)
+  }
+
+</script>
