@@ -1,9 +1,12 @@
 <meta charset="utf-8"/>
-<p><table id=choose></table></p>
-<p><div id=chart></div></p>
+<center>
+  <p><button onclick=download(event)>download</button></p>
+  <p><table id=choose></table></p>
+  <p><div id=chart></div></p>
+</center>
 <style>
   td { cursor:pointer; }
-  th { font-weight:lighter; font-family:sans-serif; font-size:smaller; white-space:nowrap;}
+  th { font-weight:normal; font-family:sans-serif; font-size:smaller; white-space:nowrap;}
   th span { writing-mode:vertical-rl; }
 </style>
 <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
@@ -72,6 +75,17 @@
       chart.innerHTML = svg.replace(/width="\d+pt" height="\d+pt"/,'');
       window.parent.postMessage({action: "resize",height: document.body.offsetHeight}, "*")
     })
+  }
+
+  window.download = function () {
+    const data = `data:text/json;charset=utf-8,` + encodeURIComponent(graph.stringify(null,2))
+    const anchor = document.createElement('a')
+    const file = `n${graph.nodes.length}r${graph.rels.length}t${Date.now()%1000}.graph.json`
+    anchor.setAttribute("href", data)
+    anchor.setAttribute("download", file)
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
   }
 
 </script>
