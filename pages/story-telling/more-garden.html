@@ -146,7 +146,7 @@
     }
     let garden = [...folds.told, ...folds.more.filter(item => item.type=='paragraph' && item.site)]
     garden.sort((a,b) => a.text < b.text ? -1 : 1)
-    html.push(`<h2 id="garden">Garden</h2>Alphebetical garden index to appear here.`)
+    html.push(`<h2 id="garden">Garden</h2>Alphabetical garden index to appear here.`)
     await section(html,garden,done)
 
     frame.download(html.join("\n"),'preprint.html','text/html')
