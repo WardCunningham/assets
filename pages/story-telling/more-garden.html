@@ -145,8 +145,23 @@
       window.result.innerHTML += '<br>'
     }
     let garden = [...folds.told, ...folds.more.filter(item => item.type=='paragraph' && item.site)]
-    garden.sort((a,b) => a.text < b.text ? -1 : 1)
-    html.push(`<h2 id="garden">Garden</h2>Alphabetical garden index to appear here.`)
+    garden = garden.sort((a,b) => a.text < b.text ? -1 : 1)
+    html.push(`
+      <h2 id="garden">Garden</h2>
+      <p>
+        These pages have been referenced from within the stories above.
+        They provide a shared context where one can read further.
+      </p>`)
+
+    let predone = new Set(done)
+    for (let item of garden) {
+      let title = item.text.split(/\[\[|\]\]/)[1]
+      let slug = frame.asSlug(title)
+      if (!predone.has(slug))
+        html.push(`<li><a href=#${slug}>${title}</a></li>`)
+      predone.add(slug)
+    }
+
     await section(html,garden,done)
 
     frame.download(html.join("\n"),'preprint.html','text/html')
@@ -209,7 +224,7 @@
     for (let item of contents) {
       let synopsis, words
       if (item.page != undefined && item.page.story != undefined) {
-        synopsis = item.page.story[0].text.slice(0,140)
+        synopsis = item.page.story[0].text.slice(0,140)    // ToDo: guard against undefined text
         words = wordcount(item.page.story)
       } else {
         synopsis = 'Page Not Found'
