@@ -20,27 +20,6 @@
     folds = folded(context.page.story,['stories','told','more'])
     console.log(folds)
 
-    // let story = context.page.story
-    // let folds = story
-    //   .filter(item => item.type == 'pagefold')
-    //   .map(item => [item.text, story.indexOf(item)])
-    // let want = 'stories, garden, more'
-    // console.log({folds})
-    // if(folds.map(fold=>fold[0]).join(', ') != want) {
-    //   window.result.innerHTML = `Unexpected pagefolds.<br>Wanted ${want}.`
-    //   return
-    // }
-
-    // inauthors = story.slice(folds[0][1]+1, folds[1][1])
-    // ingarden = story.slice(folds[1][1]+1, folds[2][1])
-    // inlists = story.slice(folds[2][1]+1).filter(item => item.type == 'markdown')
-    // console.log({inauthors, ingarden, inlists})
-
-    // instory = story.filter(item => item.type == 'paragraph' && item.site)
-    // let pages = instory.length
-    // let words = instory.reduce((sum, item) => sum + (item.words||0), 0)
-    // metrics = {pages, words,links:0}
-
     window.result.innerHTML = `<p>
       ${folds.stories.length} stories begin this garden<br>
       ${folds.told.length} pages in the garden so far<br>
