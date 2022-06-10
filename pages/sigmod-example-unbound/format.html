@@ -3,6 +3,6 @@
   const graph = 'http://ward.dojo.fed.wiki/assets/pages/sigmod-example-unbound/sigmod.graph.json'
   const {nodes, rels} = await fetch(graph).then(res => res.json())
   const n = nodes.map((n,i) => `n${i+1} ${n.type} ${n.props.name}`)
-  const r = rels.map((r,i) => `r${i+1} ${r.type} n${r.from+1} ⇒ n${r.to+1}`)
+  const r = rels.map((r,i) => `r${i+1} ${r.type} n${r.from+1} ${nodes[r.from].props.name} ⇒ n${r.to+1} ${nodes[r.to].props.name}`)
   window.report.innerHTML = [...n, '', ...r].join("\n")
 </script>
