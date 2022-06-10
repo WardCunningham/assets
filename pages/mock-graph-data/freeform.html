@@ -21,10 +21,11 @@
       if(here<0) here = g.addNode(type,{name})
     } else {
       const [type,name] = words[1].split(/:/)
-      const to = g.addNode(type,{name})
+      const match = node => node.type==type && node.props.name==name
+      let to = g.nodes.findIndex(match)
+      if(to<0) to = g.addNode(type,{name})
       const cap = word => word[0].toUpperCase() + word.slice(1)
       g.addRel(cap(words[0]),here,to,{})
-      here = to
     }
   }
   window.result.innerText = JSON.stringify(g.tally(),null,2)
