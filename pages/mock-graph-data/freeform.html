@@ -1,9 +1,15 @@
-<p><button onclick=dodownload(event)>download</button><p>
+<p>
+  <button onclick=dopreview(event)>preview</button>
+  <button onclick=dojavascript(event)>javascript</button>
+  <button onclick=dodownload(event)>download</button>
+<p>
 <pre id=result></pre>
 <script type=module>
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  import {digraph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/digraph.js'
+  import {javascript} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/javascript.js'
   const context = await frame.context()
   const code = context.page.story
     .filter(item => item.type=='code')
@@ -31,11 +37,24 @@
   }
   window.result.innerText = JSON.stringify(g.tally(),null,2)
 
+  window.dopreview = function(event) {
+    const dot = `digraph { node [shape=box style=filled fillcolor=bisque]\n${digraph(g)}\n}`
+    const text = `From [[${context.page.title}]]`
+    const story = [{type:'paragraph',text},{type:'graphviz',text:dot}]
+    frame.open({title:'Freeform Preview',story},event.shiftKey)
+  }
+
   window.dodownload = function(event) {
     const nodes = g.nodes
     const rels = g.rels
     const text = JSON.stringify({nodes,rels},null,2)
     frame.download(text,'parse.graph.json','application/json')
+  }
+
+  window.dojavascript = function(event) {
+    const text = `From [[${context.page.title}]]`
+    const story = [{type:'paragraph',text},{type:'code',text:javascript(g)}]
+    frame.open({title:'Freeform Javascript',story},event.shiftKey)
   }
 
 </script>
