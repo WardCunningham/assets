@@ -7,7 +7,7 @@
 <script type=module>
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
   import {digraph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/digraph.js'
   import {javascript} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/javascript.js'
   const context = await frame.context()
@@ -45,9 +45,7 @@
   }
 
   window.dodownload = function(event) {
-    const nodes = g.nodes
-    const rels = g.rels
-    const text = JSON.stringify({nodes,rels},null,2)
+    const text = g.stringify(null,2)
     frame.download(text,'parse.graph.json','application/json')
   }
 
