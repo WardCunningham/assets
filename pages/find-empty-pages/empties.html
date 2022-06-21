@@ -1,0 +1,38 @@
+<div id=result></div>
+<style>
+  li {cursor: pointer;}
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+</style>
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const sitemap = await fetch(`${context.origin}/system/sitemap.json`).then(res => res.json())
+  const empties = sitemap
+    .filter(info => info.synopsis=='A page with 0 items.')
+    .map(info => info.title)
+
+  const html = []
+  html.push(`<ol onclick=dolink(event)>`)
+  for (const empty of empties) {
+    html.push(`<li>${empty}</li>`)
+    const here = frame.asSlug(empty)
+    html.push(`<ul>`)
+    for (const info of sitemap) {
+      for (const slug in info.links||{}) {
+        if (slug == here) {
+          html.push(`<li>${info.title}</li>`)
+        }
+      }
+    }
+    html.push(`</ul>`)
+  }
+  html.push(`</ol>`)
+  window.result.innerHTML = html.join("\n")
+  window.parent.postMessage({action: "resize",height: document.body.offsetHeight}, "*")
+
+  window.dolink = function (event) {
+    frame.link(event.target.innerText, event.shiftKey)
+  }
+
+</script>
