@@ -24,7 +24,7 @@
 //     }, ...
 
 
-const socket = new WebSocket('ws://nr.local:4649/Spark')
+const socket = new WebSocket('ws://localhost:4649/Spark')
 
 socket.addEventListener('open', event =>
   socket.send('{"cmd":"subscribeToSpots","Enable":true}')
