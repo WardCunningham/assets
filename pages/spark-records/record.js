@@ -1,5 +1,5 @@
 // record spark spots
-// usage: mkdir data; deno run --allow-net --allow-write=data record.js nr.local
+// usage: mkdir data; deno run --allow-net --allow-write=data record.js 10.0.1.113
 
 console.log(new Date())
 
@@ -14,15 +14,23 @@ let count = 0
 function inspect(event) {
   try {
     count++
-    if(count < 5) console.log(new Date(),count,event)
+    console.log(count, new Date().toLocaleString())
+    if(count <= 2) console.log(new Date(),count,event)
     let data = event.data
     let message = JSON.parse(data)
+    if (message.cmd != 'spotResponse') {
+      console.log(new Date(), message)
+      return
+    }
     let spots = message.spots
     let first = spots[0]
     let time = first.time
     record(spots)
   } catch (error) {
-    console.error(new Date(),error)
+    console.error(new Date())
+    console.error(event)
+    console.error(event.data)
+    console.error(error)
   }
 }
 
