@@ -1,0 +1,36 @@
+<table id=log></table>
+<style>
+  td, th { border: 1px solid gray; padding: 4px; text-align:center;}
+  table { border-collapse: collapse; }
+</style>
+<script type=module>
+
+  const data = await fetch('http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/mfr-pdx-jul.txt')
+    .then(res => res.text())
+    .then(text => text.trim().split(/\r?\n/))
+  const log = data.map(text => {
+    const r = JSON.parse(text)
+    const m = r.decoded.payload
+    return {when:r.hotspots[0].reported_at, where:[m.latitude,m.longitude]}
+  })
+  const segs = [`<tr><th>sec<th>mph`]
+  for (let i=1; i<log.length; i++) {
+    const dt = (log[i].when - log[i-1].when)/1000
+    const mi = distance(log[i].where, log[i-1].where)
+    segs.push(`<tr><td>${dt}<td>${(60*60*mi/dt).toFixed(3)}`)
+  }
+  window.log.innerHTML = segs.join("\n")
+
+  function distance(here,there) {
+    // http://js.ward.asia.wiki.org/great-circle-distance.html
+    let rad = (deg) => 2 * Math.PI * deg / 360
+    let sin = Math.sin
+    let cos = Math.cos
+    let acos = Math.acos
+    let [lat1,lon1] = here.map(deg => rad(deg))
+    let [lat2,lon2] = there.map(deg => rad(deg))
+    let earth = 3958.8
+    return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
+  }
+
+</script> 
