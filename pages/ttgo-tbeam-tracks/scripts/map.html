@@ -21,6 +21,7 @@
 
   <script type=module>
     const google = (latlon, title) => `<a href="https://www.google.com/search?q=${latlon}" target=_blank>${title}</a>`
+    const helium = hotspot => `<a href="${hotspot.link}" target=_blank>${hotspot.name}`
     const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 
     // https://github.com/Leaflet/Leaflet/issues/7255#issuecomment-849638476
@@ -43,7 +44,8 @@
         const m = r.decoded.payload
         const where = [m.latitude,m.longitude]
         const there = [h.lat,h.long]
-        return {when:h.reported_at, where, name:h.name, there}
+        const link = `https://explorer.helium.com/hotspots/${h.id}`
+        return {when:h.reported_at, where, name:h.name, there, link}
     })
 
     {
@@ -56,7 +58,7 @@
 
     log.map(l => {
       L.circle(l.where,4,{color:'blue'}).addTo(map)
-      L.circle(l.there,4,{color:'red'}).addTo(map).bindPopup(google(l.there,l.name))
+      L.circle(l.there,4,{color:'red'}).addTo(map).bindPopup(helium(l))
       L.polyline([l.where,l.there],{color:'red',opacity:0.3}).addTo(map)
     })
 
