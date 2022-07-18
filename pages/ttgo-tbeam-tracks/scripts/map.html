@@ -20,7 +20,7 @@
   </style>
 
   <script type=module>
-    const google = (latlon, title) => `<a href="https://www.google.com/search?q=${latlon}" target=_blank>${title}</a>`
+    const google = (latlon) => `<a href="https://www.google.com/maps/search/?api=1&query=${latlon}" target=_blank>map</a>`
     const helium = hotspot => `<a href="${hotspot.link}" target=_blank>${hotspot.name}`
     const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 
@@ -58,7 +58,7 @@
 
     log.map(l => {
       L.circle(l.where,4,{color:'blue'}).addTo(map)
-      L.circle(l.there,4,{color:'red'}).addTo(map).bindPopup(helium(l))
+      L.circle(l.there,4,{color:'red'}).addTo(map).bindPopup(`<center>${helium(l)}<br>${google(l.there)}</center>`)
       L.polyline([l.where,l.there],{color:'red',opacity:0.3}).addTo(map)
     })
 
