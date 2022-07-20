@@ -23,6 +23,7 @@
     const google = (latlon) => `<a href="https://www.google.com/maps/search/?api=1&query=${latlon}" target=_blank>map</a>`
     const helium = hotspot => `<a href="${hotspot.link}" target=_blank>${hotspot.name}`
     const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+    const delay = time => new Promise(res => setTimeout(res,time))
 
     // https://github.com/Leaflet/Leaflet/issues/7255#issuecomment-849638476
     var map = L.map('map',{ "tap": false })
@@ -30,7 +31,10 @@
       attribution: '© Esri',
     }).addTo(map)
 
-    const raw = await fetch('http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/mfr-pdx-jul.txt')
+    // const raw = await fetch('http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/mfr-pdx-jul.txt')
+    //   .then(res => res.text())
+
+    const raw = await fetch('http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/home-cc.txt')
       .then(res => res.text())
 
     const data = raw.trim().split(/\r?\n/)
@@ -58,9 +62,41 @@
 
     log.map(l => {
       L.circle(l.where,4,{color:'blue'}).addTo(map)
-      L.circle(l.there,4,{color:'red'}).addTo(map).bindPopup(`<center>${helium(l)}<br>${google(l.there)}</center>`)
-      L.polyline([l.where,l.there],{color:'red',opacity:0.3}).addTo(map)
+      L.circle(l.there,4,{color:'red'}).addTo(map)
+        .bindPopup(`<center>${helium(l)}<br>${google(l.there)}</center>`)
+        .on('mouseover',e => pause(l.name))
+        .on('mouseout',e => resume())
+      l.line = L.polyline([l.where,l.there],{color:'red',opacity:0.3})
     })
+
+    let run = true
+    const q = []
+    while (true) {
+      for (const l of log) {
+        if(run) {
+          q.push(l)
+          l.line.addTo(map)
+          if(q.length > 10) q.shift().line.remove()
+        }
+        await delay(200)
+      }
+    }
+
+    function pause (name) {
+      run = false
+      while (q.length > 0) q.shift().line.remove()
+      for (const l of log) {
+        if (l.name == name) {
+          q.push(l)
+          l.line.addTo(map)
+        }
+      }
+    }
+
+    function resume () {
+      while (q.length > 0) q.shift().line.remove()
+      run = true
+    }
 
     map.on('click', e => console.log(`${e.latlng.lat.toFixed(7)}, ${e.latlng.lng.toFixed(7)}\n`))
 
