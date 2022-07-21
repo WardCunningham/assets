@@ -10,7 +10,7 @@ socket.addEventListener('open', event => socket.send('{"cmd":"subscribeToSpots",
 // socket.addEventListener('message', event => record(JSON.parse(event.data).spots))
 socket.addEventListener('message',inspect)
 let active = Date.now()
-setInterval(watchdog, 15)
+setInterval(watchdog, 15000)
 
 
 let count = 0
