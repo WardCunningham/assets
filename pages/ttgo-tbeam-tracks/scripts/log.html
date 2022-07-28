@@ -5,21 +5,48 @@
 </style>
 <script type=module>
 
-  const data = await fetch('http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/home-cc.txt')
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const raw = await fetch(`http://home.c2.com:3030/track/${params['track']||'2022-07-16'}`)
     .then(res => res.text())
-    .then(text => text.trim().split(/\r?\n/))
-  const log = data.map(text => {
-    const r = JSON.parse(text)
+  const data = raw.trim().split(/\r?\n/)
+    .map(text => JSON.parse(text.trim()))
+    .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
+    .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long)
+  const log = data.map(r => {
     const m = r.decoded.payload
-    return {when:r.hotspots[0].reported_at, where:[m.latitude,m.longitude]}
+    const when = r.hotspots[0].reported_at - r.hotspots[0].hold_time
+    const where = [m.latitude,m.longitude]
+    const who = r.hotspots[0].name
+    return {when, where, who}
   })
-  const segs = [`<tr><th>sec<th>mph`]
+  log.sort((a,b) => a.when - b.when)
+
+  const page = await fetch(`http://found.ward.bay.wiki.org/annotated-track-logs.json`).then(res => res.json())
+  const cities = page.story[1].text.split(/\n/)
+    .map(line => {
+      const [_, lat,lon,city] = line.match(/(-?\d+\.\d+), (-?\d+\.\d+) +(.*)$/)
+      return {there:[+lat,+lon],city}
+    })
+  const segs = [`<tr><th>time<th>sec<th>mph<th>near`]
   for (let i=1; i<log.length; i++) {
+    const low = v => v < 10 ? `<font color=gray>${v}</font>` : v
+    const t = new Date(log[i].when).toLocaleTimeString()
     const dt = (log[i].when - log[i-1].when)/1000
     const mi = distance(log[i].where, log[i-1].where)
-    segs.push(`<tr><td>${dt}<td>${(60*60*mi/dt).toFixed(3)}`)
+    if (mi==0 && dt<0.5) continue
+    const mph = (60*60*mi/dt).toFixed(3)
+    const city = nearby(log[i].where)
+    // segs.push(`<tr><td>${t}<td>${low(dt)}<td>${low(mph)}<td>${city}<td>${log[i].where}<td>${log[i].who}`)
+    segs.push(`<tr><td>${t}<td>${low(dt)}<td>${low(mph)}<td>${city}`)
   }
   window.log.innerHTML = segs.join("\n")
+
+  function nearby(here) {
+    const choices = cities
+      .map(({city,there}) => [distance(here,there),city])
+      .sort((a,b) => a[0]-b[0])
+    return choices[0][1]
+  }
 
   function distance(here,there) {
     // http://js.ward.asia.wiki.org/great-circle-distance.html
@@ -29,6 +56,7 @@
     let acos = Math.acos
     let [lat1,lon1] = here.map(deg => rad(deg))
     let [lat2,lon2] = there.map(deg => rad(deg))
+    if (lat1==lat2 && lon1==lon2) return 0
     let earth = 3958.8
     return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
   }
