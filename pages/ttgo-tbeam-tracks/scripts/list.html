@@ -1,0 +1,30 @@
+<div id=result onclick=doopen(event)>working</div>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+  span {cursor: pointer}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const dates = await fetch(`http://home.c2.com:3030/track`)
+    .then(res => res.text())
+    .then(text => text.split(/\r?\n/))
+  window.result.innerHTML = dates.map(date => `<span>${date}</span>`).join("<br>\n")
+
+  window.doopen = function (event) {
+    const date = event.target.innerText
+    const title = `Track for ${date}`
+    const text = `Details from [[TTGO TBeam Tracks]].`
+    const assets = `http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/scripts`
+    const map = `${assets}/map.html?track=${date}`
+    const log = `${assets}/log.html?track=${date}`
+    const story = [
+      {type:'paragraph', text:`Track Map. [${map} enlarge]`},
+      {type:'frame', text:`${map}\nHEIGHT 400`},
+      {type:'paragraph', text:`Track Log. [${log} enlarge]`},
+      {type:'frame', text:`${log}\nHEIGHT 600`}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+</script>
