@@ -13,6 +13,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 </head>
 <body>
+  <div id="warn"></div>
   <div id="map"></div>
   <style>
     body { padding: 0; margin: 0; }
@@ -38,6 +39,11 @@
       fetch(`http://home.c2.com:3030/track/${params['track']||'2022-07-19'}`).then(res => res.text()),
       fetch(`http://ward.eu.wiki.org/assets/pages/leaflet-maps/markers.json`).then(res => res.json())
     ])
+
+    if (!raw) {
+      window.warn.innerHTML = `<center>No data for ${params['track']||'2022-07-19'} yet</center>`
+      throw new Error("no data")
+    }
 
     const data = raw.trim().split(/\r?\n/)
       .map(text => JSON.parse(text.trim()))
