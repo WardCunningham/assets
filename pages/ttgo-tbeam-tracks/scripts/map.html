@@ -45,10 +45,14 @@
       throw new Error("no data")
     }
 
+    const dups = new Set()
     const data = raw.trim().split(/\r?\n/)
       .map(text => JSON.parse(text.trim()))
       .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
       .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long)
+      .filter(r => r.hotspots[0].hold_time < 10000)
+      .filter(r => {const dup = dups.has(r.payload); dups.add(r.payload); return !dup})
+
 
     const log = data
       .map(r => {
@@ -68,6 +72,9 @@
       map.fitBounds([[s, w],[n, e]])
     }
 
+    for (let i=1; i<log.length; i++)
+      log[i].prev = log[i-1]
+
     log.map(l => {
       L.circle(l.where,4,{color:'blue'}).addTo(map)
       L.circle(l.there,4,{color:'red'}).addTo(map)
@@ -75,6 +82,7 @@
         .on('mouseover',e => pause(l.name))
         .on('mouseout',e => resume())
       l.line = L.polyline([l.where,l.there],{color:'red',opacity:0.3})
+      if(l.prev) L.polyline([l.prev.where, l.where],{color:'blue',opacity:0.3}).addTo(map)
     })
 
     for (const mark in markers) {

@@ -8,10 +8,14 @@
   const params = Object.fromEntries(new URLSearchParams(location.search).entries())
   const raw = await fetch(`http://home.c2.com:3030/track/${params['track']||'2022-07-16'}`)
     .then(res => res.text())
+  const dups = new Set()
   const data = raw.trim().split(/\r?\n/)
     .map(text => JSON.parse(text.trim()))
     .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
     .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long)
+    .filter(r => r.hotspots[0].hold_time < 10000)
+    .filter(r => {const dup = dups.has(r.payload); dups.add(r.payload); return !dup})
+
   const log = data.map(r => {
     const m = r.decoded.payload
     const when = r.hotspots[0].reported_at - r.hotspots[0].hold_time
