@@ -1,0 +1,161 @@
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚗️</text></svg>">
+  <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
+  <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+
+</head>
+<table>
+  <tr>
+    <td style="width:25%"><div id=beam onclick=dochoose(event)>
+    <td style="width:75%"><div id=target ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">waiting
+</table>
+<style>
+  table {height:100%; width:100%; border-collapse:collapse;}
+  td, th {border:1px solid gray; padding:8px;}
+  div {height: 100%; background-color:white;}
+</style>
+<script type=module>
+
+
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
+
+  const names = ['beauty','diagram','gamma','instantiation','life','modeler','morning','thing']
+  const graphs = await Promise.all(names
+    .map(n => Graph.fetch(`http://ward.dojo.fed.wiki/assets/pages/daily-haiku-graph/${n}.graph.json`)))
+  window.beam.innerHTML = `${names.map((n,i) => `<input type=checkbox value=${i}>${n}`).join("<br>")}`
+
+
+  window.over = function (event) {
+    event.preventDefault()
+  }
+
+  window.drop = async function (event) {
+    event.preventDefault();
+    const concepts = await drop(event)
+    composite(concepts.map(c => c.graph))
+  }
+
+  async function drop (event) {
+    let files
+    if (event.dataTransfer.items) {
+      files = [...event.dataTransfer.items]
+        .filter(item => item.kind === 'file')
+        .map(item => item.getAsFile())
+    } else {
+      files = [...event.dataTransfer.files]
+    }
+    const want = files.filter(file =>
+      file.name.endsWith('.graph.json') &&
+      file.type === 'application/json')
+    const concepts = []
+    for (const file of want) {
+      const name = file.name.replace('.graph.json','')
+      const graph = await file.text()
+        .then(text => JSON.parse(text))
+        .then(({nodes,rels}) => {return new Graph(nodes, rels)})
+      concepts.push({name, graph})
+    }
+    return concepts
+  }
+
+
+  window.dochoose = function (event) {
+    const chosen = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
+      .map(e => graphs[e.value])
+    composite(chosen)
+  }
+
+
+  function composite(graphs) {
+    const merged = {nids:[]}
+    const comp = new Graph()
+
+    for (const graph of graphs) {
+      merge(comp,graph,'somewhere')
+    }
+    hpccWasm.graphviz.layout(dotify(comp), "svg", "dot").then(svg => {
+      target.innerHTML = svg;
+    })
+
+    function merge(comp,incr,source) {
+
+      function mergeprops(into,from) {
+        const keys = Object.keys(into)
+          .concat(Object.keys(from))
+          .filter(uniq)
+        for (const key of keys) {
+          if (into[key]) {
+            // if (from[key] && into[key] != from[key]) {
+            //   window.result.innerHTML +=
+            //     `<div style="font-size:small; padding:4px; background-color:#fee; border-radius:4px; border:1px solid #aaa;">
+            //       conflict for "${key}" property<br>
+            //       choosing "${into[key]}" over "${from[key]}"</div>`
+            // }
+          }
+          else {
+            if(from[key]) {
+              into[key] = from[key]
+            }
+          }
+        }
+      }
+
+      const nids = {}  // incr => comp
+      incr.nodes.forEach((node,id) => {
+        const match = comp.nodes.find(each =>
+          each.type == node.type &&
+          each.props.name == node.props.name)
+        if(match) {
+          // window.result.innerHTML += `Same <b>${match.type}</b> ${match.props.name}<br>`
+          nids[id] = comp.nodes.findIndex(node => node === match)
+          merged.nids.push(nids[id])
+          mergeprops(match.props, node.props)
+        } else {
+          nids[id] = comp.addNode(node.type,node.props)
+        }
+      })
+      incr.rels.forEach(rel => {
+        const match = comp.rels.find(each =>
+          each.type == rel.type &&
+          each.from == nids[rel.from] &&
+          each.to == nids[rel.to]
+        )
+        if(match) {
+          // window.result.innerHTML += `Same
+          //   <b>${comp.nodes[match.from].type}</b> ${comp.nodes[match.from].props.name}
+          //   <b>${match.type}</b> ▷
+          //   ${comp.nodes[match.to].type} ${comp.nodes[match.to].props.name}<br>`
+          mergeprops(match.props, rel.props)
+        } else {
+          rel.props.source = source
+          comp.addRel(rel.type, nids[rel.from], nids[rel.to], rel.props)
+        }
+      })
+    }
+
+    function dotify(graph) {
+      const nodes = graph.nodes.map((node,id) => {
+        const label = `${node.type}\n${node.props['name']}`
+        return `${id} [label="${label}"]`
+      })
+      const edges = graph.rels.map(rel => {
+        return `${rel.from}->${rel.to} [label="${rel.type}" labeltooltip="${rel.props.source}"]`
+      })
+      return [
+        'digraph {',
+        'node [shape=box style=filled fillcolor=gold]',
+        'rankdir=TB',
+        ...merged.nids,
+        'node [fillcolor=lightgreen]',
+        ...nodes,
+        ...edges,
+        '}'].join("\n")
+    }
+  }
+  
+</script>
+
+
