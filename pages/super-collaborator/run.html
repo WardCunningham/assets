@@ -6,9 +6,14 @@
 </head>
 
 <table>
+  <tr style="height:50%">
+    <td style="width:25%">
+      <div id=beam onclick=dochoose(event)>Work in Progress
+    <td style="width:75%" rowspan=2>
+      <div id=target ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">System for Action
   <tr>
-    <td style="width:25%"><div id=beam onclick=dochoose(event)>
-    <td style="width:75%"><div id=target ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">waiting
+    <td>
+      <div id=create>
 </table>
 
 <style>
@@ -23,12 +28,17 @@
   import {drop} from './drop.js'
   import {composite} from './composite.js'
   import {dotify} from './dotify.js'
+  import {create} from './create.js'
 
   const names = ['beauty','diagram','gamma','instantiation','life','modeler','morning','thing']
   const graphs = await Promise.all(names
     .map(n => Graph.fetch(`http://ward.dojo.fed.wiki/assets/pages/daily-haiku-graph/${n}.graph.json`)))
   window.beam.innerHTML = `${names.map((n,i) => `<input type=checkbox value=${i}>${n}`).join("<br>")}`
-
+  const created = {name:'empty', graph:new Graph()}
+  create(window.create, graph => {
+    Object.assign(created, {name:graph.nodes[0]?.props?.name||'void', graph});
+    refresh()
+  })
 
   window.over = function (event) {
     event.preventDefault()
@@ -40,11 +50,13 @@
     display(concepts)
   }
 
-  window.dochoose = function (event) {
+  window.dochoose = refresh
+
+  function refresh() {
     const checked = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
     const chosen = checked.map(e => ({name:names[e.value], graph:graphs[e.value]}))
-    display(chosen)
- }
+    display([...chosen,created])
+  }
 
   function display(chosen) {
     const complex = composite(chosen)
@@ -52,5 +64,5 @@
       target.innerHTML = svg;
     })    
   }
-  
+
 </script>
