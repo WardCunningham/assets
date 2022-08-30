@@ -26,11 +26,15 @@
   log.sort((a,b) => a.when - b.when)
 
   const page = await fetch(`http://found.ward.bay.wiki.org/annotated-track-logs.json`).then(res => res.json())
-  const cities = page.story[1].text.split(/\n/)
-    .map(line => {
-      const [_, lat,lon,city] = line.match(/(-?\d+\.\d+), (-?\d+\.\d+) +(.*)$/)
-      return {there:[+lat,+lon],city}
-    })
+  const cities = page.story
+    .filter(item => item.type == 'map')
+    .map(item => item.text.split(/\n/)
+      .map(line => {
+        console.log(line)
+        const [_, lat,lon,city] = line.match(/(-?\d+\.\d+), (-?\d+\.\d+) +(.*)$/)
+        return {there:[+lat,+lon],city}
+      }))
+    .flat()
   const segs = [`<tr><th>time<th>sec<th>mph<th>near`]
   for (let i=1; i<log.length; i++) {
     const low = v => v < 10 ? `<font color=gray>${v}</font>` : v
