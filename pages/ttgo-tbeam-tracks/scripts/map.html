@@ -49,19 +49,19 @@
     const data = raw.trim().split(/\r?\n/)
       .map(text => JSON.parse(text.trim()))
       .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
-      .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long)
+      .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long && r.hotspots[0].lat != 'unknown')
       .filter(r => r.hotspots[0].hold_time < 10000)
       .filter(r => {const dup = dups.has(r.payload); dups.add(r.payload); return !dup})
-
 
     const log = data
       .map(r => {
         const h = r.hotspots[0]
         const m = r.decoded.payload
+        const when = h.reported_at - h.hold_time
         const where = [m.latitude,m.longitude]
         const there = [h.lat,h.long]
         const link = `https://explorer.helium.com/hotspots/${h.id}`
-        return {when:h.reported_at, where, name:h.name, there, link}
+        return {when, where, name:h.name, there, link}
     })
 
     {
@@ -82,7 +82,22 @@
         .on('mouseover',e => pause(l.name))
         .on('mouseout',e => resume())
       l.line = L.polyline([l.where,l.there],{color:'red',opacity:0.3})
-      if(l.prev) L.polyline([l.prev.where, l.where],{color:'blue',opacity:0.3}).addTo(map)
+      if(l.prev) {
+        const dt = (l.when-l.prev.when)/1000
+        const mi = distance(l.where,l.prev.where)
+        L.polyline([l.prev.where, l.where],{color:'blue',opacity:0.3}).addTo(map)
+        if (dt>30 && dt<300 && mi>0.05) {
+          const n = Math.round(dt/20)
+          console.log('missing', n-1, dt, (5280*mi).toFixed(2))
+          const p = l.prev.where
+          const dy = l.where[0] - p[0]
+          const dx = l.where[1] - p[1]
+          for (let i=1; i<n; i++) {
+            const mid = [p[0]+i*dy/n, p[1]+i*dx/n]
+            L.circle(mid,4,{color:'brown'}).addTo(map)
+          }
+        }
+      }
     })
 
     for (const mark in markers) {
@@ -116,6 +131,20 @@
         await delay(200)
       }
     }
+
+    function distance(here,there) {
+      // http://js.ward.asia.wiki.org/great-circle-distance.html
+      let rad = (deg) => 2 * Math.PI * deg / 360
+      let sin = Math.sin
+      let cos = Math.cos
+      let acos = Math.acos
+      let [lat1,lon1] = here.map(deg => rad(deg))
+      let [lat2,lon2] = there.map(deg => rad(deg))
+      if (lat1==lat2 && lon1==lon2) return 0
+      let earth = 3958.8
+      return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
+    }
+
 
     function pause (name) {
       run = false
