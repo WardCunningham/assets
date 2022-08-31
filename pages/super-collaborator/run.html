@@ -18,11 +18,7 @@
   </tr><tr>
     <td>
       <div id="chat">
-        <div id="infobar">
-          <div id="nickname"></div>
-          <div id="viewCount"></div>
-        </div>
-        <div id="textOut"><button id=enter onclick=doenter()>enter</button></div>
+        <div id="textOut"></div>
         <input id="textIn" type="text" onkeydown="event.keyCode == 13 && sendButton.onclick()"/>
         <input id="sendButton" type="button" value = "Send" />
       </div>
@@ -144,8 +140,7 @@
     }
 
     randomName() {
-      const names =["Acorn", "Allspice", "Almond", "Ancho", "Anise", "Aoli", "Apple", "Apricot", "Arrowroot", "Asparagus", "Avocado", "Baklava", "Balsamic", "Banana", "Barbecue", "Bacon", "Basil", "Bay Leaf", "Bergamot", "Blackberry", "Blueberry", "Broccoli", "Buttermilk", "Cabbage", "Camphor", "Canaloupe", "Cappuccino", "Caramel", "Caraway", "Cardamom", "Catnip", "Cauliflower", "Cayenne", "Celery", "Cherry", "Chervil", "Chives", "Chipotle", "Chocolate", "Coconut", "Cookie Dough", "Chamomile", "Chicory", "Chutney", "Cilantro", "Cinnamon", "Clove", "Coriander", "Cranberry", "Croissant", "Cucumber", "Cupcake", "Cumin", "Curry", "Dandelion", "Dill", "Durian", "Earl Grey", "Eclair", "Eggplant", "Espresso", "Felafel", "Fennel", "Fig", "Garlic", "Gelato", "Gumbo", "Halvah", "Honeydew", "Hummus", "Hyssop", "Ghost Pepper", "Ginger", "Ginseng", "Grapefruit", "Habanero", "Harissa", "Hazelnut", "Horseradish", "Jalepeno", "Juniper", "Ketchup", "Key Lime", "Kiwi", "Kohlrabi", "Kumquat", "Latte", "Lavender", "Lemon Grass", "Lemon Zest", "Licorice", "Macaron", "Mango", "Maple Syrup", "Marjoram", "Marshmallow", "Matcha", "Mayonnaise", "Mint", "Mulberry", "Mustard", "Natto", "Nectarine", "Nutmeg", "Oatmeal", "Olive Oil", "Orange Peel", "Oregano", "Papaya", "Paprika", "Parsley", "Parsnip", "Peach", "Peanut Butter", "Pecan", "Pennyroyal", "Peppercorn", "Persimmon", "Pineapple", "Pistachio", "Plum", "Pomegranate", "Poppy Seed", "Pumpkin", "Quince", "Raspberry", "Ratatouille", "Rosemary", "Rosewater", "Saffron", "Sage", "Sassafras", "Sea Salt", "Sesame Seed", "Shiitake", "Sorrel", "Soy Sauce", "Spearmint", "Strawberry", "Strudel", "Sunflower Seed", "Sriracha", "Tabasco", "Tahini", "Tamarind", "Tandoori", "Tangerine", "Tarragon", "Thyme", "Tofu", "Truffle", "Tumeric", "Valerian", "Vanilla", "Vinegar", "Wasabi", "Walnut", "Watercress", "Watermelon", "Wheatgrass", "Yarrow", "Yuzu", "Zucchini"];
-      return names[Math.floor(Math.random() * names.length)];
+      return (Math.random()*1000000).toFixed(0)
     }
 
   }
@@ -179,30 +174,27 @@
     }
 
     refreshViewInfo() {
-      nickname.innerHTML = "<b>Name:</b> " + this.model.views.get(this.viewId);
-      viewCount.innerHTML = "<b>Users:</b> " + this.model.participants;
+      console.log({
+        name:this.model.views.get(this.viewId),
+        users:this.model.participants
+      })
     }
 
     refreshHistory() {
-      textOut.innerHTML = "<b>Welcome to Croquet Chat!</b><br><br>" +
+      textOut.innerHTML = "Super Collaborator Connected<br><br>" +
         this.model.history.map(item => item.html).join("<br>");
       textOut.scrollTop = Math.max(10000, textOut.scrollHeight);
     }
   }
 
-
-  window.doenter = function () {
-    window.enter.style.display = "none"
-    Croquet.Session.join({
-      apiKey: '1MNinyGopbyxFzgx3HupBoCAryFb6yNOIihx6Omx9',
-      appId: 'com.gmail.ward.cunningham.collaborator',
-      /* (more join options)... */
-      name: "unnamed",
-      password: "secret",
-      model: BeamModel,
-      view: BeamView
-    });
-  }
+  Croquet.Session.join({
+    apiKey: '1MNinyGopbyxFzgx3HupBoCAryFb6yNOIihx6Omx9',
+    appId: 'com.gmail.ward.cunningham.collaborator',
+    name: "unnamed",
+    password: "secret",
+    model: BeamModel,
+    view: BeamView
+  })
 
 
 
