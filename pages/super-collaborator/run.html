@@ -42,6 +42,8 @@
   import {dotify} from './dotify.js'
   import {create} from './create.js'
 
+  const croquet = {model:null, view:null}
+
   const names = ['beauty','diagram','gamma','instantiation','life','modeler','morning','thing']
   const graphs = await Promise.all(names
     .map(n => Graph.fetch(`http://ward.dojo.fed.wiki/assets/pages/daily-haiku-graph/${n}.graph.json`)))
@@ -59,6 +61,7 @@
   window.drop = async function (event) {
     event.preventDefault();
     const concepts = await drop(event)
+    croquet.view.send(JSON.stringify(concepts))
     display(concepts)
   }
 
@@ -90,6 +93,8 @@
       this.subscribe(this.sessionId, "view-exit", this.viewExit);
       this.subscribe("input", "newPost", this.newPost);
       this.subscribe("input", "reset", this.resetHistory);
+      croquet.model = this
+      console.log(this)
     }
 
     viewJoin(viewId) {
@@ -152,7 +157,7 @@
     constructor(model) {
       super(model);
       this.model = model;
-      sendButton.onclick = () => this.send();
+      sendButton.onclick = () => {this.send(textIn.value); textIn.value = "";};
       this.subscribe("history", "refresh", this.refreshHistory);
       this.subscribe("viewInfo", "refresh", this.refreshViewInfo);
       this.refreshHistory();
@@ -161,11 +166,11 @@
         !model.history.find(item => item.viewId === this.viewId)) {
         this.publish("input", "reset", "for new participants");
       }
+      croquet.view = this
+      console.log(this)
     }
 
-    send() {
-      const text = textIn.value;
-      textIn.value = "";
+    send(text) {
       if (text === "/reset") {
         this.publish("input", "reset", "at user request");
       } else {
