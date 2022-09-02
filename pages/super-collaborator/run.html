@@ -62,7 +62,7 @@
     event.preventDefault();
     const concepts = await drop(event)
     croquet.view.send(JSON.stringify(concepts))
-    display(concepts)
+    // display(concepts)
   }
 
   window.dochoose = refresh
@@ -73,11 +73,18 @@
     display([...chosen,created])
   }
 
+  let drawing = false
   function display(chosen) {
-    const complex = composite(chosen)
-    hpccWasm.graphviz.layout(dotify(complex), "svg", "dot").then(svg => {
-      target.innerHTML = svg;
-    })
+    if(!drawing){
+      drawing = true
+      const complex = composite(chosen)
+      hpccWasm.graphviz.layout(dotify(complex), "svg", "dot").then(svg => {
+        target.innerHTML = svg;
+        drawing = false
+      })
+    } else {
+      console.log('display: skipping', chosen)
+    }
   }
 
 
@@ -94,7 +101,6 @@
       this.subscribe("input", "newPost", this.newPost);
       this.subscribe("input", "reset", this.resetHistory);
       croquet.model = this
-      console.log(this)
     }
 
     viewJoin(viewId) {
@@ -115,9 +121,9 @@
 
     newPost(post) {
       const postingView = post.viewId;
-      const nickname = this.views.get(postingView);
-      const chatLine = `<b>${nickname}:</b> ${this.escape(post.text)}`;
-      this.addToHistory({ viewId: postingView, html: chatLine });
+      const nick = this.views.get(postingView);
+      const chat = this.escape(post.chat);
+      this.addToHistory({ viewId: postingView, nick, chat });
       this.lastPostTime = this.now();
       this.future(this.inactivity_timeout_ms).resetIfInactive();
     }
@@ -135,7 +141,7 @@
     }
 
     resetHistory(reason) {
-      this.history = [{ html: `<i>chat reset ${reason}</i>` }];
+      this.history = [{ nick:'system', chat: `reset ${reason}` }];
       this.lastPostTime = null;
       this.publish("history", "refresh");
     }
@@ -164,17 +170,16 @@
       this.refreshViewInfo();
       if (model.participants === 1 &&
         !model.history.find(item => item.viewId === this.viewId)) {
-        this.publish("input", "reset", "for new participants");
+        this.publish("input", "reset", "for new user");
       }
       croquet.view = this
-      console.log(this)
     }
 
     send(text) {
       if (text === "/reset") {
         this.publish("input", "reset", "at user request");
       } else {
-        this.publish("input", "newPost", {viewId: this.viewId, text});
+        this.publish("input", "newPost", {viewId: this.viewId, nick:'system', chat:text});
       }
     }
 
@@ -186,9 +191,22 @@
     }
 
     refreshHistory() {
-      textOut.innerHTML = "Super Collaborator Connected<br><br>" +
-        this.model.history.map(item => item.html).join("<br>");
+      let graph = null
+      console.log('refresh')
+      const print = item => {
+        if (item.chat && item.chat.startsWith('[')) {
+          const thing = JSON.parse(item.chat)
+          console.log('thing',thing)
+          graph = thing[0]
+          return thing[0].name
+        } else {
+          return item.chat || 'hello world'
+        }
+      }
+      textOut.innerHTML = this.model.history
+        .map(item => `${item.nick}: ${print(item)}`).join("<br>");
       textOut.scrollTop = Math.max(10000, textOut.scrollHeight);
+      if(graph) display([graph])
     }
   }
 
