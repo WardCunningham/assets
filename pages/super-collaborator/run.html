@@ -44,14 +44,10 @@
 
   const croquet = {model:null, view:null}
 
-  const names = ['beauty','diagram','gamma','instantiation','life','modeler','morning','thing']
-  const graphs = await Promise.all(names
-    .map(n => Graph.fetch(`http://ward.dojo.fed.wiki/assets/pages/daily-haiku-graph/${n}.graph.json`)))
-  window.beam.innerHTML = `${names.map((n,i) => `<input type=checkbox value=${i}>${n}`).join("<br>")}`
   const created = {name:'empty', graph:new Graph()}
   create(window.create, graph => {
-    Object.assign(created, {name:graph.nodes[0]?.props?.name||'void', graph});
-    refresh()
+    // Object.assign(created, {name:graph.nodes[0]?.props?.name||'void', graph});
+    // refresh()
   })
 
   window.over = function (event) {
@@ -60,16 +56,18 @@
 
   window.drop = async function (event) {
     event.preventDefault();
-    const concepts = await drop(event)
-    croquet.view.send(JSON.stringify(concepts))
-    // display(concepts)
+    const poems = await drop(event)
+    croquet.view.send(`drop ${poems.map(poem => poem.name).join(', ')}`)
+    croquet.view.newPoems(poems)
+    // display(poems)
   }
 
   window.dochoose = refresh
 
   function refresh() {
     const checked = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
-    const chosen = checked.map(e => ({name:names[e.value], graph:graphs[e.value]}))
+    const beam = croquet.view.beam()
+    const chosen = checked.map(e => beam[e.value])
     display([...chosen,created])
   }
 
@@ -94,13 +92,21 @@
       this.views = new Map();
       this.participants = 0;
       this.history = []; // { viewId, html } items
+      this.beam = []; //{name, graph}
       this.lastPostTime = null;
       this.inactivity_timeout_ms = 60 * 1000 * 20; // constant
       this.subscribe(this.sessionId, "view-join", this.viewJoin);
       this.subscribe(this.sessionId, "view-exit", this.viewExit);
       this.subscribe("input", "newPost", this.newPost);
       this.subscribe("input", "reset", this.resetHistory);
+      this.subscribe("input", "newPoems", this.newPoems);
       croquet.model = this
+    }
+
+    static types() {
+      return {
+        "Graph": Graph
+      };
     }
 
     viewJoin(viewId) {
@@ -128,22 +134,32 @@
       this.future(this.inactivity_timeout_ms).resetIfInactive();
     }
 
+    newPoems(poems) {
+      this.addToBeam(poems)
+    }
+
     addToHistory(item){
       this.history.push(item);
       if (this.history.length > 100) this.history.shift();
       this.publish("history", "refresh");
     }
 
+    addToBeam(poems) {
+      this.beam.push(...poems)
+      this.publish("beam", "refresh")
+    }
+
     resetIfInactive() {
       if (this.lastPostTime !== this.now() - this.inactivity_timeout_ms) return;
-
       this.resetHistory("due to inactivity");
     }
 
     resetHistory(reason) {
       this.history = [{ nick:'system', chat: `reset ${reason}` }];
+      if (reason == "at user request") this.beam = []
       this.lastPostTime = null;
       this.publish("history", "refresh");
+      this.publish("beam", "refresh")
     }
 
     escape(text) { // Clean up text to remove html formatting characters
@@ -166,8 +182,11 @@
       sendButton.onclick = () => {this.send(textIn.value); textIn.value = "";};
       this.subscribe("history", "refresh", this.refreshHistory);
       this.subscribe("viewInfo", "refresh", this.refreshViewInfo);
+      this.subscribe("beam", "refresh", this.refreshBeam);
       this.refreshHistory();
       this.refreshViewInfo();
+      this.refreshBeam()
+
       if (model.participants === 1 &&
         !model.history.find(item => item.viewId === this.viewId)) {
         this.publish("input", "reset", "for new user");
@@ -183,30 +202,32 @@
       }
     }
 
+    newPoems(poems) {
+      this.publish("input", "newPoems", poems)
+    }
+
     refreshViewInfo() {
-      console.log({
-        name:this.model.views.get(this.viewId),
-        users:this.model.participants
-      })
+      console.log('users', this.model.participants)
     }
 
     refreshHistory() {
-      let graph = null
-      console.log('refresh')
-      const print = item => {
-        if (item.chat && item.chat.startsWith('[')) {
-          const thing = JSON.parse(item.chat)
-          console.log('thing',thing)
-          graph = thing[0]
-          return thing[0].name
-        } else {
-          return item.chat || 'hello world'
-        }
-      }
       textOut.innerHTML = this.model.history
-        .map(item => `${item.nick}: ${print(item)}`).join("<br>");
+        .map(item => `${item.nick}: ${item.chat}`).join("<br>");
       textOut.scrollTop = Math.max(10000, textOut.scrollHeight);
-      if(graph) display([graph])
+
+    }
+
+    refreshBeam() {
+      const want = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
+        .map(e => +e.value)
+      const names = this.model.beam.map(poem => poem.name)
+      window.beam.innerHTML = names.map((n,i) =>
+          `<input type=checkbox value=${i} ${want.includes(i)?'checked':''}>${n}`)
+        .join("<br>")
+    }
+
+    beam() {
+      return this.model.beam
     }
   }
 
@@ -218,7 +239,6 @@
     model: BeamModel,
     view: BeamView
   })
-
 
 
 </script>
