@@ -6,32 +6,39 @@
   <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
 </head>
 <body>
-<table>
-  <tr style="height:30%">
-    <td style="width:25%">
-      <div id=beam onclick=dochoose(event)>Work in Progress</div></td>
-    <td style="width:75%" rowspan=3>
-      <div id=target ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">System for Action</div>
-  </tr><tr>
-    <td>
-      <div id=create></div>
-  </tr><tr>
-    <td>
-      <div id="chat">
-        <div id="textOut"></div>
-        <input id="textIn" type="text" onkeydown="event.keyCode == 13 && sendButton.onclick()"/>
-        <input id="sendButton" type="button" value = "Send" />
-      </div>
-    </td>
-  </tr>
-
-</table>
 
 <style>
-  table {height:100%; width:100%; border-collapse:collapse;}
-  td, th {border:1px solid gray; padding:8px;}
-  div {height: 100%; background-color:white;}
+  html, body, main { width: 100vw; height: 100vh; margin: 0;}
+  main {
+    display: grid;
+    grid-template-areas:
+      "beam   target"
+      "create target"
+      "chat   target";
+    grid-template-columns: 1fr 3fr;
+    grid-template-rows: 2fr 4fr 1fr;
+  }
+  #beam   {grid-area:beam; background-color:palegreen;}
+  #create {grid-area:create; background-color:bisque;}
+  #target {grid-area:target;}
+  #chat   {grid-area:chat; background-color:lightblue;}
+  #beam, #create, #chat {
+    margin:4px;
+    padding:8px;
+    overflow-y: scroll;
+ }
 </style>
+
+<main>
+  <div id="beam" onclick="dochoose(event)"></div>
+  <div id="target" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)"></div>
+  <div id="create"></div>
+  <div id="chat">
+    <div id="textOut"></div>
+    <input id="textIn" type="text" onkeydown="event.keyCode == 13 && sendButton.onclick()"/>
+    <input id="sendButton" type="button" value = "Send" />
+  </div>
+</main>
 
 <script src="https://unpkg.com/@croquet/croquet"></script>
 <script type=module>
