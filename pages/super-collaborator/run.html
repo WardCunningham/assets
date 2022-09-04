@@ -20,7 +20,7 @@
   }
   #beam   {grid-area:beam; background-color:palegreen;}
   #create {grid-area:create; background-color:bisque;}
-  #target {grid-area:target;}
+  #target {grid-area:target; overflow:scroll;}
   #chat   {grid-area:chat; background-color:lightblue;}
   #beam, #create, #chat {
     margin:4px;
@@ -220,8 +220,7 @@
     refreshHistory() {
       textOut.innerHTML = this.model.history
         .map(item => `${item.nick}: ${item.chat}`).join("<br>");
-      textOut.scrollTop = Math.max(10000, textOut.scrollHeight);
-
+      sendButton.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
     }
 
     refreshBeam() {
@@ -231,6 +230,8 @@
       window.beam.innerHTML = names.map((n,i) =>
           `<input type=checkbox value=${i} ${want.includes(i)?'checked':''}>${n}`)
         .join("<br>")
+      window.beam.querySelector('input:last-of-type')
+        .scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
     }
 
     beam() {
