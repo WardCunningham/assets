@@ -48,14 +48,23 @@
   import {composite} from './composite.js'
   import {dotify} from './dotify.js'
   import {create} from './create.js'
+  import {BeamModel, BeamView, croquet} from './beam.js'
 
-  const croquet = {model:null, view:null}
-
-  const created = {name:'empty', graph:new Graph()}
-  create(window.create, graph => {
-    // Object.assign(created, {name:graph.nodes[0]?.props?.name||'void', graph});
-    // refresh()
-  })
+  const creating = {
+    index: -1,
+    start: (graph) => {
+      creating.index = croquet.view.beam().length
+      croquet.view.newPoems([{name:'⋯',graph}])
+    },
+    update: (graph) => {
+      croquet.view.updatePoem(creating.index, graph, '⋯')
+    },
+    finish: (graph) => {
+      croquet.view.updatePoem(creating.index, graph, '')
+      creating.index = -1
+    }
+  }
+  create(window.create, creating)
 
   window.over = function (event) {
     event.preventDefault()
@@ -66,16 +75,13 @@
     const poems = await drop(event)
     croquet.view.send(`drop ${poems.map(poem => poem.name).join(', ')}`)
     croquet.view.newPoems(poems)
-    // display(poems)
   }
 
-  window.dochoose = refresh
-
-  function refresh() {
+  window.dochoose = function (event) {
     const checked = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
     const beam = croquet.view.beam()
     const chosen = checked.map(e => beam[e.value])
-    display([...chosen,created])
+    display([...chosen])
   }
 
   let drawing = false
@@ -92,152 +98,6 @@
     }
   }
 
-
-  class BeamModel extends Croquet.Model {
-
-    init() {
-      this.views = new Map();
-      this.participants = 0;
-      this.history = []; // { viewId, html } items
-      this.beam = []; //{name, graph}
-      this.lastPostTime = null;
-      this.inactivity_timeout_ms = 60 * 1000 * 20; // constant
-      this.subscribe(this.sessionId, "view-join", this.viewJoin);
-      this.subscribe(this.sessionId, "view-exit", this.viewExit);
-      this.subscribe("input", "newPost", this.newPost);
-      this.subscribe("input", "reset", this.resetHistory);
-      this.subscribe("input", "newPoems", this.newPoems);
-      croquet.model = this
-    }
-
-    static types() {
-      return {
-        "Graph": Graph
-      };
-    }
-
-    viewJoin(viewId) {
-      const existing = this.views.get(viewId);
-      if (!existing) {
-        const nickname = this.randomName();
-        this.views.set(viewId, nickname);
-      }
-      this.participants++;
-      this.publish("viewInfo", "refresh");
-    }
-
-    viewExit(viewId) {
-      this.participants--;
-      this.views.delete(viewId);
-      this.publish("viewInfo", "refresh");
-    }
-
-    newPost(post) {
-      const postingView = post.viewId;
-      const nick = this.views.get(postingView);
-      const chat = this.escape(post.chat);
-      this.addToHistory({ viewId: postingView, nick, chat });
-      this.lastPostTime = this.now();
-      this.future(this.inactivity_timeout_ms).resetIfInactive();
-    }
-
-    newPoems(poems) {
-      this.addToBeam(poems)
-    }
-
-    addToHistory(item){
-      this.history.push(item);
-      if (this.history.length > 100) this.history.shift();
-      this.publish("history", "refresh");
-    }
-
-    addToBeam(poems) {
-      this.beam.push(...poems)
-      this.publish("beam", "refresh")
-    }
-
-    resetIfInactive() {
-      if (this.lastPostTime !== this.now() - this.inactivity_timeout_ms) return;
-      this.resetHistory("due to inactivity");
-    }
-
-    resetHistory(reason) {
-      this.history = [{ nick:'system', chat: `reset ${reason}` }];
-      if (reason == "at user request") this.beam = []
-      this.lastPostTime = null;
-      this.publish("history", "refresh");
-      this.publish("beam", "refresh")
-    }
-
-    escape(text) { // Clean up text to remove html formatting characters
-      return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-    }
-
-    randomName() {
-      return (Math.random()*1000000).toFixed(0)
-    }
-
-  }
-
-  BeamModel.register("BeamModel");
-
-  class BeamView extends Croquet.View {
-
-    constructor(model) {
-      super(model);
-      this.model = model;
-      sendButton.onclick = () => {this.send(textIn.value); textIn.value = "";};
-      this.subscribe("history", "refresh", this.refreshHistory);
-      this.subscribe("viewInfo", "refresh", this.refreshViewInfo);
-      this.subscribe("beam", "refresh", this.refreshBeam);
-      this.refreshHistory();
-      this.refreshViewInfo();
-      this.refreshBeam()
-
-      if (model.participants === 1 &&
-        !model.history.find(item => item.viewId === this.viewId)) {
-        this.publish("input", "reset", "for new user");
-      }
-      croquet.view = this
-    }
-
-    send(text) {
-      if (text === "/reset") {
-        this.publish("input", "reset", "at user request");
-      } else {
-        this.publish("input", "newPost", {viewId: this.viewId, nick:'system', chat:text});
-      }
-    }
-
-    newPoems(poems) {
-      this.publish("input", "newPoems", poems)
-    }
-
-    refreshViewInfo() {
-      console.log('users', this.model.participants)
-    }
-
-    refreshHistory() {
-      textOut.innerHTML = this.model.history
-        .map(item => `${item.nick}: ${item.chat}`).join("<br>");
-      sendButton.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
-    }
-
-    refreshBeam() {
-      const want = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
-        .map(e => +e.value)
-      const names = this.model.beam.map(poem => poem.name)
-      window.beam.innerHTML = names.map((n,i) =>
-          `<input type=checkbox value=${i} ${want.includes(i)?'checked':''}>${n}`)
-        .join("<br>")
-      window.beam.querySelector('input:last-of-type')
-        .scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
-    }
-
-    beam() {
-      return this.model.beam
-    }
-  }
 
   Croquet.Session.join({
     apiKey: '1MNinyGopbyxFzgx3HupBoCAryFb6yNOIihx6Omx9',

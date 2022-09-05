@@ -6,13 +6,11 @@ const dup = obj => JSON.parse(JSON.stringify(obj))
 
 
 const schema = await Graph.fetch('./action.schema.json')
-const sample = await Graph.fetch('http://ward.dojo.fed.wiki/assets/pages/daily-haiku-graph/beauty.graph.json')
 
-export function create(result, update) {
-  // result.innerHTML = `Organize for Action`
+export function create(result, creating) {
 
   let s = schema
-  let g = new Graph()
+  let g = null
 
   let stride = {}
   let lineup = []
@@ -20,7 +18,9 @@ export function create(result, update) {
   stride.new = {
     render: div => {
       let keys = Object.keys(s.tally().nodes)
-      div.innerHTML = `<p>${keys.map(type =>
+      div.innerHTML = `<p>
+        <input type="button" value=done style="float:right;" disabled>
+        ${keys.map(type =>
         `<span>${type}</span>`).join("<br>")}</p>`
     },
     click: event => {
@@ -30,9 +30,16 @@ export function create(result, update) {
         let line = event.target.closest("[data-line]").dataset.line
         let name = target.innerText
         let model = s.n(name).map(node => node)[0]
+        g = new Graph()
         let nid = g.addNode(model.type,dup(model.props))
         let props = g.nodes[nid].props
+        lineup[line].div.querySelector('input').disabled = false
+        creating.start(g)
         drill(line, stride.fill, {nid,props})
+      } else if (target.innerText="done") {
+        creating.finish(g)
+        g = null
+        drill(-1,stride.new, {})
       }
     }
   }
@@ -42,7 +49,7 @@ export function create(result, update) {
       let line = div.dataset.line
       let entries = Object.entries(lineup[line].data.props)
       div.innerHTML = `<hr><p>${entries.map(entry =>
-        `<span>${entry[0]}</span><br><input type=text value="${entry[1]}" size=50>`).join("<br>")}</p><button>+</button> <button>⧎</button>`
+        `<span>${entry[0]}</span><br><input type=text value="${entry[1]}" size=50 style="width:100%;">`).join("<br>")}</p><button>+</button> <button>⧎</button>`
     },
     click: event => {
       let target = event.target
@@ -88,7 +95,7 @@ export function create(result, update) {
       let here = s.n(node.type).map(node => node)[0]
       let i = here.in.map(rid => `<span>${s.nodes[s.rels[rid].from].type} ${s.rels[rid].type} ▷</span> ${name}`)
       let o = here.out.map(rid => `${name} <span>▷ ${s.rels[rid].type} ${s.nodes[s.rels[rid].to].type}</span>`)
-      console.log({nid, i, o})
+      // console.log({nid, i, o})
       div.innerHTML = `<hr><p>${[...o, ...i].join("<br>")}</p>`
     },
     click: event => {
@@ -130,7 +137,8 @@ export function create(result, update) {
     div.addEventListener('change', step.input)
     step.render(div)
     result.append(div)
-    update(g)
+    div.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
+    if(g) creating.update(g)
     // window.parent.postMessage({action: "resize",height: document.body.offsetHeight}, "*")
   }
 
