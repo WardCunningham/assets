@@ -8,6 +8,7 @@
 <body>
 
 <style>
+
   html, body, main { width: 100vw; height: 100vh; margin: 0;}
   main {
     display: grid;
@@ -31,7 +32,12 @@
 
 <main>
   <div id="beam" onclick="dochoose(event)"></div>
-  <div id="target" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)"></div>
+  <div id="target" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">
+    <div style="padding:16px; font-size:x-large;">Learn more about this<br>
+      <a href=http://hsc.fed.wiki/view/hypertext-super-collaborator target=_blank>
+        Hypertext Super Collaborator</a>
+    </div>
+  </div>
   <div id="create"></div>
   <div id="chat">
     <div id="textOut"></div>
