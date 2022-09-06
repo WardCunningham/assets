@@ -2,6 +2,10 @@ import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
 
 export const croquet = {model:null, view:null}
 
+const emoji = await fetch('./emoji.txt')
+  .then(res => res.text())
+  .then(txt => txt.split(/\n/))
+
 export class BeamModel extends Croquet.Model {
 
   init() {
@@ -92,7 +96,7 @@ export class BeamModel extends Croquet.Model {
   }
 
   randomName() {
-    return (Math.random()*1000000).toFixed(0)
+    return emoji[Math.floor(Math.random() * emoji.length)]
   }
 
 }
@@ -136,13 +140,14 @@ export class BeamView extends Croquet.View {
   }
 
   refreshViewInfo() {
-    console.log('users', this.model.participants)
+    console.log('users', this.model.participants, 'at', new Date().toLocaleTimeString())
+    members.innerText = [...this.model.views.values()].join(" ")
   }
 
   refreshHistory() {
     textOut.innerHTML = this.model.history
       .map(item => `${item.nick}: ${item.chat}`).join("<br>");
-    sendButton.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
+    textOut.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
   }
 
   refreshBeam() {
