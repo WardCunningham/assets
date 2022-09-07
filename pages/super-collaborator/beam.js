@@ -1,7 +1,9 @@
 import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+import {composite} from './composite.js'
 
 export const croquet = {model:null, view:null}
 
+const uniq = (value, index, self) => self.indexOf(value) === index
 const emoji = await fetch('./emoji.txt')
   .then(res => res.text())
   .then(txt => txt.split(/\n/))
@@ -126,6 +128,14 @@ export class BeamView extends Croquet.View {
   send(text) {
     if (text === "/reset") {
       this.publish("input", "reset", "at user request");
+    } if (text === "/download") {
+      const poems = [...window.beamlist.querySelectorAll('input[type=checkbox]:checked')]
+        .map(e => this.beam()[+e.value])
+      const poem = composite(poems)
+      const filename = poems
+        .map(poem => poem.name.toLowerCase().replaceAll(/[^a-z0-9]/g,''))
+        .filter(uniq).sort().join('-') + '.graph.json'
+      download(poem.graph.stringify(null,2),filename,'application/json')
     } else {
       this.publish("input", "newPost", {viewId: this.viewId, nick:'system', chat:text});
     }
@@ -164,4 +174,14 @@ export class BeamView extends Croquet.View {
   beam() {
     return this.model.beam
   }
+}
+
+function download(string, file, mime='text/json') {
+  var data = `data:${mime};charset=utf-8,` + encodeURIComponent(string)
+  var anchor = document.createElement('a')
+  anchor.setAttribute("href", data)
+  anchor.setAttribute("download", file)
+  document.body.appendChild(anchor) // required for firefox
+  anchor.click()
+  anchor.remove()
 }
