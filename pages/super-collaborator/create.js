@@ -33,7 +33,7 @@ export function create(pane, creating) {
     click: event => {
       let target = event.target
       if(target.tagName=='SPAN') {
-        if(g) creating.finish(g
+        if(g) creating.finish(g)
         bold(target)
         let line = event.target.closest("[data-line]").dataset.line
         let name = target.innerText
