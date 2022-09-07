@@ -7,7 +7,7 @@ const dup = obj => JSON.parse(JSON.stringify(obj))
 
 const schema = await Graph.fetch('./action.schema.json')
 
-export function create(result, creating) {
+export function create(pane, creating) {
 
   let s = schema
   let g = null
@@ -15,17 +15,25 @@ export function create(result, creating) {
   let stride = {}
   let lineup = []
 
+  pane.innerHTML = `
+    <div></div>
+    <input type="button" value=done onclick=dodone() disabled style="float:right">
+  `
+  const result = pane.querySelector('div')
+  const done = pane.querySelector('input')
+
   stride.new = {
     render: div => {
       let keys = Object.keys(s.tally().nodes)
+      done.disabled = true
       div.innerHTML = `<p>
-        <input type="button" value=done style="float:right;" disabled>
         ${keys.map(type =>
         `<span>${type}</span>`).join("<br>")}</p>`
     },
     click: event => {
       let target = event.target
       if(target.tagName=='SPAN') {
+        if(g) creating.finish(g
         bold(target)
         let line = event.target.closest("[data-line]").dataset.line
         let name = target.innerText
@@ -33,13 +41,9 @@ export function create(result, creating) {
         g = new Graph()
         let nid = g.addNode(model.type,dup(model.props))
         let props = g.nodes[nid].props
-        lineup[line].div.querySelector('input').disabled = false
+        done.disabled = false
         creating.start(g)
         drill(line, stride.fill, {nid,props})
-      } else if (target.innerText="done") {
-        creating.finish(g)
-        g = null
-        drill(-1,stride.new, {})
       }
     }
   }
@@ -143,6 +147,12 @@ export function create(result, creating) {
   }
 
   drill(-1,stride.new, {})
+
+  window.dodone = function() {
+        creating.finish(g)
+        g = null
+        drill(-1,stride.new, {})
+  }
 
   function bold(target) {
     target.closest('p').querySelectorAll('span').forEach(span =>

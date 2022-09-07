@@ -151,13 +151,13 @@ export class BeamView extends Croquet.View {
   }
 
   refreshBeam() {
-    const want = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
+    const want = [...window.beamlist.querySelectorAll('input[type=checkbox]:checked')]
       .map(e => +e.value)
-    const names = this.model.beam.map(poem => poem.name)
-    window.beam.innerHTML = names.map((n,i) =>
+    const names = this.model.beam.map(poem => poem.name || poem.graph.nodes[0].type)
+    window.beamlist.innerHTML = names.map((n,i) =>
         `<input type=checkbox value=${i} ${want.includes(i)?'checked':''}>${n}`)
       .join("<br>")
-    const last = window.beam.querySelector('input:last-of-type')
+    const last = window.beamlist.querySelector('input:last-of-type')
     if(last) last.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
   }
 
