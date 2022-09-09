@@ -32,7 +32,7 @@
 
 <main>
   <div id="beam">
-    <div id="beamlist" onclick="dochoose(event)"></div>
+    <div id="beamlist" onchange="dochoose(event)"></div>
   </div>
   <div id="target" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">
     <div style="padding:16px; font-size:x-large;">Learn more about this<br>
@@ -92,7 +92,29 @@
     const checked = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
     const beam = croquet.view.beam()
     const chosen = checked.map(e => beam[e.value])
-    display([...chosen])
+    display(chosen)
+    recommend(chosen)
+  }
+
+  function recommend(chosen) {
+    const vocabulary = new Set()
+    const hash = node => `${node.type}: ${node.props.name || ''}`
+    for (const poem of chosen) {
+      for (const node of poem.graph.nodes) {
+        vocabulary.add(hash(node))
+      }
+    }
+    const similar = graph => {
+      for (const node of graph.nodes) {
+        if (vocabulary.has(hash(node))) return true
+      }
+      return false
+    }
+    const beam = croquet.view.beam()
+    window.beam.querySelectorAll('input[type=checkbox]').forEach(elem => {
+      const color = !elem.checked && similar(beam[elem.value].graph) ? 'darkorange' : 'black'
+      elem.nextElementSibling.style.color = color
+    })
   }
 
   let drawing = false
