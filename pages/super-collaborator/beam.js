@@ -133,7 +133,7 @@ export class BeamView extends Croquet.View {
         .map(e => this.beam()[+e.value])
       const poem = composite(poems)
       const filename = poems
-        .map(poem => poem.name.toLowerCase().replaceAll(/[^a-z0-9]/g,''))
+        .map(poem => poem.name.toLowerCase().replace(/[^a-z0-9]/g,''))
         .filter(uniq).sort().join('-') + '.graph.json'
       download(poem.graph.stringify(null,2),filename,'application/json')
     } else {
@@ -165,7 +165,8 @@ export class BeamView extends Croquet.View {
       .map(e => +e.value)
     const names = this.model.beam.map(poem => poem.name || poem.graph.nodes[0].type)
     window.beamlist.innerHTML = names.map((n,i) =>
-        `<input type=checkbox value=${i} ${want.includes(i)?'checked':''}>${n}`)
+        `<input type=checkbox value=${i} id=n${i}${want.includes(i)?'checked':''}>
+        <label for=n${i}>${n}</label>`)
       .join("<br>")
     const last = window.beamlist.querySelector('input:last-of-type')
     if(last) last.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
