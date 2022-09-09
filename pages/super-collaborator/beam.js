@@ -21,6 +21,7 @@ export class BeamModel extends Croquet.Model {
     this.subscribe(this.sessionId, "view-exit", this.viewExit);
     this.subscribe("input", "newPost", this.newPost);
     this.subscribe("input", "reset", this.resetHistory);
+    this.subscribe("input", "remove", this.removePoems);
     this.subscribe("input", "newPoems", this.newPoems);
     this.subscribe("input", "updatePoem", this.updatePoem);
     croquet.model = this
@@ -66,6 +67,13 @@ export class BeamModel extends Croquet.Model {
     const name = opt.graph.nodes[0].props.name || ''
     poem.name = name+opt.suffix
     poem.graph = opt.graph
+    this.publish("beam", "refresh")
+  }
+
+  removePoems(indices) {
+    for (const index of indices.reverse()) {
+      this.beam.splice(index,1)
+    }
     this.publish("beam", "refresh")
   }
 
@@ -127,18 +135,23 @@ export class BeamView extends Croquet.View {
 
   send(text) {
     if (text === "/reset") {
-      this.publish("input", "reset", "at user request");
-    } if (text === "/download") {
+      return this.publish("input", "reset", "at user request");
+    }
+    if (text === "/remove") {
+      const indices = [...window.beamlist.querySelectorAll('input[type=checkbox]:checked')]
+        .map(e => +e.value)
+      return this.publish("input", "remove", indices)
+    }
+    if (text === "/download") {
       const poems = [...window.beamlist.querySelectorAll('input[type=checkbox]:checked')]
         .map(e => this.beam()[+e.value])
       const poem = composite(poems)
       const filename = poems
         .map(poem => poem.name.toLowerCase().replace(/[^a-z0-9]/g,''))
         .filter(uniq).sort().join('-') + '.graph.json'
-      download(poem.graph.stringify(null,2),filename,'application/json')
-    } else {
-      this.publish("input", "newPost", {viewId: this.viewId, nick:'system', chat:text});
+      return download(poem.graph.stringify(null,2),filename,'application/json')
     }
+    this.publish("input", "newPost", {viewId: this.viewId, nick:'system', chat:text});
   }
 
   newPoems(poems) {
@@ -165,8 +178,8 @@ export class BeamView extends Croquet.View {
       .map(e => +e.value)
     const names = this.model.beam.map(poem => poem.name || poem.graph.nodes[0].type)
     window.beamlist.innerHTML = names.map((n,i) =>
-        `<input type=checkbox value=${i} id=n${i}${want.includes(i)?'checked':''}>
-        <label for=n${i}>${n}</label>`)
+        `<input type=checkbox value=${i} id=n${i} ${want.includes(i)?'checked':''}>
+        <label for=n${i}>${n}<sup>${this.model.beam[i].graph.nodes.length}</sup></label>`)
       .join("<br>")
     const last = window.beamlist.querySelector('input:last-of-type')
     if(last) last.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
