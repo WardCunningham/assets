@@ -1,18 +1,64 @@
+<button onclick=dodetails(event)>details</button>
 <div id=result onclick=doopen(event)>working</div>
 <style>
   body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
   span {cursor: pointer}
+  button {margin-bottom: 4px;}
 </style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const delay = time => new Promise(res => setTimeout(res,time))
 
   const dates = await fetch(`http://home.c2.com:3030/track`)
     .then(res => res.text())
-    .then(text => text.split(/\r?\n/))
+    .then(text => text.trim().split(/\r?\n/))
   window.result.innerHTML = dates.map(date => `<span>${date}</span>`).join("<br>\n")
 
+  window.dodetails = function (event) {
+    result.querySelectorAll('span').forEach(details)
+  }
+
+  async function details(span,index) {
+    const date = span.innerText
+    const raw = await fetch(`http://home.c2.com:3030/track/${date}`)
+      .then(res => res.text())
+    const dups = new Set()
+    const data = raw.trim().split(/\r?\n/)
+      .map(text => JSON.parse(text.trim()))
+      .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
+      .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long)
+      .filter(r => r.hotspots[0].hold_time < 10000)
+      .filter(r => {const dup = dups.has(r.payload); dups.add(r.payload); return !dup})
+    const log = data.map(r => {
+      const m = r.decoded.payload
+      const when = r.hotspots[0].reported_at - r.hotspots[0].hold_time
+      const where = [m.latitude,m.longitude]
+      const who = r.hotspots[0].name
+      return {when, where, who}
+    })
+    log.sort((a,b) => a.when - b.when)
+
+    const dt = log[log.length-1].when - log[0].when
+    span.innerText += `, ${(dt/3600000).toFixed(1)} hr`
+
+    // const home = [45.4700303,-122.745958]
+    const home = log[0].where
+    log.forEach(l => {l.dist = distance(home, l.where)})
+    log.sort((a,b) => b.dist - a.dist)
+    span.innerText += `, ${log[0].dist.toFixed(1)} mi`
+
+    // const [lat,lon] = log[0].where
+    // await delay(index*2000)
+    // span.innerText += `, ${index}`
+    // const info = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=15&addressdetails=1`).then(res => res.json())
+    // const place = info.address.quarter || info.address.suburb || info.county || Object.keys(info.address).join(', ')
+    // span.innerText += `, ${place}`
+  }
+
   window.doopen = function (event) {
-    const date = event.target.innerText
+    window.result.querySelectorAll('span').forEach(e => e.style.background = 'transparent')
+    event.target.style.background = 'lightgray'
+    const date = event.target.innerText.split(/, /)[0]
     const title = `Track for ${date}`
     const text = `Details from [[TTGO TBeam Tracks]].`
     const assets = `http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/scripts`
@@ -26,5 +72,19 @@
     ]
     frame.open({title,story},event.shiftKey)
   }
+
+  function distance(here,there) {
+    // http://js.ward.asia.wiki.org/great-circle-distance.html
+    let rad = (deg) => 2 * Math.PI * deg / 360
+    let sin = Math.sin
+    let cos = Math.cos
+    let acos = Math.acos
+    let [lat1,lon1] = here.map(deg => rad(deg))
+    let [lat2,lon2] = there.map(deg => rad(deg))
+    if (lat1==lat2 && lon1==lon2) return 0
+    let earth = 3958.8
+    return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
+  }
+
 
 </script>
