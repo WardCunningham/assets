@@ -121,11 +121,16 @@
   function display(chosen) {
     if(!drawing){
       drawing = true
-      const complex = composite(chosen)
-      hpccWasm.graphviz.layout(dotify(complex), "svg", "dot").then(svg => {
-        target.innerHTML = svg;
+      try {
+        const complex = composite(chosen)
+        hpccWasm.graphviz.layout(dotify(complex), "svg", "dot").then(svg => {
+          target.innerHTML = svg;
+          drawing = false
+        })
+      } catch (err) {
+        console.log('display error', err)
         drawing = false
-      })
+      }
     } else {
       console.log('display: skipping', chosen)
     }
