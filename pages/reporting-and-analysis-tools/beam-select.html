@@ -1,0 +1,46 @@
+<p></button><p>
+  <button onclick=dodownload(event)>download</button>
+</p>
+<p id=choices onchange=dotarget(event)></p>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+</style>
+<script type=module>
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {composite} from 'http://hsc.fed.wiki/assets/home/composite.js'
+  import {dotify} from 'http://hsc.fed.wiki/assets/home/dotify.js'
+
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  const assets = await frame.assets()
+  const graphs = await assets.filter(asset => asset.file.endsWith('.graph.json'))
+  await Promise.all(graphs.map(asset =>
+    Graph.fetch(asset.url).then(graph => {asset['graph'] = graph})))
+  window.choices.innerHTML = graphs.map((asset,idx) =>
+    `<input type=checkbox value=${idx}> ${asset.file}`).join("<br>")
+  resize()
+
+  window.dotarget = function (event) {
+    console.log(event.target)
+    const checked = [...window.choices.querySelectorAll('input[type=checkbox]:checked')]
+    const chosen = checked.map(input => graphs[input.value])
+    const story = [
+      {type:'paragraph',text:`Composite of ${chosen.length} graphs.`},
+      {type:'graphviz',text:dotify(composite(chosen))}
+    ]
+    frame.open({title:'Composite Graph Preview',story},event.shiftKey)
+  }
+
+  window.dodownload = function (event) {
+    const obj = {nodes:comp.nodes, rels:comp.rels}
+    const text = JSON.stringify(obj,null,2)
+    frame.download(text,'comp.graph.json','application/json')
+  }
+
+  function resize(max=800) {
+    const height = Math.min(max, document.body.offsetHeight)
+    window.parent.postMessage({action: "resize", height }, "*")
+  }
+
+</script>
