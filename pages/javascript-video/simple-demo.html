@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+</head>
+<body>
+
+<button onclick=camera()>Start Camera</button>
+<button onclick=record()>Start Recording</button>
+<button onclick=stop()>Stop Recording</button>
+<button onclick=save()>Save Download</button><br>
+<p><video id=video width=640 height=480 autoplay style="border: 1px solid black"></video></p>
+<a id=download download="test.webm" style="display: none"></a>
+
+<script type=module>
+
+let camera = null
+let recorder = null
+let data = []
+
+window.camera = async () => {
+  camera = await navigator.mediaDevices.getUserMedia({video:true, audio:false})
+  window.video.srcObject = camera;
+}
+
+window.record = () => {
+  recorder = new MediaRecorder(camera, { mimeType: 'video/webm' })
+  recorder.ondataavailable = (e) => data.push(e.data)
+  recorder.onstop = () => {window.download.href = URL.createObjectURL(new Blob(data, {type:'video/webm'}))}
+  recorder.start(1000);
+} 
+
+window.stop = () => recorder.stop()
+
+window.save = () => window.download.click()
+
+</script>
+
+</body>
+</html>
