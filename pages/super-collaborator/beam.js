@@ -75,6 +75,7 @@ export class BeamModel extends Croquet.Model {
       this.beam.splice(index,1)
     }
     this.publish("beam", "refresh")
+    window.beam.querySelectorAll('input').forEach(e => e.checked = false)
   }
 
   addToHistory(item){
