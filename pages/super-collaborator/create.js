@@ -1,15 +1,19 @@
-import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+import {Graph} from './graph.js'
 
 const delay = msec => new Promise(done => setTimeout(done, msec))
 const uniq = (value, index, self) => self.indexOf(value) === index
 const dup = obj => JSON.parse(JSON.stringify(obj))
 
 
-const schema = await Graph.fetch('./action.schema.json')
+let current = await Graph.fetch('./action.schema.json')
+
+export function schema(schema) {
+  current = schema
+}
 
 export function create(pane, creating) {
 
-  let s = schema
+  let s = current
   let g = null
 
   let stride = {}

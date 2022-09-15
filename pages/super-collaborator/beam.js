@@ -142,6 +142,7 @@ export class BeamView extends Croquet.View {
     if (text === "/remove") {
       const indices = [...window.beamlist.querySelectorAll('input[type=checkbox]:checked')]
         .map(e => +e.value)
+      window.target.innerHTML = ''
       return this.publish("input", "remove", indices)
     }
     if (text === "/download") {

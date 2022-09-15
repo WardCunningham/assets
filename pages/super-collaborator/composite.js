@@ -1,6 +1,6 @@
 // aggregate multiple graphs into a single graph
 
-import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+import {Graph} from './graph.js'
 
 const uniq = (value, index, self) => self.indexOf(value) === index
 

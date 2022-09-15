@@ -1,8 +1,8 @@
 // read named graph files that have been dropped by event
 
-import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+import {Graph} from './graph.js'
 
-export async function drop (event) {
+export async function drop (event,sufix) {
   let files
   if (event.dataTransfer.items) {
     files = [...event.dataTransfer.items]
@@ -12,11 +12,11 @@ export async function drop (event) {
     files = [...event.dataTransfer.files]
   }
   const want = files.filter(file =>
-    file.name.endsWith('.graph.json') &&
+    file.name.endsWith(sufix) &&
     file.type === 'application/json')
   const concepts = []
   for (const file of want) {
-    const name = file.name.replace('.graph.json','')
+    const name = file.name.replace(sufix,'')
     const graph = await file.text()
       .then(text => JSON.parse(text))
       .then(({nodes,rels}) => {return new Graph(nodes, rels)})
@@ -24,4 +24,3 @@ export async function drop (event) {
   }
   return concepts
 }
-

@@ -32,15 +32,15 @@
 
 <main>
   <div id="beam">
-    <div id="beamlist" onchange="dochoose(event)"></div>
+    <div id="beamlist" onchange="dochoose(event)" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)"></div>
   </div>
-  <div id="target" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">
+  <div id="target">
     <div style="padding:16px; font-size:x-large;">Learn more about this<br>
       <a href=http://hsc.fed.wiki/view/hypertext-super-collaborator target=_blank>
         Hypertext Super Collaborator</a>
     </div>
   </div>
-  <div id="create"></div>
+  <div id="create" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)"></div>
   <div id="chat">
     <div id="textOut"></div>
     <div style="display: flex;">
@@ -58,7 +58,7 @@
   import {drop} from './drop.js'
   import {composite} from './composite.js'
   import {dotify} from './dotify.js'
-  import {create} from './create.js'
+  import * as injector from './create.js'
   import {BeamModel, BeamView, croquet} from './beam.js'
 
   const creating = {
@@ -75,7 +75,7 @@
       creating.index = -1
     }
   }
-  create(window.create, creating)
+  injector.create(window.create, creating)
 
   window.over = function (event) {
     event.preventDefault()
@@ -83,9 +83,15 @@
 
   window.drop = async function (event) {
     event.preventDefault();
-    const poems = await drop(event)
-    croquet.view.send(`drop ${poems.map(poem => poem.name).join(', ')}`)
-    croquet.view.newPoems(poems)
+    switch (event.target.id) {
+      case "beamlist":
+        croquet.view.newPoems(await drop(event, '.graph.json'))
+        break
+      case "create":
+        injector.schema((await drop(event, '.schema.json'))[0].graph)
+        injector.create(window.create, creating)
+        break
+    }
   }
 
   window.dochoose = function (event) {
