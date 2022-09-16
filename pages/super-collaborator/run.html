@@ -44,7 +44,7 @@
   <div id="chat">
     <div id="textOut"></div>
     <div style="display: flex;">
-      <input id="textIn" type="text" style="flex:1" onkeydown="event.keyCode == 13 && sendButton.onclick()"/>
+      <input id="textIn" type="text" style="flex:1" autocomplete="off" onkeydown="event.keyCode == 13 && sendButton.onclick()"/>
       <input id="sendButton" type="button" style="margin-left:6" value = "Send" />
     </div>
     <div id="members"></div>

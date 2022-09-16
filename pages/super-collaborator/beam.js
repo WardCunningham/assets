@@ -120,6 +120,8 @@ export class BeamView extends Croquet.View {
   constructor(model) {
     super(model);
     this.model = model;
+    this.recall = []
+    textIn.addEventListener('keydown', (event) => {if(event.keyCode==38) {textIn.value = this.recall.pop()||''}})
     sendButton.onclick = () => {this.send(textIn.value); textIn.value = "";};
     this.subscribe("history", "refresh", this.refreshHistory);
     this.subscribe("viewInfo", "refresh", this.refreshViewInfo);
@@ -136,6 +138,7 @@ export class BeamView extends Croquet.View {
   }
 
   send(text) {
+    if (text.startsWith('/')) this.recall.push(text)
     if (text === "/reset") {
       return this.publish("input", "reset", "at user request");
     }
@@ -154,7 +157,7 @@ export class BeamView extends Croquet.View {
         .filter(uniq).sort().join('-') + '.graph.json'
       return download(poem.graph.stringify(null,2),filename,'application/json')
     }
-    if (text.startsWith('/match ')) {
+    if (text.startsWith("/match")) {
       const tree = cypher.parse(text.slice(1))
       if(!tree[0][0]) {
         return setTimeout(() => {window.textIn.value = `/${cypher.left}`},100)
