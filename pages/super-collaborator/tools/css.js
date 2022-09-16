@@ -8,10 +8,10 @@ const data = JSON.parse(input)
 const g = new Graph()
 const nids = {}
 
-data.elements.forEach((e,i) => {
+data.elements.forEach(e => {
   nids[e._id] = g.addNode('Element',{name:e.attributes.label})
 })
-data.connections.forEach((c,i) => {
+data.connections.forEach(c => {
   g.addRel('Connection',nids[c.from],nids[c.to],{name:c.attributes.label})
 })
 
