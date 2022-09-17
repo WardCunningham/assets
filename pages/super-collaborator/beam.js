@@ -23,7 +23,7 @@ export class BeamModel extends Croquet.Model {
     this.subscribe("input", "newPost", this.newPost);
     this.subscribe("input", "reset", this.resetHistory);
     this.subscribe("input", "remove", this.removePoems);
-    this.subscribe("input", "newPoems", this.newPoems);
+    this.subscribe("input", "newPoems", this.addToBeam);
     this.subscribe("input", "updatePoem", this.updatePoem);
     croquet.model = this
   }
@@ -59,13 +59,9 @@ export class BeamModel extends Croquet.Model {
     this.future(this.inactivity_timeout_ms).resetIfInactive();
   }
 
-  newPoems(poems) {
-    this.addToBeam(poems)
-  }
-
   updatePoem(opt) {
     const poem = this.beam[opt.index]
-    const name = opt.graph.nodes[0].props.name || ''
+    const name = opt.graph.nodes[0].props.name || opt.graph.nodes[0].type || ''
     poem.name = name+opt.suffix
     poem.graph = opt.graph
     this.publish("beam", "refresh")
@@ -153,7 +149,7 @@ export class BeamView extends Croquet.View {
         .map(e => this.beam()[+e.value])
       const poem = composite(poems)
       const filename = poems
-        .map(poem => poem.name.toLowerCase().replace(/[^a-z0-9]/g,''))
+        .map(poem => poem.name.replace(/[^a-zA-Z0-9]/g,''))
         .filter(uniq).sort().join('-') + '.graph.json'
       return download(poem.graph.stringify(null,2),filename,'application/json')
     }

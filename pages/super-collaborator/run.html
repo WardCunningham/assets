@@ -31,8 +31,8 @@
 </style>
 
 <main>
-  <div id="beam">
-    <div id="beamlist" onchange="dochoose(event)" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)"></div>
+  <div id="beam" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">
+    <div id="beamlist" onchange="dochoose(event)"></div>
   </div>
   <div id="target">
     <div style="padding:16px; font-size:x-large;">Learn more about this<br>
@@ -65,7 +65,7 @@
     index: -1,
     start: (graph) => {
       creating.index = croquet.view.beam().length
-      croquet.view.newPoems([{name:'⋯',graph}])
+      croquet.view.newPoems([{name:graph.nodes[0].type+'⋯',graph}])
     },
     update: (graph) => {
       croquet.view.updatePoem(creating.index, graph, '⋯')
@@ -83,14 +83,16 @@
 
   window.drop = async function (event) {
     event.preventDefault();
-    switch (event.target.id) {
-      case "beamlist":
+    switch (event.target.closest('div[ondrop]').id) {
+      case "beam":
         croquet.view.newPoems(await drop(event, '.graph.json'))
         break
       case "create":
         injector.schema((await drop(event, '.schema.json'))[0].graph)
         injector.create(window.create, creating)
         break
+      default:
+        console.log('Failed to dispatch', event.target)
     }
   }
 
