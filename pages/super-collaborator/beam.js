@@ -192,7 +192,8 @@ export class BeamView extends Croquet.View {
       .map(e => +e.value)
     const names = this.model.beam.map(poem => poem.name || poem.graph.nodes[0].type)
     window.beamlist.innerHTML = names.map((n,i) =>
-        `<input type=checkbox value=${i} id=n${i} ${want.includes(i)?'checked':''}>
+        `<font color=gray size=1>${i}</font>
+        <input type=checkbox value=${i} id=n${i} ${want.includes(i)?'checked':''}>
         <label for=n${i}>${n}<sup>${this.model.beam[i].graph.nodes.length}</sup></label>`)
       .join("<br>")
     const last = window.beamlist.querySelector('input:last-of-type')
