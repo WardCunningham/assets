@@ -45,106 +45,119 @@
       throw new Error("no data")
     }
 
+    map.on('click', e => console.log(`${e.latlng.lat.toFixed(7)}, ${e.latlng.lng.toFixed(7)}\n`))
+
     const dups = new Set()
-    const data = raw.trim().split(/\r?\n/)
-      .map(text => JSON.parse(text.trim()))
-      .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
-      .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long && r.hotspots[0].lat != 'unknown')
-      .filter(r => r.hotspots[0].hold_time < 10000)
-      .filter(r => {const dup = dups.has(r.payload); dups.add(r.payload); return !dup})
+    const log = tracks(raw,dups)
+    map.fitBounds(bounds(log))
+    log.map(addSpot)
+    addMarks(log)
+    let run = true
+    const q = []
+    animate()
 
-    const log = data
-      .map(r => {
-        const h = r.hotspots[0]
-        const m = r.decoded.payload
-        const when = h.reported_at - h.hold_time
-        const where = [m.latitude,m.longitude]
-        const there = [h.lat,h.long]
-        const link = `https://explorer.helium.com/hotspots/${h.id}`
-        return {when, where, name:h.name, there, link}
-    })
+    function tracks(raw,dups) {
+      const data = raw.trim().split(/\r?\n/).slice(0,params.start||9999)
+        .map(text => JSON.parse(text.trim()))
+        .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
+        .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long && r.hotspots[0].lat != 'unknown')
+        .filter(r => r.hotspots[0].hold_time < 10000)
+        .filter(r => {const dup = dups.has(r.payload); dups.add(r.payload); return !dup})
 
-    {
+      const log = data
+        .map(r => {
+          const h = r.hotspots[0]
+          const m = r.decoded.payload
+          const when = h.reported_at - h.hold_time
+          const where = [m.latitude,m.longitude]
+          const there = [h.lat,h.long]
+          const link = `https://explorer.helium.com/hotspots/${h.id}`
+          return {when, where, name:h.name, there, link}
+      })
+      for (let i=1; i<log.length; i++)
+        log[i].prev = log[i-1]
+      return log
+    }
+
+    function bounds(log) {
       let n = Math.max(...log.map(l => l.where[0]))
       let s = Math.min(...log.map(l => l.where[0]))
       let e = Math.max(...log.map(l => l.where[1]))
       let w = Math.min(...log.map(l => l.where[1]))
-      map.fitBounds([[s, w],[n, e]])
+      return [[s, w],[n, e]]
     }
 
-    for (let i=1; i<log.length; i++)
-      log[i].prev = log[i-1]
-
-    log.map(l => {
-      L.circle(l.where,4,{color:'blue'}).addTo(map)
-      L.circle(l.there,4,{color:'red'}).addTo(map)
-        .bindPopup(`<center>${helium(l)}<br>${google(l.there)}</center>`)
-        .on('mouseover',e => pause(l.name))
+    function addSpot(spot) {
+      L.circle(spot.where,4,{color:'blue'}).addTo(map)
+      L.circle(spot.there,4,{color:'red'}).addTo(map)
+        .bindPopup(`<center>${helium(spot)}<br>${google(spot.there)}</center>`)
+        .on('mouseover',e => pause(spot.name))
         .on('mouseout',e => resume())
-      l.line = L.polyline([l.where,l.there],{color:'red',opacity:0.3})
-      if(l.prev) {
-        const dt = (l.when-l.prev.when)/1000
-        const mi = distance(l.where,l.prev.where)
-        L.polyline([l.prev.where, l.where],{color:'blue',opacity:0.3}).addTo(map)
+      spot.line = L.polyline([spot.where,spot.there],{color:'red',opacity:0.3})
+      if(spot.prev) {
+        const dt = (spot.when-spot.prev.when)/1000
+        const mi = distance(spot.where,spot.prev.where)
+        L.polyline([spot.prev.where, spot.where],{color:'blue',opacity:0.3}).addTo(map)
         if (dt>30 && dt<300 && mi>0.05) {
           const n = Math.round(dt/20)
           console.log('missing', n-1, dt, (5280*mi).toFixed(2))
-          const p = l.prev.where
-          const dy = l.where[0] - p[0]
-          const dx = l.where[1] - p[1]
+          const p = spot.prev.where
+          const dy = spot.where[0] - p[0]
+          const dx = spot.where[1] - p[1]
           for (let i=1; i<n; i++) {
             const mid = [p[0]+i*dy/n, p[1]+i*dx/n]
             L.circle(mid,4,{color:'brown'}).addTo(map)
           }
         }
       }
-    })
 
-    for (const mark in markers) {
-      const near = nearby(markers[mark])
-      if (near) L.marker(near).addTo(map).bindPopup(trail(mark))
-    }
-
-    function nearby(points) {
-      const abs = Math.abs
-      const dist = (a,b) => abs(a[0]-b[0])*69 + abs(a[1]-b[1])*49
-      const close = []
-      for (const point of points)
-        for (const l of log)
-          if (dist(point, l.where) < .05)
-            close.push([dist(point, l.where), point])
-      if (!close.length) return null
-      close.sort((a,b) => a[0]-b[0])
-      return close[0][1]
-    }
-
-    let run = true
-    const q = []
-    const dwell = params['dwell']
-    while (dwell) {
-      for (const l of log) {
-        if(run) {
-          q.push(l)
-          l.line.addTo(map)
-          if(q.length > dwell) q.shift().line.remove()
-        }
-        await delay(200)
+      function distance(here,there) {
+        // http://js.ward.asia.wiki.org/great-circle-distance.html
+        let rad = (deg) => 2 * Math.PI * deg / 360
+        let sin = Math.sin
+        let cos = Math.cos
+        let acos = Math.acos
+        let [lat1,lon1] = here.map(deg => rad(deg))
+        let [lat2,lon2] = there.map(deg => rad(deg))
+        if (lat1==lat2 && lon1==lon2) return 0
+        let earth = 3958.8
+        return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
       }
     }
 
-    function distance(here,there) {
-      // http://js.ward.asia.wiki.org/great-circle-distance.html
-      let rad = (deg) => 2 * Math.PI * deg / 360
-      let sin = Math.sin
-      let cos = Math.cos
-      let acos = Math.acos
-      let [lat1,lon1] = here.map(deg => rad(deg))
-      let [lat2,lon2] = there.map(deg => rad(deg))
-      if (lat1==lat2 && lon1==lon2) return 0
-      let earth = 3958.8
-      return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
+    function addMarks(log) {
+      for (const mark in markers) {
+        const near = nearby(markers[mark])
+        if (near) L.marker(near).addTo(map).bindPopup(trail(mark))
+      }
+
+      function nearby(points) {
+        const abs = Math.abs
+        const dist = (a,b) => abs(a[0]-b[0])*69 + abs(a[1]-b[1])*49
+        const close = []
+        for (const point of points)
+          for (const l of log)
+            if (dist(point, l.where) < .05)
+              close.push([dist(point, l.where), point])
+        if (!close.length) return null
+        close.sort((a,b) => a[0]-b[0])
+        return close[0][1]
+      }
     }
 
+    async function animate() {
+      const dwell = params['dwell']
+      while (dwell) {
+        for (const l of log) {
+          if(run) {
+            q.push(l)
+            l.line.addTo(map)
+            if(q.length > dwell) q.shift().line.remove()
+          }
+          await delay(200)
+        }
+      }
+    }
 
     function pause (name) {
       run = false
@@ -161,9 +174,6 @@
       while (q.length > 0) q.shift().line.remove()
       run = true
     }
-
-    map.on('click', e => console.log(`${e.latlng.lat.toFixed(7)}, ${e.latlng.lng.toFixed(7)}\n`))
-
 
   </script>
 </body>
