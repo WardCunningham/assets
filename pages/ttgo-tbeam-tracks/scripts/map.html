@@ -55,6 +55,20 @@
     let run = true
     const q = []
     animate()
+    if(params.start) {
+      while(true) {
+        await delay(1000)
+        const start = +params.start
+        params.start = start + 1
+        const newer = tracks(raw,dups)
+        newer.forEach(spot => {
+          spot.prev = log[log.length-1]
+          log.push(spot)
+          addSpot(spot)
+        })
+        addMarks(newer)
+      }
+    }
 
     function tracks(raw,dups) {
       const data = raw.trim().split(/\r?\n/).slice(0,params.start||9999)
