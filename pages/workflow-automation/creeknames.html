@@ -12,7 +12,6 @@
   const creekname = /\b(?!The)([A-Z][a-z]+('s)?) [Cc]reek\b/g
   // const gaps = (value, index, self) => !index || self[index-1]+10 < value
 
-  let crossed = {}
   let creeks = {}
 
   main()
@@ -20,23 +19,9 @@
   async function main() {
     let names = crossed()
     let slug = location.search || 'chronological-destinations'
-    let [cross,index] = await Promise.all([
-      fetch(`${site}/creeks-i-have-crossed.json`).then(res => res.json()),
-      fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
-    ])
-    await scan(cross.story)
-    await scrape(index.story)
-  }
-
-  async function scan(crossings) {
-    const fold = word => crossings.findIndex(item => item.type == 'pagefold' && item.text == word)
-    let titles = crossings.slice(fold('crossing')+1, fold('.'))
-    console.log(titles)
-  }
-
-  async function scrape(trails) {
+    let index = await fetch(`${site}/${slug.replace('?','')}.json`).then(res => res.json())
     let work = []
-    for (let item of trails) {
+    for (let item of index.story) {
       if (item.type == 'paragraph') {
         let m = item.text.match(/^\[\[(.+?)\]\]/)
         if (m) {
@@ -79,7 +64,6 @@
     for (m of text.matchAll(creekname)) {
       let list = creeks[m[1]] = creeks[m[1]] || []
       list.push(title)
-
     }
   }
 
