@@ -17,10 +17,12 @@ const norm = (mean) => (Math.random()-Math.random()+1)*mean
 const choose = (list) => {for (let one of list) if (prob(50)) return one; return null}
 const quote = (title) => `"${title.replace(/ +/g,'\\n')}"`
 
-let origin = 'small.fed.wiki'
 let hash = location.hash || 'welcome-visitors'
+let origin = hash.split(/\//)[0].split(/@/)[1] || 'small.fed.wiki'
+
 
 let model = {}
+let remoted = []
 let recent = []
 let run = true
 
@@ -59,19 +61,28 @@ async function monkey() {
       let key = `${quote(panel.page.title)} -> ${quote(choice)}`
       model[key] = model[key] || 0
       model[key] += 1
+      if (panel.where && panel.where != origin) {
+        let quoted = quote(key)
+        if (!remoted.includes(quoted)) remoted.push(quoted)
+      }
       await click(choice, panel.pid)
     }
   }
 }
 
 async function draw() {
+  let remotes = lineup.filter(panel=>panel.where && panel.where != origin).map(panel => quote(panel.page.title))
   let roots = lineup.map(panel => quote(panel.page.title))
   let rows = Object.keys(model).sort()
   let edges = rows.map(thing => `${thing} [label="${model[thing]}"]`)
   let dot = `digraph {
     rankdir=LR
-    node [shape=box style=filled fillcolor=gold]
+    node [shape=box style=filled fillcolor=skyblue]
+    ${remotes.join("\n")}
+    node [fillcolor=gold]
     ${roots.join("\n")}
+    node [fillcolor=lightcyan]
+    ${remoted.join("\n")}
     node [fillcolor=bisque]
     ${edges.join("\n")}
   }`
