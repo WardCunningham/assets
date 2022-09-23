@@ -69,6 +69,19 @@
         addMarks(newer)
       }
     }
+    const lag = () => (Date.now() - log[log.length-1].when)/1000
+    while(lag() < 5*60) {
+      console.log(lag(), 'seconds lag')
+      await delay(20000)
+      const raw = await fetch(`http://home.c2.com:3030/track/${params['track']||'2022-07-19'}`).then(res => res.text())
+      const newer = tracks(raw,dups)
+      newer.forEach(spot => {
+        spot.prev = log[log.length-1]
+        log.push(spot)
+        addSpot(spot)
+      })
+      addMarks(newer)
+    }
 
     function tracks(raw,dups) {
       const data = raw.trim().split(/\r?\n/).slice(0,params.start||9999)
