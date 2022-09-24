@@ -47,6 +47,10 @@
 
     map.on('click', e => console.log(`${e.latlng.lat.toFixed(7)}, ${e.latlng.lng.toFixed(7)}\n`))
 
+    const readout = L.DomUtil.create('div', 'tally')
+    const Tally = L.Control.extend({options: {position: 'bottomleft'},onAdd: (map) => readout})
+    map.addControl(new Tally())
+
     const dups = new Set()
     const log = tracks(raw,dups)
     map.fitBounds(bounds(log))
@@ -65,14 +69,17 @@
           spot.prev = log[log.length-1]
           log.push(spot)
           addSpot(spot)
+          readout.innerText = new Date(spot.when).toLocaleTimeString()
         })
         addMarks(newer)
       }
     }
     const lag = () => (Date.now() - log[log.length-1].when)/1000
     while(lag() < 5*60) {
-      console.log(lag(), 'seconds lag')
-      await delay(20000)
+      const phase = Date.now()%20000/1000
+      readout.innerHTML = `${phase} phase shift<br>${lag()} seconds lag`
+      const wait = 25.0 - lag()
+      await delay(Math.trunc(Math.max(15,wait)*1000))
       const raw = await fetch(`http://home.c2.com:3030/track/${params['track']||'2022-07-19'}`).then(res => res.text())
       const newer = tracks(raw,dups)
       newer.forEach(spot => {
