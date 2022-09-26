@@ -125,6 +125,8 @@ export class BeamView extends Croquet.View {
     this.refreshHistory();
     this.refreshViewInfo();
     this.refreshBeam()
+    beam.addEventListener('keydown',this.narrowBeam)
+    beam.addEventListener('keyup',this.narrowBeam)
 
     if (model.participants === 1 &&
       !model.history.find(item => item.viewId === this.viewId)) {
@@ -207,12 +209,29 @@ export class BeamView extends Croquet.View {
       .map(e => +e.value)
     const names = this.model.beam.map(poem => poem.name || poem.graph.nodes[0].type)
     window.beamlist.innerHTML = names.map((n,i) =>
-        `<font color=gray size=1>${i}</font>
+        `<div><font color=gray size=1>${i}</font>
         <input type=checkbox value=${i} id=n${i} ${want.includes(i)?'checked':''}>
-        <label for=n${i}>${n}<sup>${this.model.beam[i].graph.nodes.length}</sup></label>`)
-      .join("<br>")
+        <label for=n${i}>${n}<sup>${this.model.beam[i].graph.nodes.length}</sup></label></div>`)
+      .join("\n")
     const last = window.beamlist.querySelector('input:last-of-type')
     if(last) last.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
+  }
+
+  narrowBeam(event) {
+    if(event.key === 'Shift') {
+      const items = window.beamlist.querySelectorAll('input[type=checkbox]')
+      const checked = window.beamlist.querySelectorAll('input[type=checkbox]:checked')
+      if (event.type==='keydown' && checked.length) {
+        items.forEach(item => {
+          if(!item.checked && item.nextElementSibling.style.color != 'darkorange')
+            item.parentElement.style.display='none'
+        })
+      } else {
+        items.forEach(item => {
+          item.parentElement.style.display='block'
+        })
+      }
+    }
   }
 
   beam() {
