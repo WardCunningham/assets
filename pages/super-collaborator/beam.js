@@ -153,6 +153,21 @@ export class BeamView extends Croquet.View {
         .filter(uniq).sort().join('-') + '.graph.json'
       return download(poem.graph.stringify(null,2),filename,'application/json')
     }
+    if (text === "/schema") {
+      const poems = [...window.beamlist.querySelectorAll('input[type=checkbox]:checked')]
+        .map(e => this.beam()[+e.value])
+      const poem = composite(poems)
+      let rels = poem.graph.rels
+      let nodes = poem.graph.nodes
+      let dot = rels
+        .map(rel => `"${nodes[rel.from].type}" -> "${nodes[rel.to].type}" [label="${rel.type}"]`)
+        .filter(uniq)
+      dot.unshift('node [shape=box style=filled fillcolor=palegreen]')
+      hpccWasm.graphviz.layout(`digraph {${dot.join("\n")}}`, "svg", "dot").then(svg => {
+        target.innerHTML = svg;
+      })
+      return
+    }
     if (text.startsWith("/match")) {
       const tree = cypher.parse(text.slice(1))
       if(!tree[0][0]) {
