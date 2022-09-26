@@ -46,9 +46,12 @@
     <div id="textOut"></div>
     <div style="display: flex;">
       <input id="textIn" type="text" style="flex:1" autocomplete="off" onkeydown="event.keyCode == 13 && sendButton.onclick()"/>
-      <input id="sendButton" type="button" style="margin-left:6" value = "Send" />
+      <input id="sendButton" type="button" style="margin-left:6" value = "➤" />
     </div>
-    <div id="members"></div>
+    <div style="display: flex;">
+      <span id="members"  style="flex:1"></span>
+      <input id="loginButton" type="button" style="margin-left:6" value = "☺" />
+    </div>
   </div>
 </main>
 
