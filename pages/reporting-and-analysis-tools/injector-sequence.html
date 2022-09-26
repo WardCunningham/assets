@@ -1,0 +1,81 @@
+<p></button><p>
+  <button onclick=dostart(event)>start</button>
+  <button onclick=donext(event)>next</button>
+  <button onclick=doback(event)>back</button>
+</p>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+</style>
+<script type=module>
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {composite} from 'http://hsc.fed.wiki/assets/home/composite.js'
+  import {dotify} from 'http://hsc.fed.wiki/assets/home/dotify.js'
+
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  const assets = await frame.assets()
+  const graphs = await assets.filter(asset => asset.file.endsWith('.graph.json'))
+  const graph = await Graph.fetch(graphs[0].url)  
+  const texts = await assets.filter(asset => asset.file.endsWith('.txt'))
+  const text = await fetch(texts[0].url).then(res => res.text())
+  const synopsis = text.split(/\n/)
+  const chosen = [{name:'Sequence', graph:new Graph()}]
+  const stack = []
+
+  let nid = -1
+
+  window.dostart = function (event) {
+    nid = 0
+    const node = graph.nodes[nid]
+    chosen[0].graph = new Graph()
+    chosen[0].graph.addNode(node.type,node.props)
+    while (stack.length) stack.pop()
+    display()
+  }
+
+  window.donext = function (event) {
+    if (nid == graph.nodes.length-1) return
+    stack.push(chosen[0].graph.stringify())
+    nid += 1
+    const node = graph.nodes[nid]
+    chosen[0].graph.addNode(node.type,node.props)
+    graph.rels.forEach(r => {
+      if((r.from == nid && r.to < nid) || (r.to == nid && r.from < nid))
+        chosen[0].graph.addRel(r.type,r.from,r.to,r.props)
+    })
+    display()
+  }
+
+  window.doback = function (event) {
+    if (!stack.length) return
+    nid -= 1
+    chosen[0].graph = Graph.load(JSON.parse(stack.pop()))
+    display()
+  }
+
+  function display() {
+    const text = dotify(composite(chosen)).replace(/(digraph {)/,"$1\nratio=1.5")
+    const story = [
+      {type:'paragraph',text:`Step ${nid+1} of ${graph.nodes.length}. ${synopsis[nid]}`},
+      {type:'graphviz',text}
+    ]
+    frame.open({title:'Graph in Sequence',story},event.shiftKey)
+
+  }
+
+  export function folded(story, wanted) {
+    let have = story
+      .filter(item => item.type == 'pagefold')
+      .map(item => [item.text, story.indexOf(item)])
+    let entries = wanted.map(label => {
+      let got = have.findIndex(fold => fold[0] == label)
+      if (got == -1) {throw `can't find expected pagefold: "${label}"`}
+      let start = have[got][1]+1
+      let end = got+1<have.length ? have[got+1][1] : story.length+1
+      return [label, story.slice(start,end)]
+    })
+    return Object.fromEntries(entries)
+  }
+
+</script>
