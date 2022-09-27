@@ -20,6 +20,7 @@ export class BeamModel extends Croquet.Model {
     this.inactivity_timeout_ms = 60 * 1000 * 20; // constant
     this.subscribe(this.sessionId, "view-join", this.viewJoin);
     this.subscribe(this.sessionId, "view-exit", this.viewExit);
+    this.subscribe("input", "newName", this.newName);
     this.subscribe("input", "newPost", this.newPost);
     this.subscribe("input", "reset", this.resetHistory);
     this.subscribe("input", "remove", this.removePoems);
@@ -48,6 +49,11 @@ export class BeamModel extends Croquet.Model {
     this.participants--;
     this.views.delete(viewId);
     this.publish("viewInfo", "refresh");
+  }
+
+  newName(opt) {
+    this.views.set(opt.viewId, opt.nickname)
+    this.publish("viewInfo", "refresh")
   }
 
   newPost(post) {
@@ -128,11 +134,14 @@ export class BeamView extends Croquet.View {
     this.refreshBeam()
     beam.addEventListener('keydown',this.narrowBeam)
     beam.addEventListener('keyup',this.narrowBeam)
+    loginButton.addEventListener('click', event => this.newFace(this,event))
 
     if (model.participants === 1 &&
       !model.history.find(item => item.viewId === this.viewId)) {
       this.publish("input", "reset", "for new user");
     }
+    const m = document.cookie.match(/\bface=(\d+)\b/)
+    if (m) this.publish('input','newName',{viewId:this.viewId, nickname:emoji[+m[1]]})
     croquet.view = this
   }
 
@@ -266,6 +275,12 @@ export class BeamView extends Croquet.View {
         })
       }
     }
+  }
+
+  newFace(view, event) {
+    const face = Math.floor(Math.random() * emoji.length)
+    document.cookie = `face=${face};samesite`
+    view.publish('input','newName',{viewId:this.viewId, nickname:emoji[face]})
   }
 
   beam() {
