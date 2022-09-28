@@ -101,6 +101,7 @@
   }
 
   window.dochoose = function (event) {
+    croquet.view.nextdownload = null
     const checked = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
     const beam = croquet.view.beam()
     const chosen = checked.map(e => beam[e.value])
