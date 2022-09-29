@@ -115,16 +115,17 @@ function openpage(date, day, event) {
   let mdy = new Date(date).toLocaleDateString()
   let title = `Wandering ${mdy}`
   let story = [
-      ...day.map(d => paragraph(`
-        ${d.synopsis} See [[${d.title}]],
-        ${d.assets.map(slug=>'[['+slug+']]').join(', ')}`)),
-      item({type:'map',text:markers(day).join("\n")+`\n${date}`}),
+      paragraph('We often visit several trails in a day of cycling. These are new to us on this day. See [[Chronological Destinations]]'),
+      ...day.map(d => paragraph(`[[${d.title}]] — ${d.synopsis}`)),
+      item({type:'pagefold',text:'.'}),
+      paragraph('New photograph locations.'),
+      item({type:'map',text:markers(day).join("\n")}),
      ]
 
   if (tracks[mdy]) {
     let assets = `http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/scripts`
     let url = `${assets}/map.html?track=${tracks[mdy]}`
-    story.push({type:'frame', text:`${url}\nHEIGHT 400`})
+    story.push(paragraph('Old and new trails passed while cycling.'),{type:'frame', text:`${url}\nHEIGHT 400`})
   }
   frame.open({title,story}, event.shiftKey)
 
