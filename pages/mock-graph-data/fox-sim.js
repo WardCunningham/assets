@@ -1,3 +1,7 @@
+// Evaluate a Vensim model that is known to oscillate
+// Continuation of dynamic modeling work
+// http://ward.dojo.fed.wiki/view/stock-and-flow/view/stock-and-flow-simulator/view/rabbit-breeding
+
 const p = {}
 const q = {}
 
