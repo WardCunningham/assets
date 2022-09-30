@@ -72,7 +72,7 @@ q.predator_increase_rate = () => p.predators_y() * p.predator_fractional_growth_
 // Relative initial predators*Reference predators)
 // Units: pred
 
-q.predators_y = () => integrate(p.predator_increase_rate() - p.predator_decrease_rate(), p.relative_initial_predators() * p.reference_predators())
+q.predators_y = () => integrate(() => p.predator_increase_rate() - p.predator_decrease_rate(), p.relative_initial_predators() * p.reference_predators())
 
 // (11) Prey decrease rate=
 // Prey X*Fractional predation rate
@@ -102,7 +102,7 @@ q.prey_increase_rate = () => p.prey_fractional_growth_rate_alpha() * p.prey_x()
 // Relative initial prey*Reference prey)
 // Units: Prey
 
-q.prey_x = () => integrate(p.prey_increase_rate() - p.prey_decrease_rate(), p.relative_initial_prey() * p.reference_prey())
+q.prey_x = () => integrate(() => p.prey_increase_rate() - p.prey_decrease_rate(), p.relative_initial_prey() * p.reference_prey())
 
 // (15) Reference predation rate=
 // 0.1
