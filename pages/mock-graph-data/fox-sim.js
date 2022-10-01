@@ -4,6 +4,7 @@
 
 const p = {}
 const q = {}
+const states = {}
 
 // (01) FINAL TIME= 100
 // Units: Time
@@ -162,31 +163,33 @@ for (const key in q) {
   p[key] = () => calc(key)
 }
 
-// Test -- Try calc of every function by name
+// Simulate -- Calculate every value by name for every step
 
-let nest = 0
-for (const key in q) {
-  try {calc(key)}
-  catch (e) {nest = 0}
+const keys = Object.keys(q).sort()
+console.log(keys.map(k=>`"${k.replaceAll("_"," ")}"`).join(","))
+for (let time=calc('initial_time'); time<=calc('final_time'); time+=calc('time_step')) {
+  console.log(keys.map(k=>calc(k)).join(","))
+  step()
 }
 
 // Runtime -- Recursively evaluate function arguments and then function
 
 function calc(key) {
-  if (nest>5) throw('unwanted recursion')
   const funct = (typeof q[key])=='function'
-  if (!nest) console.log()
-  if (funct) console.log('  '.repeat(nest), key, q[key])
-  nest += 1
   const result = funct ? q[key]() : q[key]
-  nest -= 1
-  console.log('  '.repeat(nest), key, result)
   return result
 }
 
-// Integration -- Work in progress
+// Integration -- Answer current state, then step all state
 
-function integrate(a,b) {
-  console.log('  '.repeat(nest), integrate(a, b))
-  return b
+function integrate(rate,init) {
+  states[rate] ||= {rate, value:init}
+  return states[rate].value
+}
+
+function step() {
+  for (const rate in states) {
+    const state = states[rate]
+    state.value += state.rate()
+  }
 }
