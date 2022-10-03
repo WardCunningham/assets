@@ -12,10 +12,10 @@
     stroke-linejoin="round"/>
 </svg>
 <p><div id=controls>
-  birth rate <span id=birthratereadout></span><br>
+<!--   birth rate <span id=birthratereadout></span><br>
   <input type=range id=birthrate min=0 max=300 style="width: 300px"><br>
   lifespan <span id=lifespanreadout></span><br>
-  <input type=range id=lifespan min=0 max=300 style="width: 300px">
+  <input type=range id=lifespan min=0 max=300 style="width: 300px"> -->
 </div></p>
 
 <script type=module>
@@ -32,21 +32,34 @@
     state.year = 0
   }
 
+  function adjust(key) {
+    window.controls.innerHTML += `
+      <div class=control>
+        <span class=key>${key.replaceAll('_',' ')}</span> <span class=value>0</span><br>
+        <input type=range min=0 max=300 init=${sim.calc(key)} style="width:300px;"><br>
+      </div>
+    `
+  }
+  adjust('prey_fractional_growth_rate_alpha')
+  adjust('reference_predation_rate')
+  adjust('reference_predator_growth_rate')
+  adjust('predator_fractional_decrease_rate_gamma')
+
   function inputs () {
-    function read(range,min,max) {
-      const value = document.querySelector(range).value
-      const setting = min + (max-min)*(value/300)
-      document.querySelector(range+'readout').innerText = setting.toFixed(3)
-      return setting
-    }
-    rate.birthrate = read('#birthrate', 1/16, 3/16)
-    rate.lifetime = read('#lifespan', 5, 11)
+    document.querySelectorAll('.control').forEach(div => {
+      const key = div.querySelector('.key').innerText.replaceAll(' ','_')
+      const input = div.querySelector('input')
+      const scale = input.value/300+.5
+      const value = input.getAttribute('init') * scale
+      div.querySelector('.value').innerText = value.toFixed(3)
+      sim.set(key,value)
+    })
   }
 
   function grow () {
     let points = growing.getAttribute('points')
-    if (px(state.year) > 100) {points=''; save(); start()}
-    // inputs()
+    if (px(state.year) > 14) {points=''; save(); start()}
+    inputs()
     sim.step()
     state.year += .1
     const point = [px(sim.calc('prey_x')), py(sim.calc('predators_y'))]
@@ -58,7 +71,9 @@
     hist.setAttribute('id','')
     hist.setAttribute('stroke','#ddd')
     grid.before(hist)
+    let lines = [...document.querySelectorAll('polyline')]
+    if(lines.length>5) lines[0].remove()
   }
 
-  setInterval(grow, 160)
+  setInterval(grow, 16)
 </script>

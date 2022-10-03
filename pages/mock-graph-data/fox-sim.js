@@ -184,8 +184,13 @@ function integrate(rate,init) {
 export function step() {
   for (const rate in states) {
     const state = states[rate]
-    state.value += state.rate()
+    state.value += state.rate()*calc('time_step')
   }
+}
+
+export function set(key, value) {
+  if ((typeof q[key])=='function') throw("can't set function value")
+  q[key] = value
 }
 
 export function reset() {
