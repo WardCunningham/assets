@@ -1,0 +1,64 @@
+<svg viewBox="0 0 100 100">
+  <polyline
+    id="grid"
+    points="0,0 0,100 100,100 100,0 0,0"
+    stroke="#ccc" fill="none"/>
+  <polyline
+    id="growing"
+    points=""
+    fill="none"
+    stroke="brown"
+    stroke-width=".5"
+    stroke-linejoin="round"/>
+</svg>
+<p><div id=controls>
+  birth rate <span id=birthratereadout></span><br>
+  <input type=range id=birthrate min=0 max=300 style="width: 300px"><br>
+  lifespan <span id=lifespanreadout></span><br>
+  <input type=range id=lifespan min=0 max=300 style="width: 300px">
+</div></p>
+
+<script type=module>
+  import * as sim from './fox-sim.js'
+
+  const state = {year:0}
+  sim.reset()
+
+  const px = v => 100 * (v/250)
+  const py = v => 100 - (100 * (v/100))
+
+  function start () {
+    sim.reset()
+    state.year = 0
+  }
+
+  function inputs () {
+    function read(range,min,max) {
+      const value = document.querySelector(range).value
+      const setting = min + (max-min)*(value/300)
+      document.querySelector(range+'readout').innerText = setting.toFixed(3)
+      return setting
+    }
+    rate.birthrate = read('#birthrate', 1/16, 3/16)
+    rate.lifetime = read('#lifespan', 5, 11)
+  }
+
+  function grow () {
+    let points = growing.getAttribute('points')
+    if (px(state.year) > 100) {points=''; save(); start()}
+    // inputs()
+    sim.step()
+    state.year += .1
+    const point = [px(sim.calc('prey_x')), py(sim.calc('predators_y'))]
+    growing.setAttribute('points', points+' '+point)
+  }
+
+  function save () {
+    let hist = growing.cloneNode()
+    hist.setAttribute('id','')
+    hist.setAttribute('stroke','#ddd')
+    grid.before(hist)
+  }
+
+  setInterval(grow, 160)
+</script>

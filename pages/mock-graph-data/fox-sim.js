@@ -156,25 +156,19 @@ q.saveper = () => p.time_step()
 
 q.time_step = 0.125
 
-
 // Preprocess -- All p references invoke calc of q functions
+
+export function keys() {
+  return Object.keys(q)
+}
 
 for (const key in q) {
   p[key] = () => calc(key)
 }
 
-// Simulate -- Calculate every value by name for every step
-
-const keys = Object.keys(q).sort()
-console.log(keys.map(k=>`"${k.replaceAll("_"," ")}"`).join(","))
-for (let time=calc('initial_time'); time<=calc('final_time'); time+=calc('time_step')) {
-  console.log(keys.map(k=>calc(k)).join(","))
-  step()
-}
-
 // Runtime -- Recursively evaluate function arguments and then function
 
-function calc(key) {
+export function calc(key) {
   const funct = (typeof q[key])=='function'
   const result = funct ? q[key]() : q[key]
   return result
@@ -183,13 +177,20 @@ function calc(key) {
 // Integration -- Answer current state, then step all state
 
 function integrate(rate,init) {
-  states[rate] ||= {rate, value:init}
+  states[rate] ||= {rate, value:init, init}
   return states[rate].value
 }
 
-function step() {
+export function step() {
   for (const rate in states) {
     const state = states[rate]
     state.value += state.rate()
+  }
+}
+
+export function reset() {
+  for (const rate in states) {
+    const state = states[rate]
+    state.value = state.init
   }
 }
