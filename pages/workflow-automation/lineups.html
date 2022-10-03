@@ -46,7 +46,7 @@
   if (slug == 'chronological-destinations')
     buttons.innerHTML = `<p><button onclick=dodownload()>download</button></p>`
 
-  function dodownload () {
+  window.dodownload = function () {
     frame.download(JSON.stringify(images,null,2),'images.json', 'application/json')
   }
 
@@ -125,7 +125,7 @@ function openpage(date, day, event) {
   if (tracks[mdy]) {
     let assets = `http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/scripts`
     let url = `${assets}/map.html?track=${tracks[mdy]}`
-    story.push(paragraph('Old and new trails passed while cycling.'),{type:'frame', text:`${url}\nHEIGHT 400`})
+    story.push(paragraph(`Old and new trails passed while cycling. [${url} enlarge]`),{type:'frame', text:`${url}\nHEIGHT 400`})
   }
   frame.open({title,story}, event.shiftKey)
 
@@ -145,7 +145,5 @@ function openpage(date, day, event) {
     return markers
   }
 }
-
-
 
 </script>
