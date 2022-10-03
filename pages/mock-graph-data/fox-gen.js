@@ -30,13 +30,15 @@ for (const para of src.split(/\n\n+/)) {
   }
 }
 for (const expr of exprs) {
-  const idents = [...expr.defn.matchAll(/\b[\w ]+\b/g)]
+  const idents = [...expr.defn.matchAll(/(.?)\b([\w ]+)\b/g)]
+  console.error(expr.defn,idents)
   for (const ident of idents) {
     if (ident[0]=='INTEG') continue
-    const from = nids[ident[0]]
+    const oper = ident[1]
+    const from = nids[ident[2]]
     const to = expr.nid
     console.error(from,to,ident)
-    graph.addRel('Value',from,to,{})
+    graph.addRel('Value',from,to,{oper,defn:expr.defn})
   }
 }
 console.log(JSON.stringify({nodes:graph.nodes, rels:graph.rels},null,2))
