@@ -54,6 +54,8 @@
     hist.setAttribute('id','')
     hist.setAttribute('stroke','#ddd')
     grid.before(hist)
+    let lines = [...document.querySelectorAll('polyline')]
+    if(lines.length>5) lines[0].remove()
   }
 
   setInterval(grow, 16)
