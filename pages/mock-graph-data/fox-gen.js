@@ -2,6 +2,8 @@
 // usage: deno run allow-read=. fox-gen.js
 
 import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+import * as sim from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/fox-sim.js'
+
 const graph = new Graph()
 const exprs = []
 const nids = {}
@@ -24,7 +26,8 @@ for (const para of src.split(/\n\n+/)) {
     if (defn.match(/^[0-9.]+$/)) {
       nids[funct] = graph.addNode('Const',{name:funct,label,value:+defn,units,desc})
     } else {
-      const nid = nids[funct] = graph.addNode('Funct',{name:funct,label,units,desc})
+      const value = sim.calc(funct.toLowerCase().replaceAll(' ','_'))
+      const nid = nids[funct] = graph.addNode('Funct',{name:funct,label,value,units,desc})
       exprs.push({nid,defn})
     }
   }
