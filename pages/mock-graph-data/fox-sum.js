@@ -55,7 +55,7 @@ function calc(node) {
 }
 
 function step() {
-  const dt = 0.125
+  const dt = 1 // 0.125
   const sign = {Increases: 1, Decreases: -1}
   const delta = graph.nodes.map(n => 0)
   for (const node of graph.nodes) {
