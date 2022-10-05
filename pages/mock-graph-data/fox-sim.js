@@ -168,24 +168,36 @@ for (const key in q) {
 
 // Runtime -- Recursively evaluate function arguments and then function
 
+let tree = null
+export function trace(key) {
+  tree = []
+  calc(key)
+  const result = tree
+  tree = null
+  return result
+}
+
 export function calc(key) {
+  const keep = tree
+  if (tree) {tree = []}
   const funct = (typeof q[key])=='function'
   const result = funct ? q[key]() : q[key]
+  if (tree) {keep.push([key, `${q[key]}`, tree, result]); tree = keep}
   return result
 }
 
 // Integration -- Answer current state, then step all state
 
 function integrate(rate,init) {
-  states[rate] ||= {rate, value:init, init}
+  states[rate] ||= {rate, value:init, init, delta:0}
   return states[rate].value
 }
 
 export function step() {
-  for (const rate in states) {
-    const state = states[rate]
-    state.value += state.rate()*calc('time_step')
-  }
+  for (const key in states)
+    states[key].delta = states[key].rate()*calc('time_step')
+  for (const key in states)
+    states[key].value += states[key].delta
 }
 
 export function set(key, value) {
