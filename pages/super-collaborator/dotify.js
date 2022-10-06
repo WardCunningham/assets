@@ -11,8 +11,12 @@ export function dotify(complex) {
   const edges = graph.rels.map(rel => {
     return `${rel.from}->${rel.to} [label="${rel.type}" labeltooltip="${tip(rel.props)}"]`
   })
+  const layout = graph.nodes
+    .filter(node => node.type == 'Graphviz' && node.props.layout)
+    .map(node => node.props.layout)
   return [
     'digraph {',
+    `layout = ${layout.reverse()[0]||'dot'}`,
     'node [shape=box style=filled fillcolor=gold]',
     'rankdir=TB',
     ...merged.nids,
