@@ -15,6 +15,9 @@
 
   const assets = await frame.assets()
   const graphs = await assets.filter(asset => asset.file.endsWith('.graph.json'))
+  let comp = new Graph()
+  let title = ''
+
   await Promise.all(graphs.map(asset =>
     Graph.fetch(asset.url).then(graph => {asset['graph'] = graph})))
   window.choices.innerHTML = graphs.map((asset,idx) =>
@@ -25,17 +28,19 @@
     console.log(event.target)
     const checked = [...window.choices.querySelectorAll('input[type=checkbox]:checked')]
     const chosen = checked.map(input => graphs[input.value])
+    title = chosen.map(choice => choice.file.split('.')[0]).join('-')
+    comp = composite(chosen)
     const story = [
       {type:'paragraph',text:`Composite of ${chosen.length} graphs.`},
-      {type:'graphviz',text:dotify(composite(chosen))}
+      {type:'graphviz',text:dotify(comp)}
     ]
-    frame.open({title:'Composite Graph Preview',story},event.shiftKey)
+    frame.open({title,story},event.shiftKey)
   }
 
   window.dodownload = function (event) {
-    const obj = {nodes:comp.nodes, rels:comp.rels}
+    const obj = {nodes:comp.graph.nodes, rels:comp.graph.rels}
     const text = JSON.stringify(obj,null,2)
-    frame.download(text,'comp.graph.json','application/json')
+    frame.download(text,`${title}.graph.json`,'application/json')
   }
 
   function resize(max=800) {
