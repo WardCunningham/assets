@@ -64,6 +64,9 @@
   import {dotify} from './dotify.js'
   import * as injector from './create.js'
   import {BeamModel, BeamView, croquet} from './beam.js'
+  import * as sim from './sim.js'
+
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
   const creating = {
     index: -1,
@@ -131,11 +134,13 @@
   }
 
   let drawing = false
-  function display(chosen) {
+  let siminterval = null
+  async function display(chosen) {
     if(!drawing){
       drawing = true
+      if (siminterval) clearInterval(siminterval)
+      const complex = composite(chosen)
       try {
-        const complex = composite(chosen)
         hpccWasm.graphviz.layout(dotify(complex), "svg", "dot").then(svg => {
           target.innerHTML = svg;
           drawing = false
@@ -144,6 +149,10 @@
         console.log('display error', err)
         drawing = false
       }
+      await delay(500)
+      const nodes = Object.fromEntries([...target.querySelectorAll('.node')]
+        .map(node => [node.querySelector('title').textContent,node]))
+      siminterval = sim.start(nodes,complex.graph,100)
     } else {
       console.log('display: skipping', chosen)
     }

@@ -16,7 +16,7 @@ export function dotify(complex) {
     .map(node => node.props.layout)
   return [
     'digraph {',
-    `layout = ${layout.reverse()[0]||'dot'}`,
+    `layout = ${layout.reverse()[0]||'dot'}; overlap = false; splines=true`,
     'node [shape=box style=filled fillcolor=gold]',
     'rankdir=TB',
     ...merged.nids,
