@@ -149,7 +149,22 @@
         console.log('display error', err)
         drawing = false
       }
-      await delay(500)
+      await delay(500);
+      [...target.querySelectorAll('a')]
+        .filter(n=>n.textContent.match(/☑|☐/))
+        .map(n => {
+          n.addEventListener('click',event => {
+            event.preventDefault()
+            event.stopPropagation()
+            const texts = n.querySelectorAll('text')
+            texts.forEach(text => {
+              if (text.textContent.match(/☐/))
+                text.textContent = text.textContent.replace('☐','☑')
+              else
+                text.textContent = text.textContent.replace('☑','☐')
+            })
+          })
+        })
       const nodes = Object.fromEntries([...target.querySelectorAll('.node')]
         .map(node => [node.querySelector('title').textContent,node]))
       siminterval = sim.start(nodes,complex.graph,100)
