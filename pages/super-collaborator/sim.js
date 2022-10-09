@@ -5,8 +5,17 @@ import {Graph} from './graph.js'
 export function start(nodes,graph,msec) {
   const sums = graph.search('match (sum:Variable)').map(res => res.sum)
   const flows = graph.search('match (:Variable)-[flow]->(:Variable)').map(res => res.flow)
+  const results = graph.search('match (clock:Simulator)')
+  const result = results.find(result => {
+    const nid = graph.nodes.findIndex(node => node == result.clock)
+    return nodes[nid].textContent.match(/☑/)
+  })
+  if(!result) return
+  const clock = result.clock
+
   const state = {}
-  return setInterval(step,msec)
+  const dt = clock.props.step || 1
+  return setInterval(step, clock.props.msec || 1000)
 
   function step() {
     const sign = {Increases: 1, Decreases: -1}
