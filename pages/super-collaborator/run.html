@@ -107,7 +107,7 @@
     croquet.view.nextdownload = null
     const checked = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
     const beam = croquet.view.beam()
-    const chosen = checked.map(e => beam[e.value])
+    const chosen = checked.map(e => Object.assign({index:e.value},beam[e.value]))
     display(chosen)
     recommend(chosen)
   }
@@ -152,6 +152,19 @@
       await delay(500);
       const nodes = Object.fromEntries([...target.querySelectorAll('.node')]
         .map(node => [node.querySelector('title').textContent,node]))
+      const neq = (a,b) => a.type == b.type && a.props.name == b.props.name
+      const name = node => `${node.type}:${node.props.name}`
+      for(const cid in nodes){
+        nodes[cid].addEventListener('mouseenter',event => {
+          const pick = chosen.find(entry =>
+            entry.graph.nodes.find(node =>
+              neq(node, complex.graph.nodes[cid])))
+          const nid = pick.graph.nodes.findIndex(node => neq(node,complex.graph.nodes[cid]))
+          console.log(pick.index, pick.name, cid, nid, name(complex.graph.nodes[cid]))
+          window.props = complex.graph.nodes[cid].props
+          window.save = () => croquet.view.updatePoem(pick.index,pick.graph,"*")
+        })
+      }
       siminterval = sim.start(nodes,complex.graph,100);
       [...target.querySelectorAll('a')]
         .filter(n=>n.textContent.match(/☑|☐/))
