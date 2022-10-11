@@ -53,6 +53,7 @@
       <input id="loginButton" type="button" style="margin-left:6" value = "☺" />
     </div>
   </div>
+  <div id=floater style="position:absolute; border:1px solid; background-color:white; overflow-wrap:break-word; padding:4px;" hidden></div>
 </main>
 
 <script src="https://unpkg.com/@croquet/croquet"></script>
@@ -156,13 +157,21 @@
       const name = node => `${node.type}:${node.props.name}`
       for(const cid in nodes){
         nodes[cid].addEventListener('mouseenter',event => {
-          const pick = chosen.find(entry =>
+          const picks = chosen.filter(entry =>
             entry.graph.nodes.find(node =>
               neq(node, complex.graph.nodes[cid])))
+          const pick = picks[0]
           const nid = pick.graph.nodes.findIndex(node => neq(node,complex.graph.nodes[cid]))
           console.log(pick.index, pick.name, cid, nid, name(complex.graph.nodes[cid]))
           window.props = complex.graph.nodes[cid].props
           window.save = () => croquet.view.updatePoem(pick.index,pick.graph,"*")
+          floater.style.left = event.clientX+5
+          floater.style.top = event.clientY+5
+          floater.innerHTML = picks.map(p => `${p.index} ${p.name}`).join("<br>")
+          floater.hidden=false
+        })
+        nodes[cid].addEventListener('mouseleave',event => {
+          floater.hidden=true
         })
       }
       siminterval = sim.start(nodes,complex.graph,100);
