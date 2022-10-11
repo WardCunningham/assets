@@ -1,6 +1,7 @@
 // run the count example as a wiki foreign federated server
 // deno run --allow-net --location=http://c2.com wikicount.js
 
+import {serve} from "https://deno.land/std@0.159.0/http/server.ts";
 import Croquet from "../croquet.js";
 
 const countDisplay = {}
@@ -57,3 +58,11 @@ Croquet.Session.join({
     model: MyModel,
     view: MyView
 });
+
+const handler = request => {
+  const body = `The count is: ${countDisplay.textContent || 'no count yet'}`;
+  return new Response(body, {status: 200});
+};
+
+console.log(`Serving at: http://localhost:8080/`);
+await serve(handler, {port:8080});
