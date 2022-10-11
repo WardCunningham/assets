@@ -14,10 +14,11 @@
   const imgs = document.querySelectorAll('img')
   const rev = jpeg => jpeg =='tails.jpeg' ? 'heads.jpeg' : 'tails.jpeg'
   const flip = img => img.setAttribute('src', rev(img.getAttribute('src')))
-  const iota = n => Array.from(Array(n).keys())
-  const row = r => iota(cols).map(c => flip(imgs[r*cols+c]))
-  const col = c => iota(rows).map(r => flip(imgs[r*cols+c]))
-  const move = n => {flip(imgs[n]); row(Math.floor(n/cols)); col(n%cols)}
+  const near = (i,n) => [-1,1].map(j => +i+j).filter(k => k>=0 && k<n)
+  const row = (r,c) => near(r,rows).map(rr => flip(imgs[rr*cols+c]))
+  const col = (r,c) => near(c,cols).map(cc => flip(imgs[r*cols+cc]))
+  const adj = (r,c) => {row(r,c); col(r,c)}
+  const move = n => {flip(imgs[n]); adj(Math.floor(n/cols),n%cols)}
 
 // P L A Y
   imgs.forEach((img,n) => img.addEventListener('click', () => move(n)))
