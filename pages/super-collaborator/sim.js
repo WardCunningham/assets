@@ -2,7 +2,7 @@
 
 import {Graph} from './graph.js'
 
-export function start(nodes,graph,msec) {
+export function start(nodes,graph,tick) {
   const sums = graph.search('match (sum:Variable)').map(res => res.sum)
   const flows = graph.search('match (:Variable)-[flow]->(:Variable)').map(res => res.flow)
   const results = graph.search('match (clock:Simulator)')
@@ -35,6 +35,7 @@ export function start(nodes,graph,msec) {
     for (const nid in delta) {
       state[nid] = value(nid) + .125 * delta[nid]
       nodes[nid].querySelector('text').textContent = state[nid].toFixed(3)
+      tick(nid,state[nid])
     }
   }
 }

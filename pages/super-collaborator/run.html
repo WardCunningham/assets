@@ -53,7 +53,7 @@
       <input id="loginButton" type="button" style="margin-left:6" value = "☺" />
     </div>
   </div>
-  <div id=floater style="position:absolute; border:1px solid; background-color:white; overflow-wrap:break-word; padding:4px;" hidden></div>
+  <div id=floater style="position:absolute; border:1px solid; background-color:white; overflow-wrap:break-word; padding:4px;" data-cid="" hidden></div>
 </main>
 
 <script src="https://unpkg.com/@croquet/croquet"></script>
@@ -156,7 +156,10 @@
       const neq = (a,b) => a.type == b.type && a.props.name == b.props.name
       const name = node => `${node.type}:${node.props.name}`
       for(const cid in nodes){
-        nodes[cid].addEventListener('mouseenter',event => {
+        if(complex.graph.nodes[cid].type != 'Variable') break
+        nodes[cid].addEventListener('click',event => {
+          event.preventDefault()
+          event.stopPropagation()
           const picks = chosen.filter(entry =>
             entry.graph.nodes.find(node =>
               neq(node, complex.graph.nodes[cid])))
@@ -167,14 +170,23 @@
           window.save = () => croquet.view.updatePoem(pick.index,pick.graph,"*")
           floater.style.left = event.clientX+5
           floater.style.top = event.clientY+5
-          floater.innerHTML = picks.map(p => `${p.index} ${p.name}`).join("<br>")
+          floater.innerHTML = `node ${cid}`
+          floater.dataset.cid = cid
           floater.hidden=false
         })
-        nodes[cid].addEventListener('mouseleave',event => {
-          floater.hidden=true
-        })
+        // nodes[cid].addEventListener('mouseleave',event => {
+        //   floater.hidden=true
+        // })
       }
-      siminterval = sim.start(nodes,complex.graph,100);
+      const tick = (nid,value) => {
+        if(+(floater.dataset.cid) == +nid) {
+          const data = floater.innerHTML.split(/<br>/)
+          if (data.length >= 10) data.shift()
+          floater.innerHTML = [...data,value].join('<br>')
+        }
+      }
+
+      siminterval = sim.start(nodes,complex.graph,tick);
       [...target.querySelectorAll('a')]
         .filter(n=>n.textContent.match(/☑|☐/))
         .map(n => {
@@ -189,7 +201,7 @@
                 text.textContent = text.textContent.replace('☑','☐')
             })
             clearInterval(siminterval)
-            siminterval = sim.start(nodes,complex.graph,100)
+            siminterval = sim.start(nodes,complex.graph,tick)
           })
         })
     } else {
