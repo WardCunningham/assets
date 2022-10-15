@@ -12,6 +12,7 @@
   const dates = await fetch(`http://home.c2.com:3030/track`)
     .then(res => res.text())
     .then(text => text.trim().split(/\r?\n/))
+    .then(list => list.reverse())
   window.result.innerHTML = dates.map(date => `<span>${date}</span>`).join("<br>\n")
 
   window.dodetails = function (event) {
