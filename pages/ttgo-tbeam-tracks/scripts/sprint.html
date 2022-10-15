@@ -1,6 +1,7 @@
 <div id=report>working</div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
   const pairs = array => array.slice(0,-1).map((e,i) => [e,array[i+1]])
   const stretch = (here,there,step) => {
       const dist = distance(here,there)*5280
@@ -62,9 +63,7 @@
       {type:'code',text:rows.join("\n")}
     ]
     frame.open({title,story},event.shiftKey)
-
   }
-
 
   async function track(date) {
     const raw = await fetch(`http://home.c2.com:3030/track/${date}`)
