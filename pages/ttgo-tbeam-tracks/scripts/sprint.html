@@ -35,7 +35,9 @@
   window.report.innerHTML = `
     <button onclick=doroute(event)>route</button>
     <button onclick=dospans(event)>spans</button>
-    <button onclick=dotrack(event)>track</button>  `
+    <button onclick=dotrack(event)>track</button>
+    <button onclick=dodownload(event)>download</button>
+  `
 
   window.doroute = event => {
     report(route,'Route Detail','Feet between route markers.',event)
@@ -48,6 +50,36 @@
   window.dotrack = event => {
     const spots = tracks[0].map(spot => spot.where)
     report(spots,'Track Detail','Feet between tracker spots.',event)
+  }
+
+  window.dodownload = event => {
+    const traces = []
+    let trace = {x:[],y:[],name:'route',mode:'markers'}
+    traces.push(trace)
+    let x0 = 0
+    let x1 = 0
+    pairs(route).forEach(([here,there],i) => {
+      const dist = distance(here,there)*5280
+      x1 = x0 + dist
+      trace.x.push(x0)
+      trace.y.push(1)
+      x0 = x1
+    })
+
+    trace = {x:[],y:[],name:days[0],mode:'line'}
+    traces.push(trace)
+    x0 = 0
+    x1 = 0
+    pairs(tracks[0]).forEach(([here,there],i) => {
+      const miles = distance(here.where,there.where)
+      const hours = (there.when - here.when)/1000/3600
+      x1 = x0 + miles*5280
+      trace.x.push((x0+x1)/2)
+      trace.y.push(miles/hours)
+      x0 = x1
+    })
+
+    frame.download(JSON.stringify(traces,null,2),'plot-data.json','application/json')
   }
 
   function report (spots, title, text, event) {
