@@ -20,17 +20,19 @@
   const marks = story
     .find(item => item.type == 'map')
     .text.split(/\n/)
-    .map(marker => marker
-      .split(/, */)
-      .map(coord => +coord))
+    .map(marker => {
+      const [_,lat,lon,label] = marker.match(/^(.+?), *(.+?) (.*)$/)
+      return {latlon:[+lat,+lon],label}
+    })
   const days = story
     .find(item => item.type == 'code')
     .text.split(/\n/)
+  const late = {"2022-10-15":1588}
   const tracks = await Promise.all(days.map(date => track(date.trim())))
   const route = [...marks.slice(0,-1), ...marks.reverse()]
   const steps = []
   pairs(route).forEach(([here,there]) =>
-    stretch(here, there, step => steps.push(step)))
+    stretch(here.latlon, there.latlon, step => steps.push(step)))
 
   window.report.innerHTML = `
     <button onclick=doroute(event)>route</button>
@@ -40,7 +42,7 @@
   `
 
   window.doroute = event => {
-    report(route,'Route Detail','Feet between route markers.',event)
+    report(route.map(r => r.latlon),'Route Detail','Feet between route markers.',event)
   }
 
   window.dospans = event => {
@@ -54,29 +56,31 @@
 
   window.dodownload = event => {
     const traces = []
-    let trace = {x:[],y:[],name:'route',mode:'markers'}
+    let trace = {x:[],y:[],text:[],name:'route',mode:'markers'}
     traces.push(trace)
     let x0 = 0
     let x1 = 0
     pairs(route).forEach(([here,there],i) => {
-      const dist = distance(here,there)*5280
+      const dist = distance(here.latlon,there.latlon)*5280
       x1 = x0 + dist
       trace.x.push(x0)
       trace.y.push(1)
+      trace.text.push(here.label)
       x0 = x1
     })
 
-    trace = {x:[],y:[],name:days[0],mode:'line'}
-    traces.push(trace)
-    x0 = 0
-    x1 = 0
-    pairs(tracks[0]).forEach(([here,there],i) => {
-      const miles = distance(here.where,there.where)
-      const hours = (there.when - here.when)/1000/3600
-      x1 = x0 + miles*5280
-      trace.x.push((x0+x1)/2)
-      trace.y.push(miles/hours)
-      x0 = x1
+    tracks.forEach ((track,i) => {
+      trace = {x:[],y:[],name:days[i],mode:'line'}
+      traces.push(trace)
+      x0 = late[days[i]] || 0
+      pairs(track).forEach(([here,there],i) => {
+        const miles = distance(here.where,there.where)
+        const hours = (there.when - here.when)/1000/3600
+        x1 = x0 + miles*5280
+        trace.x.push((x0+x1)/2)
+        trace.y.push(miles/hours)
+        x0 = x1
+      })
     })
 
     frame.download(JSON.stringify(traces,null,2),'plot-data.json','application/json')
