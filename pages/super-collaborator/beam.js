@@ -250,7 +250,8 @@ export class BeamView extends Croquet.View {
     this.nextdownload = null
     const want = [...window.beamlist.querySelectorAll('input[type=checkbox]:checked')]
       .map(e => +e.value)
-    if (!want.length) window.dochoose({})
+    console.log('refreshBeam',want)
+    // if (!want.length) window.dochoose({})
     const names = this.model.beam.map(poem => poem.name || poem.graph.nodes[0].type)
     window.beamlist.innerHTML = names.map((n,i) =>
         `<div><font color=gray size=1>${i}</font>
