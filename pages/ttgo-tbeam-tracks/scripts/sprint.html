@@ -131,7 +131,7 @@
     let [lat1,lon1] = here.map(deg => rad(deg))
     let [lat2,lon2] = there.map(deg => rad(deg))
     let earth = 3958.8
-    return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
+    return (earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))) || 0
   }
 
 </script>
