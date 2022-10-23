@@ -202,8 +202,8 @@
 
     for (let item of contents) {
       let synopsis, words
-      if (item.page != undefined && item.page.story != undefined) {
-        synopsis = item.page.story[0].text.slice(0,140)    // ToDo: guard against undefined text
+      if (item.page?.story?.length) {
+        synopsis = (item.page.story[0].text || '').slice(0,140)
         words = wordcount(item.page.story)
       } else {
         synopsis = 'Page Not Found'
