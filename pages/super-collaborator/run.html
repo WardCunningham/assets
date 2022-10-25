@@ -67,6 +67,7 @@
         stroke-width=".5"
         stroke-linejoin="round"/>
     </svg>
+    <div id=controls></div>
   </div>
 </main>
 
@@ -180,13 +181,23 @@
               neq(node, complex.graph.nodes[cid])))
           const pick = picks[0]
           const nid = pick.graph.nodes.findIndex(node => neq(node,complex.graph.nodes[cid]))
-          console.log(pick.index, pick.name, cid, nid, name(complex.graph.nodes[cid]))
+          const g = complex.graph
+          const n = g.nodes[cid]
+          console.log(pick.index, pick.name, cid, nid, name(n))
           window.props = complex.graph.nodes[cid].props
           window.save = () => croquet.view.updatePoem(pick.index,pick.graph,"*")
           floater.style.left = event.clientX+5
           floater.style.top = event.clientY+5
           growing.setAttribute('points','100,100')
           floater.dataset.cid = cid
+          const slide = () => `<input type=range min=0 max=100 value=50 style="width: 100%">`
+          const nslide = (n,p) => n.props.hasOwnProperty(p) ? `${n.props.name} ${p}: <span>${n.props[p]}</span>${slide()}` : ''
+          const rslide = (r,rate) => r.props.hasOwnProperty(rate) ? `${r.type} ${rate}: <span>${r.props[rate]}</span>${slide()}` : ''
+          controls.innerHTML = `<p>
+            ${['wax','wane'].map(p => nslide(n,p)).join('')}
+            ${n.in.map(rid => {const r = g.rels[rid]; return rslide(r,'orate')}).join('')}
+            ${n.out.map(rid => {const r = g.rels[rid]; return rslide(r,'irate')}).join('')}
+          `
           floater.hidden=false
         })
         // nodes[cid].addEventListener('mouseleave',event => {
