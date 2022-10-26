@@ -10,5 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "@croquet/croquet": "^1.1.0-12"
-  }
+  },
+  "type":"module"
 }
