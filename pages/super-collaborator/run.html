@@ -83,6 +83,7 @@
   import * as sim from './sim.js'
 
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
 
   const creating = {
     index: -1,
@@ -108,7 +109,12 @@
     event.preventDefault();
     switch (event.target.closest('div[ondrop]').id) {
       case "beam":
-        croquet.view.newPoems(await drop(event, '.graph.json'))
+        const poems = await drop(event, '.graph.json')
+        for (const poem of poems) {
+          croquet.view.newPoems([poem])
+          await delay(5)
+          console.log('poem',poem)
+        }
         break
       case "create":
         injector.schema((await drop(event, '.schema.json'))[0].graph)
@@ -246,7 +252,7 @@
   const session = await Croquet.Session.join({
     apiKey: '1MNinyGopbyxFzgx3HupBoCAryFb6yNOIihx6Omx9',
     appId: 'com.gmail.ward.cunningham.collaborator',
-    name: "unnamed",
+    name: params.name || "unnamed",
     password: "secret",
     model: BeamModel,
     view: BeamView
