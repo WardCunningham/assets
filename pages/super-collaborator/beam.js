@@ -172,7 +172,7 @@ export class BeamView extends Croquet.View {
     if (text === "/export") {
       const stream = this.beam().map(item => JSON.stringify(item)).join("\n")
       const date = new Date().toISOString().split('T')[0]
-      download(stream,`${date}Z.txt`,'application/json')
+      download(stream,`${date}Z.jsonl`,'application/json')
     } else
     if (text === "/schema") {
       const poems = [...window.beamlist.querySelectorAll('input[type=checkbox]:checked')]
