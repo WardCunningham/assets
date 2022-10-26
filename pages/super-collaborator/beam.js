@@ -169,6 +169,11 @@ export class BeamView extends Croquet.View {
         download(poem.graph.stringify(null,2),filename,'application/json')
       }
     } else
+    if (text === "/export") {
+      const stream = this.beam().map(item => JSON.stringify(item)).join("\n")
+      const date = new Date().toISOString().split('T')[0]
+      download(stream,`${date}Z.txt`,'application/json')
+    } else
     if (text === "/schema") {
       const poems = [...window.beamlist.querySelectorAll('input[type=checkbox]:checked')]
         .map(e => this.beam()[+e.value])
