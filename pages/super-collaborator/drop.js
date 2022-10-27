@@ -1,17 +1,10 @@
 // read named graph files that have been dropped by event
 
 import {Graph} from './graph.js'
+const inst = ({nodes,rels}) => {return new Graph(nodes, rels)}
 
 export async function drop (event,sufix) {
-  let files
-  if (event.dataTransfer.items) {
-    files = [...event.dataTransfer.items]
-      .filter(item => item.kind === 'file')
-      .map(item => item.getAsFile())
-  } else {
-    files = [...event.dataTransfer.files]
-  }
-  const want = files.filter(file =>
+  const want = files(event).filter(file =>
     file.name.endsWith(sufix) &&
     file.type === 'application/json')
   const concepts = []
@@ -19,8 +12,33 @@ export async function drop (event,sufix) {
     const name = file.name.replace(sufix,'')
     const graph = await file.text()
       .then(text => JSON.parse(text))
-      .then(({nodes,rels}) => {return new Graph(nodes, rels)})
+      .then(inst)
     concepts.push({name, graph})
   }
   return concepts
+}
+
+export async function dropl (event,sufix) {
+  const want = files(event).filter(file =>
+    file.name.endsWith(sufix))
+  const concepts = []
+  for (const file of want) {
+    const lines = await file.text()
+      .then(text => text.split(/\n/))
+    lines.forEach(line => {
+      const {name,graph} = JSON.parse(line)
+      concepts.push({name,graph:inst(graph)})
+    })
+  }
+  return concepts
+}
+
+function files(event) {
+  if (event.dataTransfer.items) {
+    return [...event.dataTransfer.items]
+      .filter(item => item.kind === 'file')
+      .map(item => item.getAsFile())
+  } else {
+    return [...event.dataTransfer.files]
+  }
 }

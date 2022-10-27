@@ -75,7 +75,7 @@
 <script type=module>
 
   import {Graph} from './graph.js'
-  import {drop} from './drop.js'
+  import {drop,dropl} from './drop.js'
   import {composite} from './composite.js'
   import {dotify} from './dotify.js'
   import * as injector from './create.js'
@@ -109,7 +109,10 @@
     event.preventDefault();
     switch (event.target.closest('div[ondrop]').id) {
       case "beam":
-        const poems = await drop(event, '.graph.json')
+        const poems = [
+          ...await dropl(event, '.jsonl'),
+          ...await drop(event, '.graph.json')
+        ]
         for (const poem of poems) {
           croquet.view.newPoems([poem])
           await delay(5)
