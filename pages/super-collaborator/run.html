@@ -167,7 +167,9 @@
       floater.hidden = true
       const complex = composite(chosen)
       try {
-        hpccWasm.graphviz.layout(dotify(complex), "svg", "dot").then(svg => {
+        const dot = dotify(complex)
+        window.dot = dot
+        hpccWasm.graphviz.layout(window.dot, "svg", "dot").then(svg => {
           target.innerHTML = svg;
           drawing = false
         })
