@@ -172,6 +172,11 @@
         hpccWasm.graphviz.layout(window.dot, "svg", "dot").then(svg => {
           target.innerHTML = svg;
           drawing = false
+          target.onclick = (event) => {
+            if(event.shiftKey) {
+              window.open('window').document.write(svg)
+            }
+          }
         })
       } catch (err) {
         console.log('display error', err)
