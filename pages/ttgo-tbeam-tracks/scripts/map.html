@@ -123,8 +123,8 @@
 
     function addSpot(spot) {
       L.circle(spot.where,4,{color:'blue'}).addTo(map)
-      L.circle(spot.there,4,{color:'red'}).addTo(map)
-        .bindPopup(`<center>${helium(spot)}<br>${google(spot.there)}</center>`)
+      L.circle(spot.there,32,{color:'red'}).addTo(map)
+        .bindPopup(`<center>${helium(spot)}<br>${maxdist(spot.name)} miles<br>${google(spot.there)}</center>`)
         .on('mouseover',e => pause(spot.name))
         .on('mouseout',e => resume())
       spot.line = L.polyline([spot.where,spot.there],{color:'red',opacity:0.3})
@@ -156,6 +156,15 @@
         if (lat1==lat2 && lon1==lon2) return 0
         let earth = 3958.8
         return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
+      }
+
+      function maxdist (name) {
+        const dists = log
+          .filter(l => l.name == name)
+          .map(l => distance(l.where,l.there))
+          .sort()
+          .reverse()
+        return dists[0].toFixed(1)
       }
     }
 
