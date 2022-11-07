@@ -4,6 +4,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚗️</text></svg>">
   <script src="https://unpkg.com/@hpcc-js/wasm/dist/index.min.js"></script>
   <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+  <script src="https://cdn.jsdelivr.net/gh/dash14/svg-pan-zoom/dist/svg-pan-zoom.min.js"></script>
 </head>
 <body>
 
@@ -172,6 +173,18 @@
         hpccWasm.graphviz.layout(window.dot, "svg", "dot").then(svg => {
           target.innerHTML = svg;
           drawing = false
+          const targetBounds = { width: document.querySelector('#target').clientWidth, height: document.querySelector('#target').clientHeight } 
+          const svgBounds = { width: document.querySelector('#target svg').clientWidth, height: document.querySelector('#target svg').clientHeight }
+          // console.log(targetBounds, svgBounds)
+          let svgElement = document.querySelector('#target svg')
+          let panSVG = svgPanZoom(svgElement)
+          document.querySelector('#target svg').style.height = "100%"
+          document.querySelector('#target svg').style.width = "100%"
+          if (targetBounds.width < svgBounds.width || targetBounds.height < svgBounds.height) {
+            panSVG.resize()
+          }
+          panSVG.fit()
+          panSVG.center()
           target.onclick = (event) => {
             if(event.shiftKey) {
               window.open('window').document.write(svg)
