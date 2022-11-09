@@ -87,45 +87,88 @@
   }
 
   async function exporter (event, selected) {
+
     const beam = []
     let graph, nid
+    const works = []
+    const linear = new Set()
 
-    let story = []
-    let works = []
+    const remote = [
+      'thompson.reimage.fed.wiki',
+      'jess.reimage.fed.wiki',
+      'david.reimage.fed.wiki',
+      'wellspring.fed.wiki'
+    ]
+
+    const emphasis = {
+      Work:"fillcolor=bisque",
+      Story:"fillcolor=lightblue",
+      Garden:"fillcolor=aquamarine",
+      Slug:"fillcolor=white"
+    }
+    const colors = new Graph()
+    colors.addNode('Graphviz',{name:'Reimage Colors',emphasis})
+    beam.push({name:'Reimage Colors',graph:colors})
 
     for (let want of selected) {
       try {
         let item = (await frame.context()).page.story.find(item => item.title == want)
         let site = item.site
         let page = await fetch(`//${site}/${frame.asSlug(item.title)}.json`).then(res => res.json())
-        let context = tell.sites(page,site)
-        works.push({page,site,context})
+        let context = [...tell.sites(page,site),...remote].filter(uniq)
+        works.push({page,site,context,story:[]})
       } catch (err) {
         console.log(`Trouble with ${want}\n${err.message}`)
       }
     }
 
     for (let work of works) {
-      const author = new Graph()
-      author.addNode('Work',{name:work.page.title,site:work.site})
-      beam.push({name:work.page.title, graph:author})
       let folds = tell.folded(work.page.story, ['told','more'])
       let more = folds.more.filter(item => item.type != 'frame')
       for (const item of more) {
         if(item.type == 'paragraph') {
           const title = tell.linked([item])[0]
           const site = await tell.find(frame.asSlug(title),work.context)
-          if (site) {
-            const type = `${site[0].toUpperCase()}${0}`
-            author.addRel(type,0,author.addNode('Page',{name:title}))
-            const gateway = new Graph()
-            gateway.addNode('Page',{name:title})
-            beam.push({name:title, graph:gateway})
-            await diagram(gateway,0,frame.asSlug(title),site,work.context,1)
-          } else {
-            author.addRel('X',0,author.addNode('Remote',{name:title}))
-          }
+          work.story.push({title,site})
+          linear.add(frame.asSlug(title))
         }
+      }
+    }
+
+    // // Flat Story (horizontal)
+    // for (let work of works) {
+    //   const author = new Graph()
+    //   author.addNode('Work',{name:work.page.title,site:work.site})
+    //   beam.push({name:work.page.title, graph:author})
+    //   for (const {title,site} of work.story) {
+    //     if (site) {
+    //       const type = `${site[0].toUpperCase()}${0}`
+    //       author.addRel(type,0,author.addNode('Story',{name:title}))
+    //     } else {
+    //       author.addRel('X',0,author.addNode('Remote',{name:title}))
+    //     }
+    //   }
+    // }
+
+
+    // String Story (vertical)
+    for (const work of works) {
+      const author = new Graph()
+      const title = work.page.title.replaceAll(/(More|Telling) */g,'')
+      let nid = author.addNode('Work',{name:title,site:work.site})
+      beam.push({name:title, graph:author})
+      let nnid
+      for (const {title,site} of work.story) {
+        if (site) {
+          const type = `${site[0].toUpperCase()}${0}`
+          nnid = author.addNode('Story',{name:title})
+          author.addRel(type,nid,nnid)
+          await diagram(author,nnid,frame.asSlug(title),site,work.context,1)
+        } else {
+          nnid = author.addNode('Remote',{name:title})
+          author.addRel('X',nid,nnid)
+        }
+        nid = nnid
       }
     }
 
@@ -134,15 +177,16 @@
       const info0 = sitemap0.find(info => info.slug == slug0)
       const links = Object.keys(info0.links||{})
       for (const slug of links) {
+        if(linear.has(slug) || Math.random()>1.0) continue
         const site = await tell.find(slug,context)
         if (site) {
           const sitemap = tell.sitemaps[site]
           const info = sitemap.find(info => info.slug == slug)
           const type = `${site[0].toUpperCase()}${depth}`
           if (info?.title) {
-            const nnid = graph.addNode('Page',{name:info.title})
+            const nnid = graph.addNode('Garden',{name:info.title})
             graph.addRel(type,nid,nnid)
-            if (depth <= 2) {
+            if (depth < 1) {
               await diagram(graph,nnid,slug,site,context,depth+1)
             }
           } else {
