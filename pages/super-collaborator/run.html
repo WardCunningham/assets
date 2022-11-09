@@ -173,7 +173,10 @@
         if (document.querySelector('#target svg')) {
           panZoom.pan = panSVG.getPan()
           panZoom.zoom = panSVG.getZoom()
-          panZoom.size = { width: document.querySelector('#target svg').clientWidth, height: document.querySelector('#target svg').clientHeight }
+          panZoom.size = { 
+              width: document.querySelector('#target svg').width.baseVal.valueInSpecifiedUnits, 
+              height: document.querySelector('#target svg').height.baseVal.valueInSpecifiedUnits
+            }
         }
         const dot = dotify(complex)
         window.dot = dot
@@ -191,7 +194,9 @@
           }
           panSVG.fit()
           panSVG.center()
-          if (panZoom.size && panZoom.size.width == targetBounds.width && panZoom.size.height == targetBounds.height) {
+          if (panZoom.size && 
+              panZoom.size.width == document.querySelector('#target svg').width.baseVal.valueInSpecifiedUnits &&
+              panZoom.size.height == document.querySelector('#target svg').height.baseVal.valueInSpecifiedUnits) {
             panSVG.zoom(panZoom.zoom)
             panSVG.pan(panZoom.pan)
           }
