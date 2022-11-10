@@ -60,7 +60,7 @@
       {type:'pagefold',text:'edited'},
       {type:'html',text:mark(edited)},
       {type:'pagefold',text:'.'},
-      {type:'paragraph',text:`Highlight ${l} to -${r} of ${min}.`}
+      {type:'paragraph',text:`Replace /${written.slice(l,-r)}/${edited.slice(l,-r)}/ from ${l} to -${r} of ${min}.`}
     ]
     frame.open({title:`Paragraph Revision (${i})`,story},e.shiftKey)
   }
