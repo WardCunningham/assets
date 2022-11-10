@@ -200,11 +200,6 @@
             panSVG.zoom(panZoom.zoom)
             panSVG.pan(panZoom.pan)
           }
-          target.onclick = (event) => {
-            if(event.shiftKey) {
-              window.open('window').document.write(svg)
-            }
-          }
         })
       } catch (err) {
         console.log('display error', err)
