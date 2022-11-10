@@ -79,6 +79,7 @@
   import {drop,dropl} from './drop.js'
   import {composite} from './composite.js'
   import {dotify} from './dotify.js'
+  import {hoverbold} from './hoverbold.js'
   import * as injector from './create.js'
   import {BeamModel, BeamView, croquet} from './beam.js'
   import * as sim from './sim.js'
@@ -183,6 +184,7 @@
         hpccWasm.graphviz.layout(window.dot, "svg", "dot").then(svg => {
           target.innerHTML = svg;
           drawing = false
+          hoverbold(target)
           const targetBounds = { width: document.querySelector('#target').clientWidth, height: document.querySelector('#target').clientHeight } 
           const svgBounds = { width: document.querySelector('#target svg').clientWidth, height: document.querySelector('#target svg').clientHeight }
           let svgElement = document.querySelector('#target svg')
