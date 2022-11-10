@@ -1,0 +1,72 @@
+<div id=working>working</div>
+<div id=results></div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const trouble = []
+
+  async function scan() {
+    const text = await fetch('http://ward.dojo.fed.wiki/assets/pages/reconcile-copy-edits/ThompsonsStory7Nov.html').then(res => res.text())
+    const copy = document.createElement('div')
+    copy.innerHTML = text
+    const elems = [...copy.querySelectorAll('.c5,.c0')]
+    while(elems[0].className != 'c5') elems.shift()
+    elems.shift()
+    while(elems[0].className != 'c5') elems.shift()
+    while(elems.length) {
+      const html = []
+      const title = elems[0].innerText
+      const site = `thompson.reimage.fed.wiki`
+      const url = `http://${site}/${frame.asSlug(title)}.json`
+      const page = await fetch(url).then(res => res.json())
+      window.working.innerText += ' .'
+      const synopsis = page.story[0].text
+      console.log({title,page})
+      html.push(`<h3>${title}</h3>`)
+      html.push(`<table>`)
+      const story = page.story
+      elems.shift()
+      while(elems.length && elems[0].className == 'c0') {
+        const edited = elems[0].innerText.trim()
+        const written = story[0]?.text.trim()
+        const id = story[0]?.id
+        const ok = edited == (written?.replaceAll(/\[\[|\]\]|_/g,''))
+        if (!ok) trouble.push({site,title,synopsis,id,written,edited})
+        const color = ok ? '' : `style="background-color:yellow" onclick=dodetail(event,${trouble.length-1})`
+        html.push(`<tr ${color}><td>${written?.slice(0,25)}<td>${edited?.slice(0,25)}`)      
+        elems.shift()
+        story.shift()
+      }
+      html.push(`</table>`)
+      window.results.innerHTML += html.join("\n")
+    }
+  }
+
+  window.dodetail = (e,i) => {
+    const esc = t => t.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
+    let {site,title,synopsis,id,written,edited} = trouble[i]
+    written = esc(written.replaceAll(/\[\[|\]\]|_/g,''))
+    edited = esc(edited)
+    let l,r
+    let min = Math.min(written.length,edited.length)
+    for(l=1;l<min && written.slice(0,l)==edited.slice(0,l);l++) {}
+    for(r=1;r<min && written.slice(-r)==edited.slice(-r);r++) {}
+    l--
+    if(r>1) r--
+    const mark = t => `${t.slice(0,l)}<mark>${t.slice(l,-r)}</mark>${t.slice(-r)}`
+    const story = [
+      {type:'reference',site,title,text:synopsis},
+      {type:'pagefold',text:'written'},
+      {type:'html',text:mark(written),id},
+      {type:'pagefold',text:'edited'},
+      {type:'html',text:mark(edited)},
+      {type:'pagefold',text:'.'},
+      {type:'paragraph',text:`Highlight ${l} to -${r} of ${min}.`}
+    ]
+    frame.open({title:`Paragraph Revision (${i})`,story},e.shiftKey)
+  }
+
+  await scan()
+  console.log(trouble)
+  window.working.innerText = ''
+
+</script>
