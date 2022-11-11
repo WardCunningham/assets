@@ -76,7 +76,7 @@
 <script type=module>
 
   import {Graph} from './graph.js'
-  import {drop,dropl} from './drop.js'
+  import {drop,dropl,dropu} from './drop.js'
   import {composite} from './composite.js'
   import {dotify} from './dotify.js'
   import {hoverbold} from './hoverbold.js'
@@ -113,7 +113,8 @@
       case "beam":
         const poems = [
           ...await dropl(event, '.jsonl'),
-          ...await drop(event, '.graph.json')
+          ...await drop(event, '.graph.json'),
+          ...await dropu(event)
         ]
         for (const poem of poems) {
           croquet.view.newPoems([poem])
