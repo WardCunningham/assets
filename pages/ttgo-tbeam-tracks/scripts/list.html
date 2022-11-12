@@ -48,6 +48,16 @@
     log.sort((a,b) => b.dist - a.dist)
     span.innerText += `, ${log[0].dist.toFixed(1)} mi`
 
+    log.sort((a,b) => a.when - b.when)
+    log[0].mph = 0
+    for (let i=1; i<log.length; i++) {
+      const dx = distance(log[i].where,log[i-1].where)
+      const dt = log[i].when - log[i-1].when
+      log[i].mph = dx/(dt/3600000)
+    }
+    log.sort((a,b) => b.mph - a.mph)
+    span.innerText += `, ${log[1].mph.toFixed(0)} mph`
+
     // const [lat,lon] = log[0].where
     // await delay(index*2000)
     // span.innerText += `, ${index}`
