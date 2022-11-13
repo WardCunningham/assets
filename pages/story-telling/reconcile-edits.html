@@ -1,72 +1,165 @@
-<div id=working>working</div>
+<details open>
+  <summary id=working>waiting</summary>
+  <p id=choices onchange=dochoose(event)></p>
+</details>
 <div id=results></div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  const trouble = []
+  const td = text => (text?.slice(0,25)) || 'empty'
+  const context = await frame.context()
+  let edits = []
+  let score = {items:0, edits:0, skipw:0, skipe:0}
 
-  async function scan() {
-    const text = await fetch('http://ward.dojo.fed.wiki/assets/pages/reconcile-copy-edits/ThompsonsStory7Nov.html').then(res => res.text())
+  let htmlfiles = (await frame.assets())
+    .filter(asset => asset.slug == context.slug)
+    .filter(asset => asset.file.endsWith('.html'))
+  window.choices.innerHTML = htmlfiles
+    .map((asset,i) => `
+      <input type=radio name=htmlfiles id=file${i} value=${i}>
+      <label for=file${i}>${asset.file}</label>`)
+    .join('<br>')
+
+  window.dochoose = async event => {
+    const asset = htmlfiles[event.target.value]
+    window.results.innerText = ''
+    edits = []
+    score = {items:0, edits:0, skipw:0, skipe:0}
+    await scan(asset.url)
+    console.log(edits)
+    window.working.innerText = Object.entries(score)
+      .map(([k,v])=>`${k}: ${v}`).join(", ")
+  }
+
+  async function scan(htmlurl) {
+    window.working.innerText = 'working'
+    const text = await fetch(htmlurl).then(res => res.text())
     const copy = document.createElement('div')
     copy.innerHTML = text
-    const elems = [...copy.querySelectorAll('.c5,.c0')]
-    while(elems[0].className != 'c5') elems.shift()
+
+    const site = copy.querySelector('a')
+      .getAttribute('href')
+      .match(/url\?q=https?\:\/\/(.*?)\//)[1]
+    const ctitle = frequent('h2','span')
+    const citem = frequent('p')
+
+    const elems = [...copy.querySelectorAll(`.${ctitle},.${citem}`)]
+    while(elems[0].className != ctitle) elems.shift()
     elems.shift()
-    while(elems[0].className != 'c5') elems.shift()
     while(elems.length) {
+      if(elems[0].className != ctitle) {
+        elems.shift()
+        continue
+      }
       const html = []
       const title = elems[0].innerText
-      const site = `thompson.reimage.fed.wiki`
       const url = `http://${site}/${frame.asSlug(title)}.json`
-      const page = await fetch(url).then(res => res.json())
-      window.working.innerText += ' .'
-      const synopsis = page.story[0].text
-      console.log({title,page})
+      let page
+      try {
+        page = await fetch(url).then(res => res.json())
+        window.working.innerText += ' .'
+      } catch (e) {
+        window.working.innerText += ' x'
+        console.log(e)
+        break
+      }
+      const synopsis = page.story[0].text.slice(0,80)+'⋯'
       html.push(`<h3>${title}</h3>`)
       html.push(`<table>`)
       const story = page.story
       elems.shift()
-      while(elems.length && elems[0].className == 'c0') {
-        const edited = elems[0].innerText.trim()
-        const written = story[0]?.text.trim()
+      while(elems.length && elems[0].className == citem) {
+        score.items++
+        let edited = elems[0].innerText.trim()
+        let written = plaintext(story[0]).trim()
+        if (td(edited) != td(written)) { // try skipping one
+          if(td(edited) == td(plaintext(story[1]).trim())) {
+            score.skipw++
+            story.shift()
+            written = plaintext(story[0]).trim()
+          } else
+          if (td(elems[1].innerText.trim()) == td(written)) {
+            score.skipe++
+            elems.shift()
+            edited = elems[0].innerText.trim()
+          }
+        }
         const id = story[0]?.id
-        const ok = edited == (written?.replaceAll(/\[\[|\]\]|_/g,''))
-        if (!ok) trouble.push({site,title,synopsis,id,written,edited})
-        const color = ok ? '' : `style="background-color:yellow" onclick=dodetail(event,${trouble.length-1})`
-        html.push(`<tr ${color}><td>${written?.slice(0,25)}<td>${edited?.slice(0,25)}`)      
+        const ok = edited == written
+        if (!ok) {
+          score.edits++
+          edits.push({site,title,synopsis,id,written,edited,item:story[0],div:elems[0]})
+        }
+        const color = ok ? '' : `style="background-color:yellow" onclick=dodetail(event,${edits.length-1})`
+        html.push(`<tr ${color}><td>${td(written)}<td>${td(edited)}`)
         elems.shift()
         story.shift()
       }
       html.push(`</table>`)
       window.results.innerHTML += html.join("\n")
     }
+
+    function frequent(selector,nextselector) {
+      const freq = {}
+      const count = elem => {
+        const klass = elem.className
+        freq[klass] = (freq[klass] || 0) + 1}
+      copy.querySelectorAll(selector)
+        .forEach(elem => {
+          if (nextselector)
+            count(elem.querySelector(nextselector))
+          else
+            count(elem)
+        })
+      const counts =  Object.entries(freq)
+        .sort((a,b) => b[1] - a[1])
+      return counts[0][0]
+    }
   }
 
   window.dodetail = (e,i) => {
-    const esc = t => t.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
-    let {site,title,synopsis,id,written,edited} = trouble[i]
-    written = esc(written.replaceAll(/\[\[|\]\]|_/g,''))
-    edited = esc(edited)
-    let l,r
+    const esc = t => t.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/\[/g,'&lsqb;')
+    let {site,title,synopsis,id,written,edited,item,div} = edits[i]
+    written = esc(plaintext(item).trim())
+    edited = esc(edited.replaceAll(/&nbsp;/g,' ').trim())
+    console.log({written,edited})
+    let l
+    let ll=0
+    let r
+    let rr=0
     let min = Math.min(written.length,edited.length)
-    for(l=1;l<min && written.slice(0,l)==edited.slice(0,l);l++) {}
-    for(r=1;r<min && written.slice(-r)==edited.slice(-r);r++) {}
-    l--
-    if(r>1) r--
-    const mark = t => `${t.slice(0,l)}<mark>${t.slice(l,-r)}</mark>${t.slice(-r)}`
+    for(l=0;l<min && written.slice(0,l)==edited.slice(0,l);l++) {ll = l}
+    const writtentail = written.slice(ll)
+    const editedtail = edited.slice(ll)
+    min = Math.min(writtentail.length,editedtail.length)
+    for(r=0;r<min && writtentail.slice(writtentail.length-r)==editedtail.slice(editedtail.length-r);r++) {rr=r}
+    const mark = t => `${t.slice(0,ll)}<mark>${t.slice(ll,t.length-rr)}</mark>${t.slice(t.length-rr)}`
     const story = [
       {type:'reference',site,title,text:synopsis},
+      {type:'pagefold',text:'reconciled (soon)'},
+      item,
       {type:'pagefold',text:'written'},
       {type:'html',text:mark(written),id},
       {type:'pagefold',text:'edited'},
       {type:'html',text:mark(edited)},
-      {type:'pagefold',text:'.'},
-      {type:'paragraph',text:`Replace /${written.slice(l,-r)}/${edited.slice(l,-r)}/ from ${l} to -${r} of ${min}.`}
+      {type:'pagefold',text:'written (raw)'},
+      {type:'html',text:esc(JSON.stringify(item))},
+      {type:'pagefold',text:'edited (raw)'},
+      {type:'html',text:esc(div.outerHTML)},
+      {type:'pagefold',text:'change'},
+      {type:'html',text:`Replace<br>/${esc(written.slice(ll,written.length-rr).replaceAll(/ /g,'␠'))}/<br><br>With<br>/${esc(edited.slice(ll,edited.length-rr).replaceAll(/ /g,'␠'))}/<br><br>From ${ll} to length-${rr} of ${min}.`}
     ]
     frame.open({title:`Paragraph Revision (${i})`,story},e.shiftKey)
   }
 
-  await scan()
-  console.log(trouble)
-  window.working.innerText = ''
+  function plaintext (item) {
+    let text = item.text
+    text = text.replaceAll(/\[\[|\]\]/g,'')
+    text = text.replaceAll(/\[http.*? (.*?)\]/g,'$1')
+    if (item.type=='markdown') {
+      text = text.replaceAll(/__(.*?)__/g,'$1')
+      text = text.replaceAll(/_(.*?)_/g,'$1')
+    }
+    return text
+  }
 
 </script>
