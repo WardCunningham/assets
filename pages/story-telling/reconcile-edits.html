@@ -5,10 +5,11 @@
 <div id=results></div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  const td = text => (text?.slice(0,25)) || 'empty'
+  const td = text => (text?.slice(0,24)) ||
+    '<span style="background-color:pink">item.text undefined</span>'
   const context = await frame.context()
   let edits = []
-  let score = {items:0, edits:0, skipw:0, skipe:0}
+  let score = {title:'', item:'', items:0, edits:0, skipw:0, skipe:0, errors:0}
 
   let htmlfiles = (await frame.assets())
     .filter(asset => asset.slug == context.slug)
@@ -39,8 +40,8 @@
     const site = copy.querySelector('a')
       .getAttribute('href')
       .match(/url\?q=https?\:\/\/(.*?)\//)[1]
-    const ctitle = frequent('h2','span')
-    const citem = frequent('p')
+    const ctitle = score.title = frequent('h2','span')
+    const citem = score.item = frequent('p')
 
     const elems = [...copy.querySelectorAll(`.${ctitle},.${citem}`)]
     while(elems[0].className != ctitle) elems.shift()
@@ -54,30 +55,39 @@
       const title = elems[0].innerText
       const url = `http://${site}/${frame.asSlug(title)}.json`
       let page
+      console.log({url})
       try {
-        page = await fetch(url).then(res => res.json())
+        page = await fetch(url).then(res => {
+          if(res.ok)
+           return res.json()
+          else
+            throw new Error(res.statusText)
+        })
         window.working.innerText += ' .'
       } catch (e) {
         window.working.innerText += ' x'
         console.log(e)
-        break
+        score.errors++
+        page = null
       }
-      const synopsis = page.story[0].text.slice(0,80)+'⋯'
+      const synopsis = page?.story[0].text.slice(0,80)+'⋯'
       html.push(`<h3>${title}</h3>`)
       html.push(`<table>`)
-      const story = page.story
+      const story = page?.story
       elems.shift()
-      while(elems.length && elems[0].className == citem) {
+      while(story && elems.length && elems[0].className == citem) {
         score.items++
         let edited = elems[0].innerText.trim()
         let written = plaintext(story[0]).trim()
         if (td(edited) != td(written)) { // try skipping one
           if(td(edited) == td(plaintext(story[1]).trim())) {
             score.skipw++
+            html.push(`<tr><td>${td(written)}<td style="background-color:pink">Skip Written`)
             story.shift()
             written = plaintext(story[0]).trim()
           } else
           if (td(elems[1].innerText.trim()) == td(written)) {
+            html.push(`<tr><td style="background-color:pink">Skip Edited<td>${td(edited)}`)
             score.skipe++
             elems.shift()
             edited = elems[0].innerText.trim()
