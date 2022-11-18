@@ -1,0 +1,98 @@
+<details open>
+  <summary id=working>waiting</summary>
+  <p id=choices onchange=dochoose(event)></p>
+</details>
+<p>
+  <button onclick=dopreview(event)>preview</button>
+  <button onclick=dodownload(event)>download</button>
+</p>
+<div id=results></div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  let assets = (await frame.assets())
+    .filter(asset => asset.dir.endsWith('/html'))
+    .filter(asset => asset.file.endsWith('.html'))
+  choices.innerHTML = assets
+    .map((asset,i) => `
+      <input type=radio name=assets id=file${i} value=${i}>
+      <label for=file${i}>${asset.file}</label>`)
+    .join('<br>')
+  let div = null
+
+  async function load(asset) {
+    window.working.innerText = 'loading'
+    window.results.innerText = ''
+    const text = await fetch(asset.url).then(res => res.text())
+    div = document.createElement('div')
+    window.working.innerText = `loaded ${(text.length/1024.0).toFixed(1)} KB`
+    div.innerHTML = text
+  }
+
+  if (assets.length == 1) {
+    choices.querySelector('input').checked = true
+    await load(assets[0])
+  }
+
+  window.dochoose = async event => {
+    const asset = assets[event.target.value]
+    load(asset)
+  }
+
+  window.dopreview = async event => {
+    console.log('preview',div)
+    window.results.innerText = ''
+    if(div) {
+      const obj = []
+      await convert(div,obj)
+      console.log('results',obj)
+      window.results.innerHTML = obj.join("\n")
+    }
+  }
+
+  async function convert (div,obj) {
+    const my = {}
+
+    my.freq = (selector,nextselector) => {
+      const freq = {}
+      const count = elem => {
+        const klass = elem.className
+        freq[klass] = (freq[klass] || 0) + 1}
+      div.querySelectorAll(selector)
+        .forEach(elem => {
+          if (nextselector)
+            count(elem.querySelector(nextselector))
+          else
+            count(elem)
+        })
+      const counts =  Object.entries(freq)
+        .sort((a,b) => b[1] - a[1])
+      return counts[0][0]
+    }
+
+    const context = await frame.context()
+    const code = context.page.story
+      .filter(item => item.type=='code')
+      .map(item => item.text)
+      .join("\n")
+    const wrap = `
+      export async function convert(div,obj,my) {
+        ${code}
+      }`
+    try {
+      console.log(wrap.split(/\n/))
+      const module = await import(`data:text/javascript;base64,${btoa(wrap)}`)
+      if (!module) return graph
+      let convert = module.convert
+      if (convert) {
+        await convert(div,obj,my)
+      }
+    } catch (e) {
+      console.log('trouble',e)
+      results.innerHTML = `<p>${e.name}: ${e.message}</p>`
+    }
+    return obj
+  }
+
+
+</script>
