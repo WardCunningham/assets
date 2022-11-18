@@ -3,12 +3,13 @@
   <p id=choices onchange=dochoose(event)></p>
 </details>
 <p>
-  <button onclick=dopreview(event)>preview</button>
-  <button onclick=dodownload(event)>download</button>
+  <button onclick=dopreview(event) disabled>preview</button>
+  <button onclick=dodownload(event) disabled>download</button>
 </p>
 <div id=results></div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const disable = want => document.querySelectorAll('button').forEach(b => b.disabled = want)
 
   let assets = (await frame.assets())
     .filter(asset => asset.dir.endsWith('/html'))
@@ -21,12 +22,14 @@
   let div = null
 
   async function load(asset) {
+    disable(true)
     window.working.innerText = 'loading'
     window.results.innerText = ''
     const text = await fetch(asset.url).then(res => res.text())
     div = document.createElement('div')
     window.working.innerText = `loaded ${(text.length/1024.0).toFixed(1)} KB`
     div.innerHTML = text
+    disable(false)
   }
 
   if (assets.length == 1) {
