@@ -20,8 +20,32 @@ export const repeat = advance => {
   return list
 }
 
+const gid = div =>
+  [...div.innerText.matchAll(/\w+/g)]
+    .map(v => v[0])
+    .sort()
+    .sort((a,b) => b.length - a.length)
+    .slice(0,3)
+    .join('-')
+
 export const item = div => {
   const text = `${div.nodeName} ${div.innerHTML}`
-  const id = (Math.random()*1000000000).toFixed(0)
-  return {type:'paragraph',text,id}
+  return {type:'paragraph',text,id:gid(div)}
+}
+
+export const frequent = (selector,nextselector) => {
+  const freq = {}
+  const count = elem => {
+    const klass = elem.className
+    freq[klass] = (freq[klass] || 0) + 1}
+  div.querySelectorAll(selector)
+    .forEach(elem => {
+      if (nextselector)
+        count(elem.querySelector(nextselector))
+      else
+        count(elem)
+    })
+  const counts =  Object.entries(freq)
+    .sort((a,b) => b[1] - a[1])
+  return counts[0][0]
 }
