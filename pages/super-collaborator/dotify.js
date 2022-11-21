@@ -20,7 +20,8 @@ export function dotify(complex) {
     return `${id} [label="${label}" ${color} ${(node.props.url||node.props.tick)?`URL="${node.props.url||'#'}" target="_blank"`:''} tooltip="${tip(node.props)}"]`
   })
   const edges = graph.rels.map(rel => {
-    return `${rel.from}->${rel.to} [label="${rel.type}" labeltooltip="${tip(rel.props)}"]`
+    const color = emphasis[rel.type] || ''
+    return `${rel.from}->${rel.to} [label="${rel.type}" ${color} labeltooltip="${tip(rel.props)}"]`
   })
   return [
     'digraph {',
