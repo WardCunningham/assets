@@ -6,12 +6,13 @@ export const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-
 export const select = s => div.querySelector(s)
 export const selectAll = s => [...div.querySelectorAll(s)]
 
-export const more = div => {
-  let d = div.nextSibling
-  if (!d.innerHTML) {d = d.nextSibling}
-  return d
+export const more = elem => {
+  return () => {
+    elem = elem.nextElementSibling
+    elem = elem?.nodeName=='P' ? elem : null
+    return elem
+  }
 }
-
 export const repeat = advance => {
   const list = []
   do {list.push(advance())}
@@ -20,13 +21,18 @@ export const repeat = advance => {
   return list
 }
 
-const gid = div =>
-  [...div.innerText.matchAll(/\w+/g)]
+const gid = div => {
+  const text = div.innerText
+  if(!text || text.length < 80) {
+    return (Math.random() * 1000000000).toFixed(0)
+  }
+  return [...div.innerText.matchAll(/\w+/g)]
     .map(v => v[0])
     .sort()
     .sort((a,b) => b.length - a.length)
     .slice(0,3)
     .join('-')
+}
 
 export const item = div => {
   const text = `${div.nodeName} ${div.innerHTML}`

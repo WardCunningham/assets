@@ -65,13 +65,33 @@
       titles.map(title =>
         [frame.asSlug(title), {
           title,
-          story:code.items(title),
+          story:code.items(title,norm.item),
           journal:[{type:'create',date:Date.now()}]
         }]
       ))
     const story = [{type:'importer',pages}]
     const title = asset.file.replace(/\.html$/,' Import')
     frame.open({title,story},event.shiftKey)
+  }
+
+  window.dodownload = async event => {
+    const item = div => {console.log('item',div); return div.innerText}
+    const code = await compile()
+    if (!code) return
+    const txt = []
+    const dotxt = div=>div.innerText
+    for(let title of code.titles()) {
+      txt.push(`============== ${title} ==============`)
+      const items = code.items(title,dotxt)
+      items.shift()
+      for(let item of items){
+        // let lines = item.split(/\.\s+/g)
+        let lines = [...item.matchAll(/.*?[\.,;?]\s*/g)].map(e=>e[0].trim())
+        txt.push('----------------------------------------',...lines)
+      }
+    }
+    const file = asset.file.replace(/\.html$/,'.txt')
+    frame.download(txt.join("\n"),file,'plain/text')
   }
 
   async function compile () {
