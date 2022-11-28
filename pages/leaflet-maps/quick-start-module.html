@@ -14,10 +14,23 @@
     #mapid { height: 100%; }
   </style>
   <script type=module>
-    var mymap = L.map('mapid').setView([51.505, -0.09], 13);
+    var mymap = L.map('mapid').setView([51.505, -0.09], 4);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(mymap)
+
+    import * as live from './live.js'
+    const page = await live.page('System Maps from Images')
+    console.log({page})
+    const data = await live.fold(page,'data')
+    console.log({data})
+    const titles = data.map(item => live.link(item.text))
+    console.log({titles})
+    const pages = await Promise.all(titles.map(title => live.page(title)))
+    console.log({pages})
+    const locs = pages.map(page => live.locs(page.story))
+    console.log({locs})
+    locs.flat().forEach(loc => L.marker(loc).addTo(mymap))
 
     var marker = L.marker([51.5, -0.09]).addTo(mymap)
 
