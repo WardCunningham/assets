@@ -2,14 +2,21 @@
   <summary id=working>waiting</summary>
   <p id=choices onchange=dochoose(event)></p>
 </details>
+<div id=buttons></div>
 <div id=results></div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as norm from 'http://ward.dojo.fed.wiki/assets/pages/story-telling/norm.js'
   const td = text => (text?.slice(0,24)) ||
     '<span style="background-color:pink">item.text undefined</span>'
   const context = await frame.context()
   let edits = []
-  let score = {title:'', item:'', items:0, edits:0, skipw:0, skipe:0, errors:0}
+  let score = {}
+  let allitems = []
+
+  const showscore = () => {
+    window.working.innerText = Object.entries(score)
+      .map(([k,v])=>`${k}: ${v}`).join(", ")}
 
   let htmlfiles = (await frame.assets())
     .filter(asset => asset.slug == context.slug)
@@ -19,157 +26,297 @@
       <input type=radio name=htmlfiles id=file${i} value=${i}>
       <label for=file${i}>${asset.file}</label>`)
     .join('<br>')
+  let titles = []
 
   window.dochoose = async event => {
     const asset = htmlfiles[event.target.value]
     window.results.innerText = ''
+    window.buttons.innerText = ''
     edits = []
-    score = {items:0, edits:0, skipw:0, skipe:0}
-    await scan(asset.url)
-    console.log(edits)
-    window.working.innerText = Object.entries(score)
-      .map(([k,v])=>`${k}: ${v}`).join(", ")
+    score = {}
+    await tscan(asset.url)
+    showscore()
+    score.items = 0
+    score.blanks = 0
+    allitems = []
+    await iscan()
+    window.buttons.innerHTML = `
+      <button onclick=doescan(event)>reconcile</button>
+    `
   }
 
-  async function scan(htmlurl) {
+  async function tscan(htmlurl) {
     window.working.innerText = 'working'
     const text = await fetch(htmlurl).then(res => res.text())
+    score.bytes = text.length.toLocaleString()
     const copy = document.createElement('div')
     copy.innerHTML = text
+    norm.setdiv(copy)
+    console.log(copy)
+    const h2 = [...copy.querySelectorAll('h2')]
+    titles = h2.map(head => ({head, name:head.querySelector('span').innerText.trim()}))
+    titles.shift()
+    if(!titles[0].name)titles.shift()
+    score.titles = titles.length
+    window.results.innerHTML = titles.map(title => 
+      `<h3>${title.name}</h3>
+      <div id="${title.name.replaceAll(/[^a-zA-z]/g,'')}"></div>`
+    ).join("\n")
+  }
 
-    const site = copy.querySelector('a')
+  async function iscan() {
+    for (const title of titles) {
+      let d = title.head
+      let items = [...norm.repeat(norm.more(d))
+        .map(elem => ({elem, title, text:elem.innerText.trim(), html:elem.innerHTML}))]
+      score.blanks += items.filter(item => !item.text).length
+      items = items.filter(item => item.text)
+      document.querySelector(`#${title.name.replaceAll(/[^a-zA-z]/g,'')}`)
+        .innerHTML = items
+          .map(item => {
+            const alert = trouble(item.elem)
+            item.alert = alert
+            const color = alert ? `style="background-color:${alert[0]}"` : ''
+            const click = `onclick="doiclick(event)" data-index="${allitems.length}"`
+            allitems.push(item)
+            return `▫︎ <span ${color} ${click}>${item.text.slice(0,48)}</span>`
+          })
+          .join("<br>")
+      score.items += items.length
+      showscore()
+    }
+  }
+
+  window.doiclick = async event => {
+    const index = +event.target.dataset.index
+    const item = allitems[index]
+    const title = `From ${item.title.name}`
+    const story = [
+      {type:'pagefold',text:'text'},
+      {type:'paragraph',text:item.text},
+      {type:'pagefold',text:'html'},
+      {type:'paragraph',text:item.html},
+      {type:'pagefold',text:'.'},
+    ]
+    if(item.alert)
+      story.push({type:'paragraph',text:`trouble with "${item.alert[1]}"`})
+    console.log({title,item,story})
+    await frame.open({title,story},event.shiftKey)
+  }
+
+  function trouble(elem) {
+    let html = elem.innerHTML
+    html = html.replace(/^<span.*?>/,'').replace(/<\/span>$/,'')
+    if(html.match(/<a/)) return ['#fa4','<a']
+    if(html.match(/<span class/)) return ['#fac','<span class']
+    if(html.match(/&(nbsp|amp);/)) return ['#fcc','&nbsp; or &amp;']
+    if(html.match(/<.*?>/)) return ['#ee9','<tag>']
+    return null
+  }
+
+  window.doescan = event => {
+    escan()
+  }
+
+  async function escan() {
+    const site = norm.div.querySelector('a')
       .getAttribute('href')
       .match(/url\?q=https?\:\/\/(.*?)\//)[1]
-    const ctitle = score.title = frequent('h2','span')
-    const citem = score.item = frequent('p')
-
-    const elems = [...copy.querySelectorAll(`.${ctitle},.${citem}`)]
-    while(elems[0].className != ctitle) elems.shift()
-    elems.shift()
-    while(elems.length) {
-      if(elems[0].className != ctitle) {
-        elems.shift()
+    console.log({site,titles})
+    for (const title of titles) {
+      const url = `http://${site}/${frame.asSlug(title.name)}.json`
+      title.fetch = fetch(url)
+    }
+    for (const title of titles) {
+      const reporting = document.querySelector(`#${title.name.replaceAll(/[^a-zA-z]/g,'')}`)
+      let d = title.head
+      let items = [...norm.repeat(norm.more(d))
+        .map(elem => ({elem, title, text:elem.innerText.trim(), html:elem.innerHTML}))]
+      items = items.filter(item => item.text)
+      const res = await title.fetch
+      if (!res.ok) {
+        reporting.previousElementSibling.style.backgroundColor = '#f88'
         continue
       }
-      const html = []
-      const title = elems[0].innerText
-      const url = `http://${site}/${frame.asSlug(title)}.json`
-      let page
-      console.log({url})
-      try {
-        page = await fetch(url).then(res => {
-          if(res.ok)
-           return res.json()
-          else
-            throw new Error(res.statusText)
-        })
-        window.working.innerText += ' .'
-      } catch (e) {
-        window.working.innerText += ' x'
-        console.log(e)
-        score.errors++
-        page = null
-      }
-      const synopsis = page?.story[0].text.slice(0,80)+'⋯'
-      html.push(`<h3>${title}</h3>`)
-      html.push(`<table>`)
-      const story = page?.story
-      elems.shift()
-      while(story && elems.length && elems[0].className == citem) {
-        score.items++
-        let edited = elems[0].innerText.trim()
-        let written = plaintext(story[0]).trim()
-        if (td(edited) != td(written)) { // try skipping one
-          if(td(edited) == td(plaintext(story[1]).trim())) {
-            score.skipw++
-            html.push(`<tr><td>${td(written)}<td style="background-color:pink">Skip Written`)
-            story.shift()
-            written = plaintext(story[0]).trim()
-          } else
-          if (td(elems[1].innerText.trim()) == td(written)) {
-            html.push(`<tr><td style="background-color:pink">Skip Edited<td>${td(edited)}`)
-            score.skipe++
-            elems.shift()
-            edited = elems[0].innerText.trim()
+      console.log({res})
+      const story = (await res.json()).story
+      console.log({title,items,story})
+      reporting
+        .querySelectorAll('span')
+        .forEach((span,i) => {
+          const index = +span.dataset.index
+          const item = allitems[index]
+          const written = story[i]
+          if (!item.alert && item.text.trim() != written.text.replaceAll(/\[\[|\]\]/g,'')) {
+            span.style.backgroundColor = '#cfc'
+            span.setAttribute('onclick','doeclick(event)')
+            item.written = written
           }
-        }
-        const id = story[0]?.id
-        const ok = edited == written
-        if (!ok) {
-          score.edits++
-          edits.push({site,title,synopsis,id,written,edited,item:story[0],div:elems[0]})
-        }
-        const color = ok ? '' : `style="background-color:yellow" onclick=dodetail(event,${edits.length-1})`
-        html.push(`<tr ${color}><td>${td(written)}<td>${td(edited)}`)
-        elems.shift()
-        story.shift()
-      }
-      html.push(`</table>`)
-      window.results.innerHTML += html.join("\n")
-    }
-
-    function frequent(selector,nextselector) {
-      const freq = {}
-      const count = elem => {
-        const klass = elem.className
-        freq[klass] = (freq[klass] || 0) + 1}
-      copy.querySelectorAll(selector)
-        .forEach(elem => {
-          if (nextselector)
-            count(elem.querySelector(nextselector))
-          else
-            count(elem)
         })
-      const counts =  Object.entries(freq)
-        .sort((a,b) => b[1] - a[1])
-      return counts[0][0]
     }
+
   }
 
-  window.dodetail = (e,i) => {
-    const esc = t => t.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/\[/g,'&lsqb;')
-    let {site,title,synopsis,id,written,edited,item,div} = edits[i]
-    written = esc(plaintext(item).trim())
-    edited = esc(edited.replaceAll(/&nbsp;/g,' ').trim())
-    console.log({written,edited})
-    let l
-    let ll=0
-    let r
-    let rr=0
-    let min = Math.min(written.length,edited.length)
-    for(l=0;l<min && written.slice(0,l)==edited.slice(0,l);l++) {ll = l}
-    const writtentail = written.slice(ll)
-    const editedtail = edited.slice(ll)
-    min = Math.min(writtentail.length,editedtail.length)
-    for(r=0;r<min && writtentail.slice(writtentail.length-r)==editedtail.slice(editedtail.length-r);r++) {rr=r}
-    const mark = t => `${t.slice(0,ll)}<mark>${t.slice(ll,t.length-rr)}</mark>${t.slice(t.length-rr)}`
+  window.doeclick = async event => {
+    console.log('eclick',event)
+    const index = +event.target.dataset.index
+    const item = allitems[index]
+    const title = `For ${item.title.name}`
     const story = [
-      {type:'reference',site,title,text:synopsis},
-      {type:'pagefold',text:'reconciled (soon)'},
-      item,
       {type:'pagefold',text:'written'},
-      {type:'html',text:mark(written),id},
-      {type:'pagefold',text:'edited'},
-      {type:'html',text:mark(edited)},
-      {type:'pagefold',text:'written (raw)'},
-      {type:'html',text:esc(JSON.stringify(item))},
-      {type:'pagefold',text:'edited (raw)'},
-      {type:'html',text:esc(div.outerHTML)},
-      {type:'pagefold',text:'change'},
-      {type:'html',text:`Replace<br>/${esc(written.slice(ll,written.length-rr).replaceAll(/ /g,'␠'))}/<br><br>With<br>/${esc(edited.slice(ll,edited.length-rr).replaceAll(/ /g,'␠'))}/<br><br>From ${ll} to length-${rr} of ${min}.`}
+      {type:'paragraph',text:item.written.text},
+      {type:'pagefold',text:'text'},
+      {type:'paragraph',text:item.text},
+      {type:'pagefold',text:'html'},
+      {type:'paragraph',text:item.html},
+      {type:'pagefold',text:'.'},
     ]
-    frame.open({title:`Paragraph Revision (${i})`,story},e.shiftKey)
+    if(item.alert)
+      story.push({type:'paragraph',text:`trouble with "${item.alert[1]}"`})
+    console.log({title,item,story})
+    await frame.open({title,story},event.shiftKey)
+
   }
 
-  function plaintext (item) {
-    let text = item.text
-    text = text.replaceAll(/\[\[|\]\]/g,'')
-    text = text.replaceAll(/\[http.*? (.*?)\]/g,'$1')
-    if (item.type=='markdown') {
-      text = text.replaceAll(/__(.*?)__/g,'$1')
-      text = text.replaceAll(/_(.*?)_/g,'$1')
-    }
-    return text
-  }
+  // async function scan(htmlurl) {
+  //   window.working.innerText = 'working'
+  //   const text = await fetch(htmlurl).then(res => res.text())
+  //   const copy = document.createElement('div')
+  //   copy.innerHTML = text
+
+  //   const site = copy.querySelector('a')
+  //     .getAttribute('href')
+  //     .match(/url\?q=https?\:\/\/(.*?)\//)[1]
+  //   const ctitle = score.title = frequent('h2','span')
+  //   const citem = score.item = frequent('p')
+
+  //   const elems = [...copy.querySelectorAll(`.${ctitle},.${citem}`)]
+  //   while(elems[0].className != ctitle) elems.shift()
+  //   elems.shift()
+  //   while(elems.length) {
+  //     if(elems[0].className != ctitle) {
+  //       elems.shift()
+  //       continue
+  //     }
+  //     const html = []
+  //     const title = elems[0].innerText
+  //     const url = `http://${site}/${frame.asSlug(title)}.json`
+  //     let page
+  //     console.log({url})
+  //     try {
+  //       page = await fetch(url).then(res => {
+  //         if(res.ok)
+  //          return res.json()
+  //         else
+  //           throw new Error(res.statusText)
+  //       })
+  //       window.working.innerText += ' .'
+  //     } catch (e) {
+  //       window.working.innerText += ' x'
+  //       console.log(e)
+  //       score.errors++
+  //       page = null
+  //     }
+  //     const synopsis = page?.story[0].text.slice(0,80)+'⋯'
+  //     html.push(`<h3>${title}</h3>`)
+  //     html.push(`<table>`)
+  //     const story = page?.story
+  //     elems.shift()
+  //     while(story && elems.length && elems[0].className == citem) {
+  //       score.items++
+  //       let edited = elems[0].innerText.trim()
+  //       let written = plaintext(story[0]).trim()
+  //       if (td(edited) != td(written)) { // try skipping one
+  //         if(td(edited) == td(plaintext(story[1]).trim())) {
+  //           score.skipw++
+  //           html.push(`<tr><td>${td(written)}<td style="background-color:pink">Skip Written`)
+  //           story.shift()
+  //           written = plaintext(story[0]).trim()
+  //         } else
+  //         if (td(elems[1].innerText.trim()) == td(written)) {
+  //           html.push(`<tr><td style="background-color:pink">Skip Edited<td>${td(edited)}`)
+  //           score.skipe++
+  //           elems.shift()
+  //           edited = elems[0].innerText.trim()
+  //         }
+  //       }
+  //       const id = story[0]?.id
+  //       const ok = edited == written
+  //       if (!ok) {
+  //         score.edits++
+  //         edits.push({site,title,synopsis,id,written,edited,item:story[0],div:elems[0]})
+  //       }
+  //       const color = ok ? '' : `style="background-color:yellow" onclick=dodetail(event,${edits.length-1})`
+  //       html.push(`<tr ${color}><td>${td(written)}<td>${td(edited)}`)
+  //       elems.shift()
+  //       story.shift()
+  //     }
+  //     html.push(`</table>`)
+  //     window.results.innerHTML += html.join("\n")
+  //   }
+
+  //   function frequent(selector,nextselector) {
+  //     const freq = {}
+  //     const count = elem => {
+  //       const klass = elem.className
+  //       freq[klass] = (freq[klass] || 0) + 1}
+  //     copy.querySelectorAll(selector)
+  //       .forEach(elem => {
+  //         if (nextselector)
+  //           count(elem.querySelector(nextselector))
+  //         else
+  //           count(elem)
+  //       })
+  //     const counts =  Object.entries(freq)
+  //       .sort((a,b) => b[1] - a[1])
+  //     return counts[0][0]
+  //   }
+  // }
+
+  // window.dodetail = (e,i) => {
+  //   const esc = t => t.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;').replaceAll(/\[/g,'&lsqb;')
+  //   let {site,title,synopsis,id,written,edited,item,div} = edits[i]
+  //   written = esc(plaintext(item).trim())
+  //   edited = esc(edited.replaceAll(/&nbsp;/g,' ').trim())
+  //   console.log({written,edited})
+  //   let l
+  //   let ll=0
+  //   let r
+  //   let rr=0
+  //   let min = Math.min(written.length,edited.length)
+  //   for(l=0;l<min && written.slice(0,l)==edited.slice(0,l);l++) {ll = l}
+  //   const writtentail = written.slice(ll)
+  //   const editedtail = edited.slice(ll)
+  //   min = Math.min(writtentail.length,editedtail.length)
+  //   for(r=0;r<min && writtentail.slice(writtentail.length-r)==editedtail.slice(editedtail.length-r);r++) {rr=r}
+  //   const mark = t => `${t.slice(0,ll)}<mark>${t.slice(ll,t.length-rr)}</mark>${t.slice(t.length-rr)}`
+  //   const story = [
+  //     {type:'reference',site,title,text:synopsis},
+  //     {type:'pagefold',text:'reconciled (soon)'},
+  //     item,
+  //     {type:'pagefold',text:'written'},
+  //     {type:'html',text:mark(written),id},
+  //     {type:'pagefold',text:'edited'},
+  //     {type:'html',text:mark(edited)},
+  //     {type:'pagefold',text:'written (raw)'},
+  //     {type:'html',text:esc(JSON.stringify(item))},
+  //     {type:'pagefold',text:'edited (raw)'},
+  //     {type:'html',text:esc(div.outerHTML)},
+  //     {type:'pagefold',text:'change'},
+  //     {type:'html',text:`Replace<br>/${esc(written.slice(ll,written.length-rr).replaceAll(/ /g,'␠'))}/<br><br>With<br>/${esc(edited.slice(ll,edited.length-rr).replaceAll(/ /g,'␠'))}/<br><br>From ${ll} to length-${rr} of ${min}.`}
+  //   ]
+  //   frame.open({title:`Paragraph Revision (${i})`,story},e.shiftKey)
+  // }
+
+  // function plaintext (item) {
+  //   let text = item.text
+  //   text = text.replaceAll(/\[\[|\]\]/g,'')
+  //   text = text.replaceAll(/\[http.*? (.*?)\]/g,'$1')
+  //   if (item.type=='markdown') {
+  //     text = text.replaceAll(/__(.*?)__/g,'$1')
+  //     text = text.replaceAll(/_(.*?)_/g,'$1')
+  //   }
+  //   return text
+  // }
 
 </script>
