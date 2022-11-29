@@ -139,7 +139,10 @@
         continue
       }
       console.log({res})
-      const story = (await res.json()).story
+      const page = await res.json()
+      const {type,date} = page.journal.slice(-1)[0]
+      const revision = `${type} ${new Date(date).toLocaleString()}`
+      const story = page.story
       console.log({title,items,story})
       reporting
         .querySelectorAll('span')
@@ -147,24 +150,26 @@
           const index = +span.dataset.index
           const item = allitems[index]
           const written = story[i]
-          if (!item.alert && item.text.trim() != written.text.replaceAll(/\[\[|\]\]/g,'')) {
+          if (!item.alert && item.text.trim() != written.text.replaceAll(/\[\[|\]\]/g,'').trim()) {
             span.style.backgroundColor = '#cfc'
             span.setAttribute('onclick','doeclick(event)')
             item.written = written
+            item.revision = revision
+            item.site = site
           }
         })
     }
-
   }
 
   window.doeclick = async event => {
     console.log('eclick',event)
     const index = +event.target.dataset.index
     const item = allitems[index]
-    const title = `For ${item.title.name}`
+    const {site,written,revision} = item
     const story = [
+      {type:'reference',site,title:item.title.name,text:revision},
       {type:'pagefold',text:'written'},
-      {type:'paragraph',text:item.written.text},
+      {type:'paragraph',text:written.text,id:written.id},
       {type:'pagefold',text:'text'},
       {type:'paragraph',text:item.text},
       {type:'pagefold',text:'html'},
@@ -173,8 +178,7 @@
     ]
     if(item.alert)
       story.push({type:'paragraph',text:`trouble with "${item.alert[1]}"`})
-    console.log({title,item,story})
-    await frame.open({title,story},event.shiftKey)
+    await frame.open({title:`For ${item.title.name}`,story},event.shiftKey)
 
   }
 
