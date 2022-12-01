@@ -25,9 +25,9 @@ export function dotify(complex) {
   })
   return [
     'digraph {',
-    `layout = ${layout.reverse()[0]||'dot'}; overlap = false; splines=true`,
+    'overlap = false; splines=true',
+    `layout = ${layout.reverse()[0]||'dot'};`,
     'node [shape=box style=filled fillcolor=gold]',
-    'rankdir=TB',
     ...merged.nids,
     'node [fillcolor=palegreen]',
     ...nodes,
