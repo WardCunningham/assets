@@ -36,7 +36,7 @@
   <div id="beam" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">
     <div id="beamlist" onchange="dochoose(event)"></div>
   </div>
-  <div id="target">
+  <div id="target" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">
     <div style="padding:16px; font-size:x-large;">Learn more about this<br>
       <a href=http://hsc.fed.wiki/view/hypertext-super-collaborator target=_blank>
         Hypertext Super Collaborator</a>
@@ -125,6 +125,14 @@
       case "create":
         injector.schema((await drop(event, '.schema.json'))[0].graph)
         injector.create(window.create, creating)
+        break
+      case "target":
+        const poemz = [
+          ...await dropl(event, '.jsonl'),
+          ...await drop(event, '.graph.json')
+        ]
+        display(poemz)
+        recommend(poemz)
         break
       default:
         console.log('Failed to dispatch', event.target)
