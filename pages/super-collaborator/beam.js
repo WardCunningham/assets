@@ -156,6 +156,15 @@ export class BeamView extends Croquet.View {
       window.target.innerHTML = ''
       this.publish("input", "remove", indices)
     } else
+    if (text.match(/^\/remove (\d+)$/)) {
+      const last = this.beam().length-1
+      const count = Math.min(+text.match(/^\/remove (\d+)$/)[1],last+1)
+      const first = last-(count-1)
+      const indices = [...Array(last+1).keys()].slice(first)
+      console.log({count,last,first,indices})
+      window.target.innerHTML = ''
+      this.publish("input", "remove", indices)
+    } else
     if (text === "/download") {
       if (this.nextdownload) {
         download(...this.nextdownload)
