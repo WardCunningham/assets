@@ -1,6 +1,10 @@
 <details open>
-  <summary id=working>waiting</summary>
+  <summary id=working>choose file</summary>
   <p id=choices onchange=dochoose(event)></p>
+</details>
+<details open=false>
+  <summary>color key</summary>
+  <p id=colors onchange=docolor(event)></p>
 </details>
 <div id=buttons></div>
 <div id=results></div>
@@ -28,21 +32,40 @@
     .join('<br>')
   let titles = []
 
+  let colors = {} 
+  const usecolor = (color,explain) => {
+    colors[color] ||= {count:0, explain}
+    colors[color].count += 1
+  }
+  const showcolors = () => {
+    const escape = text => text.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
+    window.colors.innerHTML = Object.entries(colors)
+      .map(([color,value]) => 
+        `▫︎ <span style="background-color:${color}; width:100%">
+          &nbsp; ${value.count} × ${escape(value.explain)} &nbsp; </span>`)
+      .join("<br>")
+  }
+
   window.dochoose = async event => {
     const asset = htmlfiles[event.target.value]
     window.results.innerText = ''
     window.buttons.innerText = ''
+    window.colors.innerText = ''
     edits = []
     score = {}
+    colors = {}
     await tscan(asset.url)
     showscore()
     score.items = 0
     score.blanks = 0
     allitems = []
     await iscan()
-    window.buttons.innerHTML = `
-      <button onclick=doescan(event)>reconcile</button>
-    `
+    showcolors()
+    // window.buttons.innerHTML = `
+    //   <button onclick=doescan(event)>reconcile</button>
+    // `
+    await escan()
+    showcolors()
   }
 
   async function tscan(htmlurl) {
@@ -75,6 +98,7 @@
         .innerHTML = items
           .map(item => {
             const alert = trouble(item.elem)
+            if(alert) usecolor(...alert)
             item.alert = alert
             const color = alert ? `style="background-color:${alert[0]}"` : ''
             const click = `onclick="doiclick(event)" data-index="${allitems.length}"`
@@ -107,16 +131,17 @@
   function trouble(elem) {
     let html = elem.innerHTML
     html = html.replace(/^<span.*?>/,'').replace(/<\/span>$/,'')
-    if(html.match(/<a/)) return ['#fa4','<a']
-    if(html.match(/<span class/)) return ['#fac','<span class']
-    if(html.match(/&(nbsp|amp);/)) return ['#fcc','&nbsp; or &amp;']
-    if(html.match(/<.*?>/)) return ['#ee9','<tag>']
+    if(html.match(/<a/)) return ['#fa4','read anchor, <a']
+    if(html.match(/<span class/)) return ['#fac','read special <span class']
+    if(html.match(/&(nbsp|amp);/)) return ['#fcc','read &nbsp; or &amp;']
+    if(html.match(/<.*?>/)) return ['#ea9','read some other <tag>']
     return null
   }
 
-  window.doescan = event => {
-    escan()
-  }
+  // window.doescan = async event => {
+  //   await escan()
+  //   showcolors()
+  // }
 
   async function escan() {
     const site = norm.div.querySelector('a')
@@ -138,40 +163,52 @@
         reporting.previousElementSibling.style.backgroundColor = '#f88'
         continue
       }
-      console.log({res})
       const page = await res.json()
       const {type,date} = page.journal.slice(-1)[0]
       const revision = `${type} ${new Date(date).toLocaleString()}`
       const story = page.story
-      console.log({title,items,story})
       reporting
         .querySelectorAll('span')
         .forEach((span,i) => {
           const index = +span.dataset.index
           const item = allitems[index]
+          if(item.alert) return
+          const e = item.text.trim()
           const written = story[i]
-          if (!item.alert && item.text.trim() != written.text.replaceAll(/\[\[|\]\]/g,'').trim()) {
-            span.style.backgroundColor = '#cfc'
+          const w = written.text.replaceAll(/\[\[|\]\]/g,'').trim()
+          const repl = mismatch(w,e)
+          if (repl) {
+            const alert = miscolor(...repl)
+            usecolor(...alert)
+            span.style.backgroundColor = alert[0]
             span.setAttribute('onclick','doeclick(event)')
             item.written = written
             item.revision = revision
             item.site = site
+            item.repl = repl
           }
         })
     }
   }
 
   window.doeclick = async event => {
-    console.log('eclick',event)
     const index = +event.target.dataset.index
     const item = allitems[index]
     const {site,written,revision} = item
+    const recommended = JSON.parse(JSON.stringify(written))
+    recommended.text = recommended.text.replace(...item.repl).replace('  ',' ')
     const story = [
       {type:'reference',site,title:item.title.name,text:revision},
+      {type:'pagefold',text:'recommended'},
+      recommended,
       {type:'pagefold',text:'written'},
       {type:'paragraph',text:written.text,id:written.id},
-      {type:'pagefold',text:'text'},
+      {type:'code',text:`${item.repl[0].length} => ${item.repl[1].length}`},
+      {type:'code',text:item.repl[0]},
+      {type:'code',text:item.repl[1]},
+      {type:'pagefold',text:'edited'},
       {type:'paragraph',text:item.text},
+      {type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/check.html\nHEIGHT 10`},
       {type:'pagefold',text:'html'},
       {type:'paragraph',text:item.html},
       {type:'pagefold',text:'.'},
@@ -179,7 +216,32 @@
     if(item.alert)
       story.push({type:'paragraph',text:`trouble with "${item.alert[1]}"`})
     await frame.open({title:`For ${item.title.name}`,story},event.shiftKey)
+  }
 
+  function mismatch(written, edited) {
+    if (written == edited) return null
+    let w = written.split(/ +/)
+    let e = edited.split(/ +/)
+    const left = e.findIndex((c,i)=>c!=w[i])
+    if (left<0) return null
+    w = w.reverse()
+    e = e.reverse()
+    const right = e.findIndex((c,i)=>c!=w[i])
+    if (right<0) return null
+    return [
+      w.slice(right).reverse().slice(left).join(' '),
+      e.slice(right).reverse().slice(left).join(' ')
+    ]
+  }
+
+  function miscolor(written, edited) {
+    const w = written.length
+    const e = edited.length
+    if(w<25 && e<25) return ['#cfc',"replace short -> short"]
+    if(w==0 || e==0) return ['#ddf',"replace at/with nothing"]
+    if(w<25) return ['#cfa',"replace shrot -> long"]
+    if(e<25) return ['#afc',"replace long -> short"]
+    return ['#add',"replace long -> long"]
   }
 
   // async function scan(htmlurl) {
