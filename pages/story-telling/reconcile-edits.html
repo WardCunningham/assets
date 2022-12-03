@@ -4,19 +4,22 @@
 </details>
 <details open=false>
   <summary>color key</summary>
-  <p id=colors onchange=docolor(event)></p>
+  <p id=colors></p>
 </details>
 <div id=buttons></div>
 <div id=results></div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import * as norm from 'http://ward.dojo.fed.wiki/assets/pages/story-telling/norm.js'
+  const scripts = `http://ward.dojo.fed.wiki/assets/pages/story-telling`
+
   const td = text => (text?.slice(0,24)) ||
     '<span style="background-color:pink">item.text undefined</span>'
   const context = await frame.context()
   let edits = []
   let score = {}
   let allitems = []
+  let file = ''
 
   const showscore = () => {
     window.working.innerText = Object.entries(score)
@@ -40,14 +43,28 @@
   const showcolors = () => {
     const escape = text => text.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
     window.colors.innerHTML = Object.entries(colors)
+      .sort((a,b) => a[1].explain > b[1].explain ? 1 : -1)
       .map(([color,value]) => 
         `▫︎ <span style="background-color:${color}; width:100%">
           &nbsp; ${value.count} × ${escape(value.explain)} &nbsp; </span>`)
       .join("<br>")
   }
+  window.docolordata = async event => {
+    const title = `Data ${file.replace(/\.html$/,'')}`
+    const now = {date:Date.now(),colors,score}
+    const old = await fetch(`/${frame.asSlug(title)}.json`).then(res => res.ok ? res.json() : null)
+    const hist = old ? [now, ...JSON.parse(old.story[2].text)] : [now]
+    const story = [
+      {type:'paragraph',text:`Updated ${new Date().toLocaleDateString()}.`},
+      {type:'frame',text:`${scripts}/plot.html\nHEIGHT 450`},
+      {type:'code',text:JSON.stringify(hist,null,2)}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
 
   window.dochoose = async event => {
     const asset = htmlfiles[event.target.value]
+    file = asset.file
     window.results.innerText = ''
     window.buttons.innerText = ''
     window.colors.innerText = ''
@@ -66,6 +83,8 @@
     // `
     await escan()
     showcolors()
+    window.colors.innerHTML += ` &nbsp; <button onclick=docolordata(event)>preview</button>`
+
   }
 
   async function tscan(htmlurl) {
@@ -208,7 +227,7 @@
       {type:'code',text:item.repl[1]},
       {type:'pagefold',text:'edited'},
       {type:'paragraph',text:item.text},
-      {type:'frame',text:`http://ward.dojo.fed.wiki/assets/pages/story-telling/check.html\nHEIGHT 10`},
+      {type:'frame',text:`${scripts}/check.html\nHEIGHT 10`},
       {type:'pagefold',text:'html'},
       {type:'paragraph',text:item.html},
       {type:'pagefold',text:'.'},
@@ -239,7 +258,7 @@
     const e = edited.length
     if(w<25 && e<25) return ['#cfc',"replace short -> short"]
     if(w==0 || e==0) return ['#ddf',"replace at/with nothing"]
-    if(w<25) return ['#cfa',"replace shrot -> long"]
+    if(w<25) return ['#cfa',"replace short -> long"]
     if(e<25) return ['#afc',"replace long -> short"]
     return ['#add',"replace long -> long"]
   }
