@@ -192,19 +192,16 @@
           const index = +span.dataset.index
           const item = allitems[index]
           if(item.alert) return
-          const e = item.text.trim()
           const written = story[i]
-          const w = written.text.replaceAll(/\[\[|\]\]/g,'').trim()
-          const repl = mismatch(w,e)
-          if (repl) {
-            const alert = miscolor(...repl)
+          const changed = mismatch(written.text,item.text)
+          if (changed) {
+            const alert = miscolor(changed)
             usecolor(...alert)
             span.style.backgroundColor = alert[0]
             span.setAttribute('onclick','doeclick(event)')
             item.written = written
-            item.revision = revision
+            item.changed = changed
             item.site = site
-            item.repl = repl
           }
         })
     }
@@ -213,18 +210,16 @@
   window.doeclick = async event => {
     const index = +event.target.dataset.index
     const item = allitems[index]
-    const {site,written,revision} = item
-    const recommended = JSON.parse(JSON.stringify(written))
-    recommended.text = recommended.text.replace(...item.repl).replace('  ',' ')
+    const {site,written,revision,changed} = item
     const story = [
       {type:'reference',site,title:item.title.name,text:revision},
       {type:'pagefold',text:'recommended'},
-      recommended,
+      revise(written,changed),
       {type:'pagefold',text:'written'},
       {type:'paragraph',text:written.text,id:written.id},
-      {type:'code',text:`${item.repl[0].length} => ${item.repl[1].length}`},
-      {type:'code',text:item.repl[0]},
-      {type:'code',text:item.repl[1]},
+      {type:'code',text:`${changed.repl[0].length} => ${changed.repl[1].length}`},
+      {type:'code',text:changed.repl[0]},
+      {type:'code',text:changed.repl[1]},
       {type:'pagefold',text:'edited'},
       {type:'paragraph',text:item.text},
       {type:'frame',text:`${scripts}/check.html\nHEIGHT 10`},
@@ -237,30 +232,47 @@
     await frame.open({title:`For ${item.title.name}`,story},event.shiftKey)
   }
 
+  const deeptrim = text => text.trim().replaceAll(/  +/g,' ')
+
   function mismatch(written, edited) {
-    if (written == edited) return null
-    let w = written.split(/ +/)
-    let e = edited.split(/ +/)
+    const clean = text => text.replaceAll(/\[\[|\]\]/g,'')
+    if (clean(deeptrim(written)) == deeptrim(edited)) return null
+    let w = written.trim().split(/ +/)
+    let e = edited.trim().split(/ +/)
     const left = e.findIndex((c,i)=>c!=w[i])
     if (left<0) return null
+    const skip = w.slice(0,left).join(' ')
     w = w.reverse()
     e = e.reverse()
     const right = e.findIndex((c,i)=>c!=w[i])
     if (right<0) return null
-    return [
-      w.slice(right).reverse().slice(left).join(' '),
-      e.slice(right).reverse().slice(left).join(' ')
-    ]
+    return {
+      skip,
+      repl:[
+        w.slice(right).reverse().slice(left).join(' '),
+        e.slice(right).reverse().slice(left).join(' ')
+      ]
+    }
   }
 
-  function miscolor(written, edited) {
-    const w = written.length
-    const e = edited.length
-    if(w<25 && e<25) return ['#cfc',"replace short -> short"]
+  function miscolor(changed) {
+    const w = changed.repl[0].length
+    const e = changed.repl[1].length
     if(w==0 || e==0) return ['#ddf',"replace at/with nothing"]
+    if(w<25 && e<25) return ['#cfc',"replace short -> short"]
     if(w<25) return ['#cfa',"replace short -> long"]
     if(e<25) return ['#afc',"replace long -> short"]
     return ['#add',"replace long -> long"]
+  }
+
+  function revise(written, changed) {
+    const text = deeptrim(written.text)
+    const [remove,replace] = changed.repl
+    const skip = changed.skip
+    const space = remove.length == 0 ? ' ' : ''
+    const item = JSON.parse(JSON.stringify(written))
+    item.text = text.replace(`${skip} ${remove}`, `${skip} ${replace}${space}`)
+    return item
   }
 
   // async function scan(htmlurl) {
