@@ -1,0 +1,53 @@
+<head><script src='https://cdn.plot.ly/plotly-2.14.0.min.js'></script></head>
+<div id='plot'></div>
+<script type=module>
+
+  // Assemble condition color history as plotly traces
+  // Handle missing data when conditions don't occur
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const escape = text => text.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
+  const darken = hex => `rgb(${hex.split('').slice(1).map(c => parseInt(c,16)*16*0.9)})`
+  const jiggle = n => n+(Math.random().toFixed(2))/10
+
+  const page = (await frame.context()).page
+  const hist = JSON.parse(page.story[2].text)
+
+  // discover required traces
+  const colors = hist.map(samp => {
+    const counts = Object.entries(samp.colors);
+    const hovertemplate = "%{y}"
+    const entries = counts.map(count => [
+      count[0],
+      {x:[], y:[], mode:'lines+markers', hovertemplate, line:{width:4,color:darken(count[0])},
+      name:escape(count[1].explain.replace(/(read|replace) /,''))}
+    ])
+    return Object.fromEntries(entries)
+  })
+  const traces = Object.assign({},...colors)
+
+  // add data to traces
+  hist.forEach(samp => {
+    const date = new Date(samp.date)
+    const colors = samp.colors
+    Object.keys(traces).forEach(key => {
+      const trace = traces[key]
+      const count = (key in colors) ? jiggle(colors[key].count) : null
+      trace.x.push(date)
+      trace.y.push(count)
+    })
+  })
+
+  // https://plotly.com/javascript/line-charts/#adding-names-to-line-and-scatter-plot
+  // https://plotly.com/javascript/setting-graph-size/
+  // https://plotly.com/javascript/legend/
+  // https://plotly.com/javascript/colorway/
+  const layout = {
+    showlegend:false,
+    margin:{l:20, r:0, b:50, t:0, pad:0},
+    paper_bgcolor:'rgba(0,0,0,0)',
+    plot_bgcolor:'rgba(0,0,0,0)'
+  }
+  Plotly.newPlot('plot', Object.values(traces), layout);
+
+</script>
