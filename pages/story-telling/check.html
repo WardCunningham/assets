@@ -8,10 +8,10 @@ import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
 const context = await frame.context()
 const story = context.page.story
 const edited = fold('edited').text.trim()
-const recommended = fold('recommended').text.trim()
+const recommended = fold('recommended').text.trim().replaceAll(/\[\[|\]\]/g,'')
 console.log({edited,recommended})
 window.result.innerHTML = edited==recommended ?
-  '<h1 style="color:green">ok</h1>' :
+  '<h1 style="color:green">check</h1>' :
   '<h1 style="color:red">trouble</h1>'
 
 function fold (label) {

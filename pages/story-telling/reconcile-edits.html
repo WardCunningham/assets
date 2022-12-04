@@ -202,6 +202,7 @@
             item.written = written
             item.changed = changed
             item.site = site
+            item.revision = revision
           }
         })
     }
@@ -214,15 +215,19 @@
     const story = [
       {type:'reference',site,title:item.title.name,text:revision},
       {type:'pagefold',text:'recommended'},
-      revise(written,changed),
+      revise(written,misfix(changed)),
       {type:'pagefold',text:'written'},
-      {type:'paragraph',text:written.text,id:written.id},
+      {type:'paragraph',text:written.text},
+      {type:'pagefold',text:'change'},
       {type:'code',text:`${changed.repl[0].length} => ${changed.repl[1].length}`},
       {type:'code',text:changed.repl[0]},
       {type:'code',text:changed.repl[1]},
+      {type:'frame',text:`${scripts}/check.html\nHEIGHT 10`},
+      {type:'html',text:'<p>'+written.text.replace(
+        `${changed.skip} ${changed.repl[0]}`,
+        `${changed.skip} <mark>${changed.repl[1]}</mark>${changed.repl[0].length == 0 ? ' ' : ''}`)},
       {type:'pagefold',text:'edited'},
       {type:'paragraph',text:item.text},
-      {type:'frame',text:`${scripts}/check.html\nHEIGHT 10`},
       {type:'pagefold',text:'html'},
       {type:'paragraph',text:item.html},
       {type:'pagefold',text:'.'},
@@ -233,9 +238,9 @@
   }
 
   const deeptrim = text => text.trim().replaceAll(/  +/g,' ')
+  const clean = text => text.replaceAll(/\[\[|\]\]/g,'')
 
   function mismatch(written, edited) {
-    const clean = text => text.replaceAll(/\[\[|\]\]/g,'')
     if (clean(deeptrim(written)) == deeptrim(edited)) return null
     let w = written.trim().split(/ +/)
     let e = edited.trim().split(/ +/)
@@ -265,8 +270,21 @@
     return ['#add',"replace long -> long"]
   }
 
+  function misfix(changed) {
+    const copy = JSON.parse(JSON.stringify(changed))
+    const w = copy.repl[0]
+    const e = copy.repl[1]
+    const regex = /\[\[(.*?)\]\]/g
+    let m
+    while (m = regex.exec(w)) {
+      copy.repl[1] = e.replace(m[1],m[0])
+    }
+    return copy
+  }
+
   function revise(written, changed) {
-    const text = deeptrim(written.text)
+    // const text = deeptrim(written.text)
+    const text = written.text
     const [remove,replace] = changed.repl
     const skip = changed.skip
     const space = remove.length == 0 ? ' ' : ''
