@@ -1,0 +1,44 @@
+<div id=result onclick=dopreview(event)></div>
+<script type=module>
+
+  // traverse and assemble sections of apl.localhost as graphs
+
+  import * as live from 'http://trails.ward.asia.wiki.org/assets/pages/leaflet-maps/live.js'
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  import {dotify} from 'http://hsc.fed.wiki/assets/home/dotify.js'
+
+  live.setsite('apl.localhost')
+  const chapters = ['Towns','Buildings','Construction']
+  const sections = (await Promise.all(chapters.map(scan))).flat()
+  window.result.innerHTML = sections.map(section =>
+    `<span>${section.name} — ${section.title}</span>`
+  ).join("<br>")
+
+  window.dopreview = async event => {
+    const [name, title] = event.target.innerText.split(' — ')
+    const sections = await scan(title)
+    const graph = new Graph()
+    const nids = {}
+    graph.addNode('APL',{name,title})
+    sections.forEach(section => {
+      const {name,title} = section
+      section.url = `http://apl.localhost/${frame.asSlug(title)}.json`
+      const nid = nids[name] = graph.addNode('APL',section)
+      graph.addRel('Part',0,nid)
+    })
+    const dot = dotify({graph,merged:{nids:[0]}})
+    const story = [{type:'graphviz',text:dot}]
+    frame.open({title,story},event.shiftKey)
+    console.log({name,title,sections})
+  }
+
+  async function scan(chapter){
+    const page = await live.page(chapter)
+    return page.story.map(item => {
+      const m = item.text.match(/^(.*?)\. \[\[(.*?)\]\]/)
+      return {name:`${m[1]}`, title:m[2]}
+    })
+  }
+
+</script>
