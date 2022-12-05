@@ -1,5 +1,5 @@
 <p>
-  <button onclick=dosurvey(event)>scan</button>
+  <button onclick=dosurvey(event)>survey</button>
   <button onclick=doprint(event)>download</button>
 </p>
 <div id=report></div>
@@ -24,15 +24,24 @@
     .filter(item => item.type=='reference')
     .map(item => item.site)
   const assets = (await frame.assets())
-    .filter(asset => asset.dir == "pages/deep-in-the-garden/graphs")
-  window.report.innerText = 'ready'
-
-  // console.log({sites,maps,assets,graphs})
-  // window.report.innerHTML = `<pre>
-  //   ${sites.length} stories, ${maps.map(infos => infos.length)} pages
-  //   ${graphs.length} graphs, ${graphs.map(graph => graph.nodes.length)} nodes`
+    .filter(asset =>
+      asset.dir == "pages/deep-in-the-garden/graphs" &&
+      asset.file.endsWith('.graph.json'))
+  window.report.innerText = `ready with ${sites.length} references, ${assets.length} graph assets`
 
   window.dosurvey = async event => {
+    const format = (row,col) => cols[col].garden[row].length
+    await loader()
+    survey()
+    window.report.innerHTML = `
+      <table>
+      ${[0,1,2,3,4,5,6,7,8].map(row =>
+        `<tr><td>${row}${[0,1,2].map(col =>
+          `<td>${format(row,col)}`).join('')}`).join('')}
+      </table>`
+  }
+
+  async function loader() {
     window.report.innerText = ''
     maps = await Promise.all(
       sites.map(site => fetch(`//${site}/system/sitemap.json`)
@@ -51,37 +60,34 @@
         .map(node => frame.asSlug(node.props.name))]
       cols.push({site,map,garden})
     })
+  }
+
+  function survey() {
     for (let depth=1; depth<=8; depth++) {
       cols.forEach(col => {
         const have = col.garden.flat()
-        const doing = col.garden.slice(-1)[0]
-        const want = doing.map(slug => {
-          const info = col.map.find(info => info.slug == slug)
-          if(info?.links) {
-            return Object.keys(info.links)
-          }
-          else
-            return []
-        }).flat()
+        const here = col.garden.slice(-1)[0]
+        const need = here
+          .map(slug => {
+            const info = col.map.find(info => info.slug == slug)
+            if(info?.links) {return Object.keys(info.links)}
+            else return []})
+          .flat()
           .filter(slug => !have.includes(slug))
           .filter(uniq)
-        col.garden.push(want)
+        col.garden.push(need)
       })
-      console.log(depth,cols.map(col => col.garden[col.garden.length-1].length))
     }
-    window.report.innerHTML = `
-      <table>
-      ${[0,1,2,3,4,5,6,7,8].map(row => 
-        `<tr><td>${row}${[0,1,2].map(col =>
-          `<td>${cols[col].garden[row].length}`).join('')}`).join('')}
-      </table>
-    `
   }
 
   window.doprint = event => {
     const format = (row,col) => {
-      const slugs = cols[col].garden[row]
-      const titles = slugs.map(slug => cols[col].map.find(info => info.slug == slug)?.title||slug)
+      const {garden, map} = cols[col]
+      const slugs = garden[row]
+      const titles = slugs.map(slug => {
+        const info = map.find(info => info.slug == slug)
+        return info?.title||slug
+      })
       return titles.join('<br>')
     }
     const html = `
