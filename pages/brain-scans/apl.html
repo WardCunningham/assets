@@ -11,26 +11,16 @@
   live.setsite('apl.localhost')
   const chapters = ['Towns','Buildings','Construction']
   const sections = (await Promise.all(chapters.map(scan))).flat()
+  const patterns = (await Promise.all(sections.map(s => scan(s.title)))).flat()
+
   window.result.innerHTML = sections.map(section =>
     `<span>${section.name} — ${section.title}</span>`
   ).join("<br>")
 
   window.dopreview = async event => {
     const [name, title] = event.target.innerText.split(' — ')
-    const sections = await scan(title)
-    const graph = new Graph()
-    const nids = {}
-    graph.addNode('APL',{name,title})
-    sections.forEach(section => {
-      const {name,title} = section
-      section.url = `http://apl.localhost/${frame.asSlug(title)}.json`
-      const nid = nids[name] = graph.addNode('APL',section)
-      graph.addRel('Part',0,nid)
-    })
-    const dot = dotify({graph,merged:{nids:[0]}})
-    const story = [{type:'graphviz',text:dot}]
-    frame.open({title,story},event.shiftKey)
-    console.log({name,title,sections})
+    const graph = await build(title)
+    show(event,title,graph)
   }
 
   async function scan(chapter){
@@ -39,6 +29,65 @@
       const m = item.text.match(/^(.*?)\. \[\[(.*?)\]\]/)
       return {name:`${m[1]}`, title:m[2]}
     })
+  }
+
+  async function build(title) {
+    const sections = await scan(title)
+    const graph = new Graph()
+    const nids = {}
+    // graph.addNode('APL',{name,title})
+    for (const section of sections) {
+      const {name,title} = section
+      section.url = `http://apl.localhost/${frame.asSlug(title)}.html`
+      const nid = nids[name] = graph.addNode('APL',section)
+      // graph.addRel('Part',0,nid)
+      const page = await live.page(title)
+      downlink(nid,page)
+      uplink(nid,page)
+    }
+    return graph
+
+    function downlink(nid,page) {
+      const item = page.story.find(item => item.type=='paragraph' && item.text.endsWith('…'))
+      if(item) {
+        for (const link of links(item.text)) {
+          const {name,title} = patterns.find(p => p.title == link)
+          if (!(name in nids)) {    
+            nids[name] = graph.addNode('APL',{name,title})
+          }
+          graph.addRel('',nid,nids[name])
+        }      
+      }
+    }
+    function uplink(nid,page) {
+      const item = page.story.find(item => item.type=='paragraph' && item.text.startsWith('…'))
+      if(item) {
+        for (const link of links(item.text)) {
+          const {name,title} = patterns.find(p => p.title == link)
+          if (!(name in nids)) {    
+            nids[name] = graph.addNode('APL',{name,title})
+          }
+          graph.addRel('',nids[name],nid)
+        }      
+      }
+    }
+  }
+
+
+  function links(text) {
+    const list = []
+    const regex = /\[\[(.*?)\]\]/g
+    let m
+    while(m = regex.exec(text))
+      list.push(m[1])
+    return list
+  }
+
+  function show(event,title,graph) {
+    const dot = dotify({graph,merged:{nids:[]}})
+    const story = [{type:'graphviz',text:dot}]
+    frame.open({title,story},event.shiftKey)
+    console.log({name,title,sections})
   }
 
 </script>

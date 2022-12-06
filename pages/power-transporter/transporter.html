@@ -42,11 +42,13 @@
   }
 
   function over(event) {
+    console.log('over')
     event.preventDefault();
     return false
   }
 
   async function drop(event) {
+    console.log('drop')
     event.preventDefault();
     let dt = event.dataTransfer
     output.innerHTML = dt.types.join(", ")

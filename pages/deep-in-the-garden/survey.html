@@ -39,8 +39,27 @@
       <table>
       ${[0,1,2,3,4,5,6,7,8].map(row =>
         `<tr><td>${row}${[0,1,2].map(col =>
-          `<td>${format(row,col)}`).join('')}`).join('')}
+          `<td onclick=docell(event,${row},${col})>${format(row,col)}`).join('')}`).join('')}
       </table>`
+  }
+
+  window.docell = (event,row,col) => {
+    const cells = order(row,col)
+    const site = sites[col]
+    console.log({row,col,site,cells})
+    const title = `${row} clicks from ${site.split(/\./)[0]}'s story`
+    const text =`We group pages by how widely they have been shared among authors ${row} steps into the garden.`
+    const story = [
+      {type:'paragraph',text},
+      ...cells.map((cell,j) => [
+        {type:'pagefold',text:['unanomous','shared','solo'][j]},
+        ...cell.map((titlet,i) => {
+          const {slug,title} = titlet
+          return {type:'reference',site,slug,title,text:`${i+1} of ${cell.length}`}
+        })
+      ]).flat()
+    ].flat()
+    frame.open({title,story},event.shiftKey)
   }
 
   async function loader() {
@@ -138,24 +157,11 @@
   }
 
   window.doprint = event => {
-    const order = (row,col) => {
-      const {garden, map} = cols[col]
-      const slugs = garden[row]
-      const agreements = []
-      const pages = slugs.map(slug => {
-        const info = map.find(info => info.slug == slug)
-        const agree = count(slug,row)
-        return {title:info?.title||slug, slug, agree}
-      });
-      [3,2,1].forEach(agree => {
-        const agreement = pages
-          .filter(page => page.agree == agree)
-        agreements.push(agreement)
-      })
-      return agreements
-    }
+    const uniques = new Set()
+
     const color = (site,titlet) => {
       const {title,slug} = titlet
+      uniques.add(slug)
       const haiku = beauty.find(haiku => haiku.site==site && haiku.slug==slug)
       if(!haiku) return title
       const {items,links} = haiku
@@ -176,6 +182,7 @@
           html.push('<td>')
           html.push(titles.join("<br>\n"))
         })
+        html.push(`<td>${uniques.size} uniques`)
       })
       return html.join("\n")
     }
@@ -187,11 +194,28 @@
       </style>
       <table>
       ${[0,1,2,3,4,5,6,7].map(row =>
-        `<tr><td colspan=3 style="background-color:lightgray;">${row} clicks from story
+        `<tr><td colspan=4 style="background-color:lightgray;">${row} clicks from story
          ${format(row)}`).join("\n")}
       </table>
     `
     frame.download(html,'DeepGarden.html','text/html')
+  }
+
+  function order (row,col) {
+    const {garden, map} = cols[col]
+    const slugs = garden[row]
+    const agreements = []
+    const pages = slugs.map(slug => {
+      const info = map.find(info => info.slug == slug)
+      const agree = count(slug,row)
+      return {title:info?.title||slug, slug, agree}
+    });
+    [3,2,1].forEach(agree => {
+      const agreement = pages
+        .filter(page => page.agree == agree)
+      agreements.push(agreement)
+    })
+    return agreements
   }
 
   function count(slug, row) {

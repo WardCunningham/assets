@@ -185,7 +185,7 @@
       const page = await res.json()
       const {type,date} = page.journal.slice(-1)[0]
       const revision = `${type} ${new Date(date).toLocaleString()}`
-      const story = page.story
+      const story = page.story.filter(item => item.text && item.text.match(/\S/))
       reporting
         .querySelectorAll('span')
         .forEach((span,i) => {
