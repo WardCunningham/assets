@@ -155,14 +155,27 @@
       })
       return agreements
     }
+    const color = (site,title) => {
+      const slug = frame.asSlug(title)
+      const haiku = beauty.find(haiku => haiku.site==site && haiku.slug==slug)
+      if(!haiku) return
+      const {items,links} = haiku
+      const highlight =
+        (items==6 && links==3) ? '#afa' :
+        (items>=5 && items<=7 && links>=2 && links<=4) ? '#efe' :
+        null
+      return highlight ? `<span style="background-color:${highlight}">${title}</span>` : title
+    }
     const format = row => {
       const ordered = [0,1,2].map(col => order(row,col))
       const html = [];
       [0,1,2].forEach(agree => {
         html.push('<tr>');
         [0,1,2].forEach(col => {
+          const site = cols[col].site
+          const titles = ordered[col][agree].map(title => color(site,title))
           html.push('<td>')
-          html.push(ordered[col][agree].join("<br>"))
+          html.push(titles.join("<br>\n"))
         })
       })
       return html.join("\n")
