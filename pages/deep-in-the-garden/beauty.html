@@ -1,0 +1,56 @@
+<div id=result onclick=dobrowse(event)>working</div>
+<style>
+  body { font-family: verdana, helvetica, sans; font-size: smaller; }
+  td { border: 1px solid gray; padding: 4px; text-align:center; vertical-align:top; display:table-cell}
+  table { border-collapse: collapse; display:table; width:100%; table-layout:fixed}
+/*table{
+  display:table;
+  width:100%;
+  table-layout:fixed;
+}
+.table_cell{
+  display:table-cell;
+  width:100px;
+  border:solid black 1px;
+}*/
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const beauty = await fetch('./beauty.json').then(res => res.json())
+  const [height,width] =[16,8]
+  const tally = Array.from(Array(height),()=>Array(width).fill(0))
+  for(const haiku of beauty) {
+    const {items,links} = haiku
+    if (items<height && links<width) {
+      tally[items][links]++
+    }
+  }
+  window.result.innerHTML = `<table>${
+    tally.map((row,items) => `<tr>${
+      row.map((cell,links) => 
+        format(items,links,cell)).join('')
+    }`).join("\n")}</table>`
+
+  function format(items,links,cell) {
+    const text = cell ? cell : ''
+    const highlight =
+      (items==6 && links==3) ? '#afa' :
+      (items>=5 && items<=7 && links>=2 && links<=4) ? '#efe' :
+      '#eee'
+    return `<td bgcolor="${highlight}" title="${links}/${items}">${text}`
+  }
+
+  window.dobrowse = event => {
+    const title = event.target.getAttribute('title')
+    const [links,items] = title.split(/\//)
+    const haikus = beauty.filter(haiku => haiku.links==links && haiku.items==items)
+    const story = haikus.map((haiku,i) => ({
+      type:'reference',
+      site:haiku.site,
+      slug:haiku.slug,
+      title:haiku.slug,
+      text:`${i+1} of ${haikus.length}`}))
+    story.unshift({type:'paragraph',text:`From [[Link and Item Counts]]`})
+    frame.open({title,story},event.shiftKey)
+  }
+</script>
