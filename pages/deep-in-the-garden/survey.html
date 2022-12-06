@@ -145,20 +145,19 @@
       const pages = slugs.map(slug => {
         const info = map.find(info => info.slug == slug)
         const agree = count(slug,row)
-        return {title:info?.title||slug, agree}
+        return {title:info?.title||slug, slug, agree}
       });
       [3,2,1].forEach(agree => {
         const agreement = pages
           .filter(page => page.agree == agree)
-          .map(page => page.title)
         agreements.push(agreement)
       })
       return agreements
     }
-    const color = (site,title) => {
-      const slug = frame.asSlug(title)
+    const color = (site,titlet) => {
+      const {title,slug} = titlet
       const haiku = beauty.find(haiku => haiku.site==site && haiku.slug==slug)
-      if(!haiku) return
+      if(!haiku) return title
       const {items,links} = haiku
       const highlight =
         (items==6 && links==3) ? '#afa' :
@@ -173,7 +172,7 @@
         html.push('<tr>');
         [0,1,2].forEach(col => {
           const site = cols[col].site
-          const titles = ordered[col][agree].map(title => color(site,title))
+          const titles = ordered[col][agree].map(titlet => color(site,titlet))
           html.push('<td>')
           html.push(titles.join("<br>\n"))
         })
