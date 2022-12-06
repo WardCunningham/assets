@@ -1,4 +1,4 @@
-<p>
+<p id=buttons>
   <button onclick=dosurvey(event)>survey</button>
   <button onclick=doprint(event)>download</button>
 </p>
@@ -18,6 +18,7 @@
   const cols = []
   let maps = null
   let graphs = null
+  let beauty = null
 
   const page = (await frame.context()).page
   const sites = page.story
@@ -32,6 +33,7 @@
   window.dosurvey = async event => {
     const format = (row,col) => cols[col].garden[row].length
     await loader()
+    await refresh()
     survey()
     window.report.innerHTML = `
       <table>
@@ -62,6 +64,61 @@
     })
   }
 
+  async function refresh() {
+    beauty = await fetch('./beauty.json').then(res => res.ok ? res.json() : [])
+    let updates = 0
+    const work = cols.map(async col => {
+      const {site,map} = col
+      const todo = map.map(info => {
+        const slug = info.slug
+        const have = beauty.find(haiku => haiku.site==site && haiku.slug==info.slug)
+        if(Math.random()<1.0 && (!have || have.date < info.date))
+          return fetch(`http://${site}/${slug}.json`)
+            .then(res => res.json())
+            .then(page => update(site,slug,page,have))
+        else
+          return null
+      })
+      return Promise.all(todo)
+    })
+    await Promise.all(work)
+    if(updates) {
+      window.buttons.innerHTML +=
+        `${updates} haiku updates
+        <button onclick=dohaiku(event)>download</button>`
+    }
+
+    function update(site,slug,page,have) {
+      updates += 1
+      const items = page.story
+        .filter(item => ['paragraph','markdown'].includes(item.type))
+      const links = items
+        .map(item => parse(item.text))
+        .flat()
+        .filter(uniq)
+      const haiku = {site,slug,items:items.length,links:links.length}
+      if(have)
+        Object.assign(have,haiku)
+      else
+        beauty.push(haiku)
+      window.report.innerText += ' .'
+
+      function parse(text) {
+        const link = /\[\[(.*?)\]\]/g
+        const titles = []
+        let m
+        while(m = link.exec(text))
+          titles.push(m[1])
+        return titles
+      }
+    }
+  }
+
+  window.dohaiku = event => {
+    const json = JSON.stringify(beauty,null,2)
+    frame.download(json,'beauty.json','application/json')
+  }
+
   function survey() {
     for (let depth=1; depth<=8; depth++) {
       cols.forEach(col => {
@@ -81,14 +138,34 @@
   }
 
   window.doprint = event => {
-    const format = (row,col) => {
+    const order = (row,col) => {
       const {garden, map} = cols[col]
       const slugs = garden[row]
-      const titles = slugs.map(slug => {
+      const agreements = []
+      const pages = slugs.map(slug => {
         const info = map.find(info => info.slug == slug)
-        return info?.title||slug
+        const agree = count(slug,row)
+        return {title:info?.title||slug, agree}
+      });
+      [3,2,1].forEach(agree => {
+        const agreement = pages
+          .filter(page => page.agree == agree)
+          .map(page => page.title)
+        agreements.push(agreement)
       })
-      return titles.join('<br>')
+      return agreements
+    }
+    const format = row => {
+      const ordered = [0,1,2].map(col => order(row,col))
+      const html = [];
+      [0,1,2].forEach(agree => {
+        html.push('<tr>');
+        [0,1,2].forEach(col => {
+          html.push('<td>')
+          html.push(ordered[col][agree].join("<br>"))
+        })
+      })
+      return html.join("\n")
     }
     const html = `
       <style>
@@ -97,13 +174,22 @@
         table { border-collapse: collapse; }
       </style>
       <table>
-      ${[0,1,2,3,4,5,6,7,8].map(row => 
-        `<tr><td colspan=3>${row}
-         <tr>${[0,1,2].map(col =>
-          `<td>${format(row,col)}`).join('')}`).join('')}
+      ${[0,1,2,3,4,5,6,7].map(row =>
+        `<tr><td colspan=3 style="background-color:lightgray;">${row} clicks from story
+         ${format(row)}`).join("\n")}
       </table>
     `
     frame.download(html,'DeepGarden.html','text/html')
+  }
+
+  function count(slug, row) {
+    let count = 0
+    for (const col of cols) {
+      for (const slugs of col.garden.slice(0,row+1)) {
+        if(slugs.includes(slug)) count++
+      }
+    }
+    return count
   }
 
 </script>
