@@ -48,15 +48,24 @@
     const site = sites[col]
     console.log({row,col,site,cells})
     const title = `${row} clicks from ${site.split(/\./)[0]}'s story`
-    const text =`We group pages by how widely they have been shared among authors ${row} steps into the garden.`
     const story = [
-      {type:'paragraph',text},
+      {type:'paragraph',text:`Page references are grouped by the breadth of sharing among authors when ${row} steps into the garden.`},
+      {type:'paragraph',text:`Forks are all shown together ordered by last edit date.`},
       ...cells.map((cell,j) => [
         {type:'pagefold',text:['unanomous','shared','solo'][j]},
         ...cell.map((titlet,i) => {
           const {slug,title} = titlet
-          return {type:'reference',site,slug,title,text:`${i+1} of ${cell.length}`}
-        })
+          const found = sites
+            .map((site,i) => ({i,site,info:maps[i].find(info => info.slug == slug)}))
+            .filter(find => find.info)
+          return found
+            .sort((a,b) => a.info.date - b.info.date)
+            .map(({i,site,info}) => {
+              const haiku = beauty.find(haiku => haiku.site==site && haiku.slug==slug)
+              const text = `${new Date(info.date).toLocaleString()} (${haiku.links}/${haiku.items})`
+              return {type:'reference',site,slug,title,text}
+            })
+        }).flat()
       ]).flat()
     ].flat()
     frame.open({title,story},event.shiftKey)
@@ -109,13 +118,20 @@
 
     function update(site,slug,page,have) {
       updates += 1
+      const date = Date.now()
       const items = page.story
         .filter(item => ['paragraph','markdown'].includes(item.type))
+      const blanks = items
+        .filter(item => !item.text.match(/\S/))
       const links = items
         .map(item => parse(item.text))
         .flat()
         .filter(uniq)
-      const haiku = {site,slug,items:items.length,links:links.length}
+      const haiku = {
+        site,slug,date,
+        items:items.length-blanks.length,
+        blanks:blanks.length,
+        links:links.length}
       if(have)
         Object.assign(have,haiku)
       else
