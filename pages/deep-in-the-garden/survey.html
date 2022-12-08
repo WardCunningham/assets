@@ -94,7 +94,7 @@
 
   async function refresh() {
     beauty = await fetch('./beauty.json').then(res => res.ok ? res.json() : [])
-    let updates = 0
+    let updates = []
     const work = cols.map(async col => {
       const {site,map} = col
       const todo = map.map(info => {
@@ -110,14 +110,15 @@
       return Promise.all(todo)
     })
     await Promise.all(work)
-    if(updates) {
+    if(updates.length) {
+      console.log({updates})
       window.buttons.innerHTML +=
-        `${updates} haiku updates
+        `<span title="${updates.join("\n")}">${updates.length} haiku updates</span>
         <button onclick=dohaiku(event)>download</button>`
     }
 
     function update(site,slug,page,have) {
-      updates += 1
+      updates.push(slug)
       const date = Date.now()
       const items = page.story
         .filter(item => ['paragraph','markdown'].includes(item.type))
