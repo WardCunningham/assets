@@ -34,6 +34,7 @@
       <label for=file${i}>${asset.file}</label>`)
     .join('<br>')
   let titles = []
+  let site = null
 
   let colors = {} 
   const usecolor = (color,explain) => {
@@ -57,6 +58,7 @@
     const story = [
       {type:'paragraph',text:`Updated ${new Date().toLocaleDateString()}.`},
       {type:'frame',text:`${scripts}/plot.html\nHEIGHT 450`},
+      {type:'data',text:'Remaining Edits',data:hist},
       {type:'code',text:JSON.stringify(hist,null,2)}
     ]
     frame.open({title,story},event.shiftKey)
@@ -71,6 +73,7 @@
     edits = []
     score = {}
     colors = {}
+
     await tscan(asset.url)
     showscore()
     score.items = 0
@@ -78,14 +81,13 @@
     allitems = []
     await iscan()
     showcolors()
-    // window.buttons.innerHTML = `
-    //   <button onclick=doescan(event)>reconcile</button>
-    // `
     await escan()
     showcolors()
     window.colors.innerHTML += ` &nbsp; <button onclick=docolordata(event)>preview</button>`
-
   }
+
+
+// T I T L E S
 
   async function tscan(htmlurl) {
     window.working.innerText = 'working'
@@ -95,6 +97,9 @@
     copy.innerHTML = text
     norm.setdiv(copy)
     console.log(copy)
+    site = norm.div.querySelector('a')
+      .getAttribute('href')
+      .match(/url\?q=https?\:\/\/(.*?)\//)[1]
     const h2 = [...copy.querySelectorAll('h2')]
     titles = h2.map(head => ({head, name:head.querySelector('span').innerText.trim()}))
     titles.shift()
@@ -105,6 +110,9 @@
       <div id="${title.name.replaceAll(/[^a-zA-z]/g,'')}"></div>`
     ).join("\n")
   }
+
+
+// I T E M S
 
   async function iscan() {
     for (const title of titles) {
@@ -135,7 +143,8 @@
     const item = allitems[index]
     const title = `From ${item.title.name}`
     const story = [
-      {type:'pagefold',text:'text'},
+      {type:'reference',site,title:item.title.name,text:'(not yet reconciled)'},
+      {type:'pagefold',text:'edited'},
       {type:'paragraph',text:item.text},
       {type:'pagefold',text:'html'},
       {type:'paragraph',text:item.html},
@@ -151,23 +160,17 @@
     let html = elem.innerHTML
     html = html.replace(/^<span.*?>/,'').replace(/<\/span>$/,'')
     if(html.match(/<a/)) return ['#fa4','read anchor, <a']
-    if(html.match(/<\/span><span class=".*?">.*?<\/span><span class=".*?">&nbsp;/)) return null
+    if(html.match(/<\/span><span class=".*?">.*?<\/span><span class=".*?">(&nbsp;)?/)) return null
     if(html.match(/<span class/)) return ['#fac','read special <span class']
     if(html.match(/&(nbsp|amp);/)) return ['#fcc','read &nbsp; or &amp;']
     if(html.match(/<.*?>/)) return ['#ea9','read some other <tag>']
     return null
   }
 
-  // window.doescan = async event => {
-  //   await escan()
-  //   showcolors()
-  // }
+
+// E D I T S
 
   async function escan() {
-    const site = norm.div.querySelector('a')
-      .getAttribute('href')
-      .match(/url\?q=https?\:\/\/(.*?)\//)[1]
-    console.log({site,titles})
     for (const title of titles) {
       const url = `http://${site}/${frame.asSlug(title.name)}.json`
       title.fetch = fetch(url)
