@@ -151,6 +151,7 @@
     let html = elem.innerHTML
     html = html.replace(/^<span.*?>/,'').replace(/<\/span>$/,'')
     if(html.match(/<a/)) return ['#fa4','read anchor, <a']
+    if(html.match(/<\/span><span class=".*?">.*?<\/span><span class=".*?">&nbsp;/)) return null
     if(html.match(/<span class/)) return ['#fac','read special <span class']
     if(html.match(/&(nbsp|amp);/)) return ['#fcc','read &nbsp; or &amp;']
     if(html.match(/<.*?>/)) return ['#ea9','read some other <tag>']
@@ -202,7 +203,7 @@
             item.written = written
             item.changed = changed
             item.site = site
-            item.revision = revision
+            item.revision = `${written.type} ${revision.replace(/\/2022/,'').replace(/:(\d\d):\d\d/,':$1')}`
           }
         })
     }
@@ -238,7 +239,7 @@
   }
 
   const deeptrim = text => text.trim().replaceAll(/  +/g,' ')
-  const clean = text => text.replaceAll(/\[\[|\]\]/g,'')
+  const clean = text => text.replaceAll(/\[\[|\]\]|_/g,'')
 
   function mismatch(written, edited) {
     if (clean(deeptrim(written)) == deeptrim(edited)) return null
@@ -272,12 +273,17 @@
 
   function misfix(changed) {
     const copy = JSON.parse(JSON.stringify(changed))
-    const w = copy.repl[0]
-    const e = copy.repl[1]
+    let w = copy.repl[0]
+    let e = copy.repl[1]
     const regex = /\[\[(.*?)\]\]/g
     let m
     while (m = regex.exec(w)) {
-      copy.repl[1] = e.replace(m[1],m[0])
+      copy.repl[1] = e = e.replace(m[1],m[0])
+    }
+    const regex2 = /_(.*?)_/g
+    while (m = regex2.exec(w)) {
+      console.log(`misfix /${m[1]}/${m[0]}/ `)
+      copy.repl[1] = e = e.replace(m[1],m[0])
     }
     return copy
   }

@@ -12,7 +12,7 @@ const recommended = fold('recommended').text.trim().replaceAll(/\[\[|\]\]/g,'')
 console.log({edited,recommended})
 window.result.innerHTML = edited==recommended ?
   '<h1 style="color:green">check</h1>' :
-  '<h1 style="color:red">trouble</h1>'
+  '<h1 style="color:red">double check</h1>'
 
 function fold (label) {
   const found = story.findIndex(item => item.type=='pagefold' && item.text==label)
