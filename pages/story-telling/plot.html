@@ -11,7 +11,8 @@
   const jiggle = n => n+(Math.random().toFixed(2))/10
 
   const page = (await frame.context()).page
-  const hist = JSON.parse(page.story[2].text)
+  const data = page.story.find(item => item.type == 'data')?.data
+  const hist = data || JSON.parse(page.story[2].text)
 
   // discover required traces
   const colors = hist.map(samp => {

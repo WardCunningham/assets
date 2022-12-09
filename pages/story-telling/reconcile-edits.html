@@ -51,15 +51,20 @@
       .join("<br>")
   }
   window.docolordata = async event => {
+    const data = page => {
+      const data = page.story.find(item => item.type == 'data')?.data
+      return data || JSON.parse(page.story[2].text)
+    }
     const title = `Data ${file.replace(/\.html$/,'')}`
     const now = {date:Date.now(),colors,score}
     const old = await fetch(`/${frame.asSlug(title)}.json`).then(res => res.ok ? res.json() : null)
-    const hist = old ? [now, ...JSON.parse(old.story[2].text)] : [now]
+    const hist = old ? [now, ...data(old)] : [now]
     const story = [
       {type:'paragraph',text:`Updated ${new Date().toLocaleDateString()}.`},
       {type:'frame',text:`${scripts}/plot.html\nHEIGHT 450`},
-      {type:'data',text:'Remaining Edits',data:hist},
-      {type:'code',text:JSON.stringify(hist,null,2)}
+      {type:'pagefold',text:'.'},
+      // {type:'code',text:JSON.stringify(hist,null,2)},
+      {type:'data',text:'Remaining Edits',data:hist}
     ]
     frame.open({title,story},event.shiftKey)
   }
