@@ -23,9 +23,8 @@ export async function dropl (event,sufix) {
     file.name.endsWith(sufix))
   const concepts = []
   for (const file of want) {
-    const lines = await file.text()
-      .then(text => text.trim().split(/\n/))
-    lines.forEach(line => {
+    const text = await file.text()
+    text.trim().split(/\n/).forEach(line => {
       const {name,graph} = JSON.parse(line)
       concepts.push({name,graph:inst(graph)})
     })
