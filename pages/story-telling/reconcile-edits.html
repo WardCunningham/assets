@@ -8,9 +8,15 @@
 </details>
 <div id=buttons></div>
 <div id=results></div>
+
+<style>
+  span.debug, span.item {cursor:pointer}
+</style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import * as norm from 'http://ward.dojo.fed.wiki/assets/pages/story-telling/norm.js'
+  import {history} from './item-history.js'
+
   const scripts = `http://ward.dojo.fed.wiki/assets/pages/story-telling`
 
   const td = text => (text?.slice(0,24)) ||
@@ -121,6 +127,7 @@
 
   async function iscan() {
     for (const title of titles) {
+      const slug = frame.asSlug(title.name)
       let d = title.head
       let items = [...norm.repeat(norm.more(d))
         .map(elem => ({elem, title, text:elem.innerText.trim(), html:elem.innerHTML}))]
@@ -134,8 +141,9 @@
             item.alert = alert
             const color = alert ? `style="background-color:${alert[0]}"` : ''
             const click = `onclick="doiclick(event)" data-index="${allitems.length}"`
+            const bullet = `<span class=debug data-site=${site} data-slug=${slug} onclick=dodebug(event)>▫︎</span>`
             allitems.push(item)
-            return `▫︎ <span ${color} ${click}>${item.text.slice(0,48)}</span>`
+            return `${bullet} <span class=item ${color} ${click}>${item.text.slice(0,48)}</span>`
           })
           .join("<br>")
       score.items += items.length
@@ -172,6 +180,15 @@
     return null
   }
 
+  window.dodebug = async event => {
+    const target = event.target
+    const dataset = target.dataset
+    const params = ['site','slug','id'].reduce((sum,each)=>{sum[each]=dataset[each];return sum}, {})
+    console.log({target,dataset,params})
+    const hist = await history(params)
+    frame.open(hist.details(),event.shiftKey)
+  }
+
 
 // E D I T S
 
@@ -196,12 +213,13 @@
       const revision = `${type} ${new Date(date).toLocaleString()}`
       const story = page.story.filter(item => item.text && item.text.match(/\S/))
       reporting
-        .querySelectorAll('span')
+        .querySelectorAll('span.item')
         .forEach((span,i) => {
           const index = +span.dataset.index
           const item = allitems[index]
           if(item.alert) return
           const written = story[i]
+          span.previousElementSibling.dataset.id = written.id
           const changed = mismatch(written.text,item.text)
           if (changed) {
             const alert = miscolor(changed)
@@ -218,32 +236,53 @@
   }
 
   window.doeclick = async event => {
-    const index = +event.target.dataset.index
+    const target = event.target
+    const index = +target.dataset.index
     const item = allitems[index]
     const {site,written,revision,changed} = item
+
+    const params = ['site','slug','id']
+      .reduce((sum,each) => {
+        sum[each] = target.previousElementSibling.dataset[each];
+        return sum}, {})
+    const hist = await history(params)
+
     const story = [
       {type:'reference',site,title:item.title.name,text:revision},
-      {type:'pagefold',text:'recommended'},
-      revise(written,misfix(changed)),
-      {type:'pagefold',text:'written'},
-      {type:'paragraph',text:written.text},
+
       {type:'pagefold',text:'change'},
-      {type:'code',text:`${changed.repl[0].length} => ${changed.repl[1].length}`},
+      {type: 'paragraph',text:'from'},
       {type:'code',text:changed.repl[0]},
+      {type: 'paragraph',text:'to'},
       {type:'code',text:changed.repl[1]},
-      {type:'frame',text:`${scripts}/check.html\nHEIGHT 10`},
       {type:'html',text:'<p>'+written.text.replace(
         `${changed.skip} ${changed.repl[0]}`,
         `${changed.skip} <mark>${changed.repl[1]}</mark>${changed.repl[0].length == 0 ? ' ' : ''}`)},
+      {type:'code',text:`${changed.repl[0].length} => ${changed.repl[1].length}`},
+      {type:'frame',text:`${scripts}/check.html\nHEIGHT 10`},
+
+      {type:'pagefold',text:'written'},
+      {type:'paragraph',text:written.text},
+
+      {type:'pagefold',text:'recommended'},
+      revise(written,misfix(changed)),
+
       {type:'pagefold',text:'edited'},
       {type:'paragraph',text:item.text},
+
       {type:'pagefold',text:'html'},
       {type:'paragraph',text:item.html},
+
+      {type:'pagefold',text:'history'},
+      {type:'html',text:hist.summary()},
+      ...hist.items(),
       {type:'pagefold',text:'.'},
+
     ]
     if(item.alert)
       story.push({type:'paragraph',text:`trouble with "${item.alert[1]}"`})
     await frame.open({title:`For ${item.title.name}`,story},event.shiftKey)
+    await frame.link(item.title.name,true)
   }
 
   const deeptrim = text => text.trim().replaceAll(/  +/g,' ')
