@@ -1,0 +1,18 @@
+<button onclick=dodetails(event)>show details</button>
+<div id=result></div>
+<script type=module>
+  // show complete history of one item
+  // usage: .../item-history.html?site=http://thompson.reimage.fed.wiki/&slug=taking-things-apart&id=13d7cf4ef951df97
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {history} from './item-history.js'
+
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const hist = await history(params)
+ 
+  window.result.innerHTML = hist.summary()
+
+  window.dodetails = event =>
+    frame.open(hist.details(),event.shiftKey)
+
+</script>
