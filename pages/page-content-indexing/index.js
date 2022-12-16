@@ -65,3 +65,17 @@ export function tags(items,tag) {
   }
   return tags
 }
+
+export function folds(items) {
+  const folds = items
+    .map((item, index) => ({item, index}))
+    .filter(fold => fold.item.type == 'pagefold')
+  return folds.reduce((sum,each,i,a) => {
+    if(each.item.text != '.') {
+      const upto = (a[i+1]?.index)||9999
+      const span = items.slice(each.index+1,upto)
+      sum[each.item.text] = span
+    }
+    return sum
+  },{})
+}

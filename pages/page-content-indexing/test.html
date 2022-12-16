@@ -11,13 +11,15 @@
   <button onclick=dolinks(event)>links</button>
   <button onclick=dolocs(event)>locs</button>
   <button onclick=dotags(event)>tags</button>
+  <button onclick=dofolds(event)>folds</button>
 </p>
 
 <pre id=result></pre>
 
 <script type=module>
 
-import * as index from './index.js'
+import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+// import * as index from './index.js'
 
 
 // F E T C H
@@ -69,17 +71,24 @@ window.dotags = async event => {
   let site = await index.site('npl.wiki')
   let page = await site.page('Special Use Patterns')
   let tags = index.tags(page.story,'img')
-  report(tags.map(tag => escape(tag)))
+  report(tags)
+}
+
+window.dofolds = async event => {
+  let site = await index.site('ward.dojo.fed.wiki')
+  let page = await site.page('System Maps from Images')
+  let folds = index.folds(page.story)
+  report(folds)
 }
 
 
 
-function escape(text) {
-  return text.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
-}
+// function escape(text) {
+//   return text.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
+// }
 
 function report(result) {
-  window.result.innerHTML = JSON.stringify(result,null,2)
+  window.result.innerText = JSON.stringify(result,null,2)
 }
 
 </script>
