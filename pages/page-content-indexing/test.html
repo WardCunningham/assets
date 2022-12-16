@@ -1,0 +1,85 @@
+<h3>Fetch</h3>
+<p>
+  <button onclick=dosite(event)>site</button>
+  <button onclick=doinfo(event)>info</button>
+  <button onclick=dopage(event)>page</button>
+  <button onclick=dopages(event)>pages</button>
+</p>
+
+<h3>Find</h3>
+<p>
+  <button onclick=dolinks(event)>links</button>
+  <button onclick=dolocs(event)>locs</button>
+  <button onclick=dotags(event)>tags</button>
+</p>
+
+<pre id=result></pre>
+
+<script type=module>
+
+import * as index from './index.js'
+
+
+// F E T C H
+
+window.dosite = async event => {
+  let site = await index.site('ward.dojo.fed.wiki')
+  report(site)
+}
+
+window.doinfo = async event => {
+  let site = await index.site('ward.dojo.fed.wiki')
+  let info = site.info('System Maps from Images')
+  report(info)
+}
+
+window.dopage = async event => {
+  let site = await index.site('ward.dojo.fed.wiki')
+  let page = await site.page('System Maps from Images')
+  report(page)
+}
+
+window.dopages = async event => {
+  let site = await index.site('ward.dojo.fed.wiki')
+  let info = site.info('System Maps from Images')
+  let pages = await site.pages(Object.keys(info.links))
+  report(pages)
+}
+
+
+// F I N D
+
+window.dolinks = async event => {
+  let site = await index.site('ward.dojo.fed.wiki')
+  let page = await site.page('System Maps from Images')
+  let links = index.links(page.story)
+  report(links)
+}
+
+window.dolocs = async event => {
+  let site = await index.site('ward.dojo.fed.wiki')
+  let info = site.info('System Maps from Images')
+  let pages = await site.pages(Object.keys(info.links))
+  let items = pages.map(page => page.story).flat()
+  let locs = index.locs(items)
+  report(locs)
+}
+
+window.dotags = async event => {
+  let site = await index.site('npl.wiki')
+  let page = await site.page('Special Use Patterns')
+  let tags = index.tags(page.story,'img')
+  report(tags.map(tag => escape(tag)))
+}
+
+
+
+function escape(text) {
+  return text.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
+}
+
+function report(result) {
+  window.result.innerHTML = JSON.stringify(result,null,2)
+}
+
+</script>
