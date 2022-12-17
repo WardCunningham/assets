@@ -1,14 +1,23 @@
 export const asSlug = title => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 export const asCopy = obj => JSON.parse(JSON.stringify(obj))
 
+
+// F E T C H
+
 export async function site(domain) {
   const site = domain
   const sitemap = await fetch(`//${site}/system/sitemap.json`).then(res => res.json())
-  return {sitemap,info,page,pages}
+  return {sitemap,info,newer,page,pages}
 
   function info(title) {
     const slug = asSlug(title)
     return sitemap.find(info => info.slug == slug)
+  }
+
+  function newer(epoch) {
+    return sitemap
+      .filter(info => info.date > epoch)
+      .map(info => info.title)
   }
 
   function page(title) {
@@ -24,6 +33,8 @@ export async function site(domain) {
   }
 }
 
+
+// F I N D
 
 export function links(items) {
   const link = /\[\[(.*?)\]\]/g
@@ -78,4 +89,28 @@ export function folds(items) {
     }
     return sum
   },{})
+}
+
+
+// I N D E X
+
+export function base(site,func) {
+  let cache = {}
+  return {cache: () => cache, index, reload}
+
+  async function reload(url) {
+    cache = await fetch(url).then(res => res.json())
+  }
+
+  function index(pages) {
+    const finds = pages
+      .map(page => {
+        const title = page.title
+        const find = func(page.story)
+        const info = find?.length ? {title, find} : null
+        return cache[asSlug(title)] = info
+      })
+    return finds
+  }
+
 }
