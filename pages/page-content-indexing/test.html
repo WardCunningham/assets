@@ -95,8 +95,8 @@ window.dofolds = async event => {
 
 // I N D E X
 
-let find = story => index.tags(story,'img')
-let base = index.base(site,find)
+let finder = story => index.tags(story,'img')
+let base = index.base(site,finder)
 
 window.doindex = async event => {
   let todo = site.sitemap

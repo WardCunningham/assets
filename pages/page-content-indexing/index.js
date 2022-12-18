@@ -61,7 +61,6 @@ export function locs(items) {
   return locs
 }
 
-
 export function tags(items,tag) {
   const link = new RegExp(`<${tag}.*?>`,'gi')
   const tags = []
@@ -94,7 +93,7 @@ export function folds(items) {
 
 // I N D E X
 
-export function base(site,func) {
+export function base(site,finder) {
   let cache = {}
   return {cache: () => cache, index, reload}
 
@@ -106,8 +105,8 @@ export function base(site,func) {
     const finds = pages
       .map(page => {
         const title = page.title
-        const find = func(page.story)
-        const info = find?.length ? {title, find} : null
+        const finds = finder(page.story)
+        const info = finds?.length ? {title, finds} : null
         return cache[asSlug(title)] = info
       })
     return finds
