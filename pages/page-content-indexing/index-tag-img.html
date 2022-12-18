@@ -37,6 +37,7 @@
       .filter(info => !(info.slug in base.cache()) && !have.includes(info.slug))
       .slice(0,6)
       .map(info => info.slug)
+    if(!todo.length) return
     have.push(...todo)
     const pages = await site.pages(todo)
     base.index(pages)
