@@ -218,6 +218,12 @@
           const index = +span.dataset.index
           const item = allitems[index]
           if(item.alert) return
+          if(i>=story.length) {
+            const alert = ['#f88',"read malalignment"]
+            usecolor(...alert)
+            span.style.backgroundColor = alert[0]
+            return
+          }
           const written = story[i]
           span.previousElementSibling.dataset.id = written.id
           const changed = mismatch(written.text,item.text)
