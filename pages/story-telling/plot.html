@@ -8,7 +8,6 @@
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const escape = text => text.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
   const darken = hex => `rgb(${hex.split('').slice(1).map(c => parseInt(c,16)*16*0.9)})`
-  const jiggle = n => n+(Math.random().toFixed(2))/10
 
   const page = (await frame.context()).page
   const data = page.story.find(item => item.type == 'data')?.data
@@ -31,9 +30,9 @@
   hist.forEach(samp => {
     const date = new Date(samp.date)
     const colors = samp.colors
-    Object.keys(traces).forEach(key => {
+    Object.keys(traces).forEach((key,i) => {
       const trace = traces[key]
-      const count = (key in colors) ? jiggle(colors[key].count) : null
+      const count = (key in colors) ? colors[key].count+(i/20) : null
       trace.x.push(date)
       trace.y.push(count)
     })
