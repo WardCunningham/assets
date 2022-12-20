@@ -13,6 +13,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 </head>
 <body>
+  <div id="warn"></div>
   <div id="map"></div>
   <style>
     body { padding: 0; margin: 0; }
@@ -24,6 +25,9 @@
     const helium = hotspot => `<a href="${hotspot.link}" target=_blank>${hotspot.name}`
     const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
     const delay = time => new Promise(res => setTimeout(res,time))
+    const trail = name => `<a href="http://trails.ward.asia.wiki.org/${asSlug(name)}.html" target=_blank>${name}</a>`
+
+    const params = Object.fromEntries(new URLSearchParams(location.search).entries())
 
     // https://github.com/Leaflet/Leaflet/issues/7255#issuecomment-849638476
     var map = L.map('map',{ "tap": false })
@@ -31,54 +35,170 @@
       attribution: '© Esri',
     }).addTo(map)
 
-    // const raw = await fetch('http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/mfr-pdx-jul.txt')
-    //   .then(res => res.text())
+    const [raw,markers] = await Promise.all([
+      fetch(`http://home.c2.com:3030/track/${params['track']||'2022-07-19'}`).then(res => res.text()),
+      fetch(`http://ward.eu.wiki.org/assets/pages/leaflet-maps/markers.json`).then(res => res.json())
+    ])
 
-    const raw = await fetch('http://found.ward.bay.wiki.org/assets/pages/ttgo-tbeam-tracks/home-cc.txt')
-      .then(res => res.text())
+    if (!raw) {
+      window.warn.innerHTML = `<center>No data for ${params['track']||'2022-07-19'} yet</center>`
+      throw new Error("no data")
+    }
 
-    const data = raw.trim().split(/\r?\n/)
-      .map(text => JSON.parse(text.trim()))
-      .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
-      .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long)
+    map.on('click', e => console.log(`${e.latlng.lat.toFixed(7)}, ${e.latlng.lng.toFixed(7)}\n`))
 
-    const log = data
-      .map(r => {
-        const h = r.hotspots[0]
-        const m = r.decoded.payload
-        const where = [m.latitude,m.longitude]
-        const there = [h.lat,h.long]
-        const link = `https://explorer.helium.com/hotspots/${h.id}`
-        return {when:h.reported_at, where, name:h.name, there, link}
-    })
+    const readout = L.DomUtil.create('div', 'tally')
+    const Tally = L.Control.extend({options: {position: 'bottomleft'},onAdd: (map) => readout})
+    map.addControl(new Tally())
 
-    {
+    const dups = new Set()
+    const log = tracks(raw,dups)
+    map.fitBounds(bounds(log))
+    log.map(addSpot)
+    addMarks(log)
+    let run = true
+    const q = []
+    animate()
+    if(params.start) {
+      while(true) {
+        await delay(1000)
+        const start = +params.start
+        params.start = start + 1
+        const newer = tracks(raw,dups)
+        newer.forEach(spot => {
+          spot.prev = log[log.length-1]
+          log.push(spot)
+          addSpot(spot)
+          readout.innerText = new Date(spot.when).toLocaleTimeString()
+        })
+        addMarks(newer)
+      }
+    }
+    const lag = () => (Date.now() - log[log.length-1].when)/1000
+    while(lag() < 5*60) {
+      const phase = Date.now()%20000/1000
+      readout.innerHTML = `${phase} phase shift<br>${lag()} seconds lag`
+      const wait = 25.0 - lag()
+      await delay(Math.trunc(Math.max(15,wait)*1000))
+      const raw = await fetch(`http://home.c2.com:3030/track/${params['track']||'2022-07-19'}`).then(res => res.text())
+      const newer = tracks(raw,dups)
+      newer.forEach(spot => {
+        spot.prev = log[log.length-1]
+        log.push(spot)
+        addSpot(spot)
+      })
+      addMarks(newer)
+    }
+
+    function tracks(raw,dups) {
+      const data = raw.trim().split(/\r?\n/).slice(0,params.start||9999)
+        .map(text => JSON.parse(text.trim()))
+        .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
+        .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long && r.hotspots[0].lat != 'unknown')
+        .filter(r => r.hotspots[0].hold_time < 10000)
+        .filter(r => {const dup = dups.has(r.payload); dups.add(r.payload); return !dup})
+
+      const log = data
+        .map(r => {
+          const h = r.hotspots[0]
+          const m = r.decoded.payload
+          const when = h.reported_at - h.hold_time
+          const where = [m.latitude,m.longitude]
+          const there = [h.lat,h.long]
+          const link = `https://explorer.helium.com/hotspots/${h.id}`
+          return {when, where, name:h.name, there, link}
+      })
+      for (let i=1; i<log.length; i++)
+        log[i].prev = log[i-1]
+      return log
+    }
+
+    function bounds(log) {
       let n = Math.max(...log.map(l => l.where[0]))
       let s = Math.min(...log.map(l => l.where[0]))
       let e = Math.max(...log.map(l => l.where[1]))
       let w = Math.min(...log.map(l => l.where[1]))
-      map.fitBounds([[s, w],[n, e]])
+      return [[s, w],[n, e]]
     }
 
-    log.map(l => {
-      L.circle(l.where,4,{color:'blue'}).addTo(map)
-      L.circle(l.there,4,{color:'red'}).addTo(map)
-        .bindPopup(`<center>${helium(l)}<br>${google(l.there)}</center>`)
-        .on('mouseover',e => pause(l.name))
+    function addSpot(spot) {
+      L.circle(spot.where,4,{color:'blue'}).addTo(map)
+      L.circle(spot.there,32,{color:'red'}).addTo(map)
+        .bindPopup(`<center>${helium(spot)}<br>${maxdist(spot.name)} miles<br>${google(spot.there)}</center>`)
+        .on('mouseover',e => pause(spot.name))
         .on('mouseout',e => resume())
-      l.line = L.polyline([l.where,l.there],{color:'red',opacity:0.3})
-    })
-
-    let run = true
-    const q = []
-    while (true) {
-      for (const l of log) {
-        if(run) {
-          q.push(l)
-          l.line.addTo(map)
-          if(q.length > 10) q.shift().line.remove()
+      spot.line = L.polyline([spot.where,spot.there],{color:'red',opacity:0.3})
+      if(spot.prev) {
+        const dt = (spot.when-spot.prev.when)/1000
+        const mi = distance(spot.where,spot.prev.where)
+        L.polyline([spot.prev.where, spot.where],{color:'blue',opacity:0.3}).addTo(map)
+        if (dt>30 && dt<300 && mi>0.05) {
+          const n = Math.round(dt/20)
+          console.log('missing', n-1, dt, (5280*mi).toFixed(2))
+          const p = spot.prev.where
+          const dy = spot.where[0] - p[0]
+          const dx = spot.where[1] - p[1]
+          for (let i=1; i<n; i++) {
+            const mid = [p[0]+i*dy/n, p[1]+i*dx/n]
+            L.circle(mid,4,{color:'brown'}).addTo(map)
+          }
         }
-        await delay(200)
+      }
+
+      function distance(here,there) {
+        // http://js.ward.asia.wiki.org/great-circle-distance.html
+        let rad = (deg) => 2 * Math.PI * deg / 360
+        let sin = Math.sin
+        let cos = Math.cos
+        let acos = Math.acos
+        let [lat1,lon1] = here.map(deg => rad(deg))
+        let [lat2,lon2] = there.map(deg => rad(deg))
+        if (lat1==lat2 && lon1==lon2) return 0
+        let earth = 3958.8
+        return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
+      }
+
+      function maxdist (name) {
+        const dists = log
+          .filter(l => l.name == name)
+          .map(l => distance(l.where,l.there))
+          .sort()
+          .reverse()
+        return dists[0].toFixed(1)
+      }
+    }
+
+    function addMarks(log) {
+      for (const mark in markers) {
+        const near = nearby(markers[mark])
+        if (near) L.marker(near).addTo(map).bindPopup(trail(mark))
+      }
+
+      function nearby(points) {
+        const abs = Math.abs
+        const dist = (a,b) => abs(a[0]-b[0])*69 + abs(a[1]-b[1])*49
+        const close = []
+        for (const point of points)
+          for (const l of log)
+            if (dist(point, l.where) < .05)
+              close.push([dist(point, l.where), point])
+        if (!close.length) return null
+        close.sort((a,b) => a[0]-b[0])
+        return close[0][1]
+      }
+    }
+
+    async function animate() {
+      const dwell = params['dwell']
+      while (dwell) {
+        for (const l of log) {
+          if(run) {
+            q.push(l)
+            l.line.addTo(map)
+            if(q.length > dwell) q.shift().line.remove()
+          }
+          await delay(200)
+        }
       }
     }
 
@@ -97,9 +217,6 @@
       while (q.length > 0) q.shift().line.remove()
       run = true
     }
-
-    map.on('click', e => console.log(`${e.latlng.lat.toFixed(7)}, ${e.latlng.lng.toFixed(7)}\n`))
-
 
   </script>
 </body>

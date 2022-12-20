@@ -1,0 +1,22 @@
+<div id=result></div>
+
+<script type=module>
+
+// check that the edit called for has been applied correctly
+
+import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+const context = await frame.context()
+const story = context.page.story
+const edited = fold('edited').text.trim()
+const recommended = fold('recommended').text.trim().replaceAll(/\[\[|\]\]/g,'')
+console.log({edited,recommended})
+window.result.innerHTML = edited==recommended ?
+  '<h1 style="color:green">check</h1>' :
+  '<h1 style="color:red">double check</h1>'
+
+function fold (label) {
+  const found = story.findIndex(item => item.type=='pagefold' && item.text==label)
+  return story[found+1]
+}
+
+</script>

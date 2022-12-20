@@ -1,0 +1,51 @@
+<p>
+  <button onclick=dopreview(event)>preview</button>
+  <button onclick=dodownload(event)>download</button>
+<p>
+<pre id=result></pre>
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  import {digraph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/digraph.js'
+  const context = await frame.context()
+  const code = context.page.story
+    .filter(item => item.type=='code')
+    .map(item => item.text)
+    .join("\n")
+
+  const g = new Graph()
+  let here // nid
+  for (const line of code.split(/\n+/)) {
+    const words = line.split(/ +/)
+    if (words[0].includes(':')) {
+      const [type,name] = words[0].split(/:/)
+      const match = node => node.type==type && node.props.name==name
+      here = g.nodes.findIndex(match)
+      if(here<0) here = g.addNode(type,{name})
+    } else {
+      const [type,name] = words[1].split(/:/)
+      const match = node => node.type==type && node.props.name==name
+      let to = g.nodes.findIndex(match)
+      if(to<0) to = g.addNode(type,{name})
+      const cap = word => word[0].toUpperCase() + word.slice(1)
+      g.addRel(cap(words[0]),here,to,{})
+      if(words[2] == 'which') here = to
+    }
+  }
+  window.result.innerText = JSON.stringify(g.tally(),null,2)
+
+  window.dopreview = function(event) {
+    const dot = `digraph { node [shape=oval style=filled fillcolor=bisque]\n${digraph(g)}\n}`
+    const text = `From [[${context.page.title}]]`
+    const story = [{type:'paragraph',text},{type:'graphviz',text:dot}]
+    frame.open({title:'Freeform Preview',story},event.shiftKey)
+  }
+
+  window.dodownload = function(event) {
+    const prefix = context.title.split(/ /)[0]
+    const text = g.stringify(null,2)
+    frame.download(text,`${prefix}.schema.json`,'application/json')
+  }
+
+</script>

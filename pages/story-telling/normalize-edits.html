@@ -1,0 +1,113 @@
+<details open>
+  <summary id=working>waiting</summary>
+  <p id=choices onchange=dochoose(event)></p>
+</details>
+<p>
+  <button onclick=dopreview(event) disabled>preview</button>
+  <button onclick=doimport(event) disabled>import</button>
+  <button onclick=dodownload(event) disabled>download</button>
+</p>
+<div id=results></div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as norm from 'http://ward.dojo.fed.wiki/assets/pages/story-telling/norm.js'
+  const disable = want => document.querySelectorAll('button').forEach(b => b.disabled = want)
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+
+  let assets = (await frame.assets())
+    .filter(asset => asset.dir.endsWith(`/${params.dir || ''}`))
+    .filter(asset => asset.file.endsWith('.html'))
+  choices.innerHTML = assets
+    .map((asset,i) => `
+      <input type=radio name=assets id=file${i} value=${i}>
+      <label for=file${i}>${asset.file}</label>`)
+    .join('<br>')
+  let asset = null
+  let div = null
+
+  async function load(index) {
+    asset = assets[index]
+    disable(true)
+    window.working.innerText = 'loading'
+    window.results.innerText = ''
+    const text = await fetch(asset.url).then(res => res.text())
+    div = document.createElement('div')
+    window.working.innerText = `loaded ${(text.length/1024.0).toFixed(1)} KB`
+    div.innerHTML = text
+    norm.setdiv(div)
+    disable(false)
+  }
+
+  if (assets.length == 1) {
+    choices.querySelector('input').checked = true
+    await load(0)
+  }
+
+  window.dochoose = async event => {
+    load(event.target.value)
+  }
+
+  window.dopreview = async event => {
+    window.results.innerText = ''
+    const code = await compile()
+    if (!code) return
+    const titles = code.titles(div)
+    console.log('results',titles)
+    window.results.innerHTML = titles.join("<br>")
+  }
+
+  window.doimport = async event => {
+    window.results.innerText = ''
+    const code = await compile()
+    if (!code) return
+    const titles = code.titles(div)
+    const pages = Object.fromEntries(
+      titles.map(title =>
+        [frame.asSlug(title), {
+          title,
+          story:code.items(title,norm.item),
+          journal:[{type:'create',date:Date.now()}]
+        }]
+      ))
+    const story = [{type:'importer',pages}]
+    const title = asset.file.replace(/\.html$/,' Import')
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.dodownload = async event => {
+    const item = div => {console.log('item',div); return div.innerText}
+    const code = await compile()
+    if (!code) return
+    const txt = []
+    const dotxt = div=>div.innerText
+    for(let title of code.titles()) {
+      txt.push(`============== ${title} ==============`)
+      const items = code.items(title,dotxt)
+      items.shift()
+      for(let item of items){
+        // let lines = item.split(/\.\s+/g)
+        let lines = [...item.matchAll(/.*?[\.,;?]\s*/g)].map(e=>e[0].trim())
+        txt.push('----------------------------------------',...lines)
+      }
+    }
+    const file = asset.file.replace(/\.html$/,'.txt')
+    frame.download(txt.join("\n"),file,'plain/text')
+  }
+
+  async function compile () {
+    const context = await frame.context()
+    const code = context.page.story
+      .filter(item => item.type=='code')
+      .map(item => item.text)
+      .join("\n")
+    try {
+      return await import(`data:text/javascript;base64,${btoa(code)}`)
+    } catch (e) {
+      console.log(['', ...code.split(/\n/)],e)
+      results.innerHTML = `<p>${e.name}: ${e.message}</p>`
+    }
+    return null
+  }
+
+
+</script>

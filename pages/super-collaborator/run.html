@@ -1,0 +1,309 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚗️</text></svg>">
+  <script src="https://unpkg.com/@hpcc-js/wasm@1.20.1/dist/index.min.js"></script>
+  <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+  <script src="https://cdn.jsdelivr.net/gh/dash14/svg-pan-zoom/dist/svg-pan-zoom.min.js"></script>
+</head>
+<body>
+
+<style>
+
+  html, body, main { width: 100vw; height: 100vh; margin: 0;}
+  main {
+    display: grid;
+    grid-template-areas:
+      "beam   target"
+      "create target"
+      "chat   target";
+    grid-template-columns: 1fr 3fr;
+    grid-template-rows: 2fr 4fr 1fr;
+  }
+  #beam   {grid-area:beam; background-color:palegreen;}
+  #create {grid-area:create; background-color:bisque;}
+  #target {grid-area:target; overflow:scroll;}
+  #chat   {grid-area:chat; background-color:lightblue;}
+  #beam, #create, #chat {
+    margin:4px;
+    padding:8px;
+    overflow-y: scroll;
+  }
+  #beam input, label {cursor:pointer;}
+</style>
+
+<main>
+  <div id="beam" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">
+    <div id="beamlist" onchange="dochoose(event)"></div>
+  </div>
+  <div id="target" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)">
+    <div style="padding:16px; font-size:x-large;">Learn more about this<br>
+      <a href=http://hsc.fed.wiki/view/hypertext-super-collaborator target=_blank>
+        Hypertext Super Collaborator</a>
+    </div>
+  </div>
+  <div id="create" ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)"></div>
+  <div id="chat">
+    <div id="textOut"></div>
+    <div style="display: flex;">
+      <input id="textIn" type="text" style="flex:1" autocomplete="off" onkeydown="event.keyCode == 13 && sendButton.onclick()"/>
+      <input id="sendButton" type="button" style="margin-left:6" value = "➤" />
+    </div>
+    <div style="display: flex;">
+      <span id="members"  style="flex:1"></span>
+      <input id="loginButton" type="button" style="margin-left:6" value = "☺" />
+    </div>
+  </div>
+  <div id=floater style="position:absolute; border:1px solid; background-color:white; overflow-wrap:break-word; padding:4px; width:200px; height:200px;" data-cid="" hidden>
+    <svg viewBox="0 0 100 100">
+      <polyline
+        id="grid"
+        points="0,0 0,100 100,100 100,0 0,0"
+        stroke="#ccc" fill="none"/>
+      <polyline
+        id="growing"
+        points="100,100"
+        fill="none"
+        stroke="brown"
+        stroke-width=".5"
+        stroke-linejoin="round"/>
+    </svg>
+    <div id=controls></div>
+  </div>
+</main>
+
+<script src="https://unpkg.com/@croquet/croquet"></script>
+<script type=module>
+
+  import {Graph} from './graph.js'
+  import {drop,dropl,dropu} from './drop.js'
+  import {composite} from './composite.js'
+  import {dotify} from './dotify.js'
+  import {hoverbold} from './hoverbold.js'
+  import * as injector from './create.js'
+  import {BeamModel, BeamView, croquet} from './beam.js'
+  import * as sim from './sim.js'
+
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+
+  const creating = {
+    index: -1,
+    start: (graph) => {
+      creating.index = croquet.view.beam().length
+      croquet.view.newPoems([{name:graph.nodes[0].type+'⋯',graph}])
+    },
+    update: (graph) => {
+      croquet.view.updatePoem(creating.index, graph, '⋯')
+    },
+    finish: (graph) => {
+      croquet.view.updatePoem(creating.index, graph, '')
+      creating.index = -1
+    }
+  }
+  injector.create(window.create, creating)
+
+  window.over = function (event) {
+    event.preventDefault()
+  }
+
+  window.drop = async function (event) {
+    event.preventDefault();
+    switch (event.target.closest('div[ondrop]').id) {
+      case "beam":
+        const poems = [
+          ...await dropl(event, '.jsonl'),
+          ...await drop(event, '.graph.json'),
+          ...await dropu(event)
+        ]
+        for (const poem of poems) {
+          croquet.view.newPoems([poem])
+          await delay(60)
+          console.log('poem',poem)
+        }
+        break
+      case "create":
+        injector.schema((await drop(event, '.schema.json'))[0].graph)
+        injector.create(window.create, creating)
+        break
+      case "target":
+        const poemz = [
+          ...await dropl(event, '.jsonl'),
+          ...await drop(event, '.graph.json')
+        ]
+        display(poemz)
+        recommend(poemz)
+        break
+      default:
+        console.log('Failed to dispatch', event.target)
+    }
+  }
+
+  window.dochoose = function (event) {
+    croquet.view.nextdownload = null
+    const checked = [...window.beam.querySelectorAll('input[type=checkbox]:checked')]
+    const beam = croquet.view.beam()
+    const chosen = checked.map(e => Object.assign({index:e.value},beam[e.value]))
+    display(chosen)
+    recommend(chosen)
+  }
+
+  function recommend(chosen) {
+    const vocabulary = new Set()
+    const hash = node => `${node.type}: ${node.props.name || ''}`
+    for (const poem of chosen) {
+      for (const node of poem.graph.nodes) {
+        vocabulary.add(hash(node))
+      }
+    }
+    const similar = graph => {
+      for (const node of graph.nodes) {
+        if (vocabulary.has(hash(node))) return true
+      }
+      return false
+    }
+    const beam = croquet.view.beam()
+    window.beam.querySelectorAll('input[type=checkbox]').forEach(elem => {
+      const color = !elem.checked && similar(beam[elem.value].graph) ? 'darkorange' : 'black'
+      elem.nextElementSibling.style.color = color
+    })
+  }
+
+  let drawing = false
+  let siminterval = null
+  let panSVG = null
+  const panZoom = {}
+  async function display(chosen) {
+    if(!drawing){
+      drawing = true
+      if (siminterval) clearInterval(siminterval)
+      floater.hidden = true
+      const complex = composite(chosen)
+      try {
+        if (document.querySelector('#target svg')) {
+          panZoom.pan = panSVG.getPan()
+          panZoom.zoom = panSVG.getZoom()
+          panZoom.size = { 
+              width: document.querySelector('#target svg').width.baseVal.valueInSpecifiedUnits, 
+              height: document.querySelector('#target svg').height.baseVal.valueInSpecifiedUnits
+            }
+        }
+        const dot = dotify(complex)
+        window.dot = dot
+        hpccWasm.graphviz.layout(window.dot, "svg", "dot").then(svg => {
+          target.innerHTML = svg;
+          drawing = false
+          hoverbold(target)
+          const targetBounds = { width: document.querySelector('#target').clientWidth, height: document.querySelector('#target').clientHeight } 
+          const svgBounds = { width: document.querySelector('#target svg').clientWidth, height: document.querySelector('#target svg').clientHeight }
+          let svgElement = document.querySelector('#target svg')
+          panSVG = svgPanZoom(svgElement)
+          document.querySelector('#target svg').style.height = "100%"
+          document.querySelector('#target svg').style.width = "100%"
+          if (targetBounds.width < svgBounds.width || targetBounds.height < svgBounds.height) {
+            panSVG.resize()
+          }
+          panSVG.fit()
+          panSVG.center()
+          if (panZoom.size && 
+              panZoom.size.width == document.querySelector('#target svg').width.baseVal.valueInSpecifiedUnits &&
+              panZoom.size.height == document.querySelector('#target svg').height.baseVal.valueInSpecifiedUnits) {
+            panSVG.zoom(panZoom.zoom)
+            panSVG.pan(panZoom.pan)
+          }
+        })
+      } catch (err) {
+        console.log('display error', err)
+        drawing = false
+      }
+      await delay(500);
+      const nodes = Object.fromEntries([...target.querySelectorAll('.node')]
+        .map(node => [node.querySelector('title').textContent,node]))
+      const neq = (a,b) => a.type == b.type && a.props.name == b.props.name
+      const name = node => `${node.type}:${node.props.name}`
+      for(const cid in nodes){
+        if(complex.graph.nodes[cid].type != 'Variable') break
+        nodes[cid].addEventListener('click',event => {
+          event.preventDefault()
+          event.stopPropagation()
+          const picks = chosen.filter(entry =>
+            entry.graph.nodes.find(node =>
+              neq(node, complex.graph.nodes[cid])))
+          const pick = picks[0]
+          const nid = pick.graph.nodes.findIndex(node => neq(node,complex.graph.nodes[cid]))
+          const g = complex.graph
+          const n = g.nodes[cid]
+          console.log(pick.index, pick.name, cid, nid, name(n))
+          window.props = complex.graph.nodes[cid].props
+          window.save = () => croquet.view.updatePoem(pick.index,pick.graph,"*")
+          floater.style.left = event.clientX+5
+          floater.style.top = event.clientY+5
+          growing.setAttribute('points','100,100')
+          floater.dataset.cid = cid
+          const slide = () => `<input type=range min=0 max=100 value=50 style="width: 100%">`
+          const nslide = (n,p) => n.props.hasOwnProperty(p) ? `${n.props.name} ${p}: <span>${n.props[p]}</span>${slide()}` : ''
+          const rslide = (r,rate) => r.props.hasOwnProperty(rate) ? `${r.type} ${rate}: <span>${r.props[rate]}</span>${slide()}` : ''
+          controls.innerHTML = `<p>
+            ${['wax','wane'].map(p => nslide(n,p)).join('')}
+            ${n.in.map(rid => {const r = g.rels[rid]; return rslide(r,'orate')}).join('')}
+            ${n.out.map(rid => {const r = g.rels[rid]; return rslide(r,'irate')}).join('')}
+          `
+          floater.hidden=false
+        })
+        // nodes[cid].addEventListener('mouseleave',event => {
+        //   floater.hidden=true
+        // })
+      }
+      const tick = (nid,value) => {
+        if(+(floater.dataset.cid) == +nid) {
+          let points = growing.getAttribute('points')
+          let samples = points.split(' ')
+            .map(pair => {
+              let [x,y] = pair.split(',')
+              return [x-1,y].join(',')
+            })
+          if (samples.length >= 100) samples.shift()
+          samples.push([100,100-Math.max(0,Math.min(100,value))].join(','))
+          growing.setAttribute('points', samples.join(' '))
+
+        }
+      }
+
+      siminterval = sim.start(nodes,complex.graph,tick);
+      [...target.querySelectorAll('a')]
+        .filter(n=>n.textContent.match(/☑|☐/))
+        .map(n => {
+          n.addEventListener('click',event => {
+            event.preventDefault()
+            event.stopPropagation()
+            const texts = n.querySelectorAll('text')
+            texts.forEach(text => {
+              if (text.textContent.match(/☐/))
+                text.textContent = text.textContent.replace('☐','☑')
+              else
+                text.textContent = text.textContent.replace('☑','☐')
+            })
+            clearInterval(siminterval)
+            siminterval = sim.start(nodes,complex.graph,tick)
+          })
+        })
+    } else {
+      console.log('display: skipping', chosen)
+    }
+  }
+
+
+  const session = await Croquet.Session.join({
+    apiKey: '1MNinyGopbyxFzgx3HupBoCAryFb6yNOIihx6Omx9',
+    appId: 'com.gmail.ward.cunningham.collaborator',
+    name: params.name || "unnamed",
+    password: "secret",
+    model: BeamModel,
+    view: BeamView
+  })
+  console.log(session)
+
+
+</script>
+</body>
+</html>

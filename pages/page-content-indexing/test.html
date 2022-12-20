@@ -1,0 +1,139 @@
+<h3>Fetch</h3>
+<p>
+  <button onclick=dosite(event)>site</button>
+  <button onclick=doinfo(event)>info</button>
+  <button onclick=donewer(event)>newer</button>
+  <button onclick=dopage(event)>page</button>
+  <button onclick=dopages(event)>pages</button>
+</p>
+
+<h3>Find</h3>
+<p>
+  <button onclick=dolinks(event)>links</button>
+  <button onclick=dolocs(event)>locs</button>
+  <button onclick=dotags(event)>tags</button>
+  <button onclick=dofolds(event)>folds</button>
+</p>
+
+<h3>Index</h3>
+<p>
+  <button onclick=doindex(event)>index</button>
+  <button onclick=docache(event)>cache</button>
+  <button onclick=dodownload(event)>download</button>
+  <button onclick=doreload(event)>reload</button>
+</p>
+<p id=counts></p>
+
+<pre id=result></pre>
+
+<script type=module>
+
+import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+// import * as index from './index.js'
+
+const site = await index.site('ward.dojo.fed.wiki')
+
+
+// F E T C H
+
+window.dosite = async event => {
+  report(site)
+}
+
+window.doinfo = async event => {
+  let info = site.info('System Maps from Images')
+  report(info)
+}
+
+window.donewer = event => {
+  let titles = site.newer(1671069803852)
+  report(titles)
+}
+
+window.dopage = async event => {
+  let page = await site.page('System Maps from Images')
+  report(page)
+}
+
+window.dopages = async event => {
+  let info = site.info('System Maps from Images')
+  let pages = await site.pages(Object.keys(info.links))
+  report(pages)
+}
+
+
+// F I N D
+
+
+window.dolinks = async event => {
+  let page = await site.page('System Maps from Images')
+  let links = index.links(page.story)
+  report(links)
+}
+
+window.dolocs = async event => {
+  let info = site.info('System Maps from Images')
+  let pages = await site.pages(Object.keys(info.links))
+  let items = pages.map(page => page.story).flat()
+  let locs = index.locs(items)
+  report(locs)
+}
+
+window.dotags = async event => {
+  let page = await site.page('SW 67th Avenue')
+  let tags = index.tags(page.story,'img')
+  report(tags)
+}
+
+window.dofolds = async event => {
+  let page = await site.page('System Maps from Images')
+  let folds = index.folds(page.story)
+  report(folds)
+}
+
+
+// I N D E X
+
+let finder = story => index.tags(story,'img')
+let base = index.base(site,finder)
+
+window.doindex = async event => {
+  let todo = site.sitemap
+    .filter(info => !(info.slug in base.cache()))
+    .filter(info => Math.random() < 0.03)
+    .map(info => info.slug)
+  let done = await site.pages(todo)
+  fullreport(base.index(done))
+}
+
+window.docache = event => {
+  fullreport(base.cache())
+}
+
+window.dodownload = event => {
+  frame.download(JSON.stringify(base.cache(),null,2),'index-tag-img.json','application/json')
+}
+
+window.doreload = async event => {
+  const url = 'http://code.fed.wiki/assets/page/page-content-indexing/index-tag-img.json'
+  await base.reload(url)
+  fullreport(base.cache())
+}
+
+
+//
+
+function fullreport(result) {
+  const finds = Object.values(base.cache()).filter(info => info).length
+  const titles = Object.keys(base.cache()).length
+  const pages = site.sitemap.length
+  window.counts.innerText = `${finds} finds in ${titles} titles cached for ${pages} pages`
+  report(result)
+}
+
+function report(result) {
+  window.result.innerText = JSON.stringify(result,null,2)
+}
+
+</script>

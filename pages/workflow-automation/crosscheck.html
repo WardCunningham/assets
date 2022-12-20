@@ -4,7 +4,7 @@
     td { vertical-align: text-top; }
     thead tr th { text-align: left; position: sticky; top: 0px; background-color: white}
 </style>
-<script>
+<script type=module>
 
   const site = 'http://trails.ward.asia.wiki.org'
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
@@ -13,11 +13,23 @@
 
   let wholesitemap = []
 
+  let blocklist = await block(
+    fetch(`${site}/more-wider-travels.json`).then(res => res.json())
+  )
+
   cross(
   	fetch(`${site}/chronological-destinations.json`).then(res => res.json()),
   	fetch(`${site}/places-i-have-been.json`).then(res => res.json()),
   	fetch(`${site}/system/sitemap.json`).then(res => res.json())
   )
+
+  async function block(...roots) {
+    let list = await Promise.all(roots)
+    return list.map(page => [page.title, ...links(page.story.map(item => item.text))]).flat()
+  }
+
+
+
 
   async function cross(...checks) {
     let [dest, been, sitemap] = await Promise.all(checks)
@@ -38,18 +50,18 @@
     console.log({dest, been, sitemap})
 
     if (params['generate']) {
-      result.innerHTML = `<h3>New Chronological Destinations</h3>`
+      window.result.innerHTML = `<h3>New Chronological Destinations</h3>`
       let newlinks = sitemap
         .filter(trail => !dest.includes(trail))
         .sort(chron)
         .map(trail => `[[${trail}]]`)
-      result.innerHTML += newlinks.join("<br>\n")
-      result.innerHTML += `<h3>New Places I Have Been</h3>`
+      window.result.innerHTML += newlinks.join("<br>\n")
+      window.result.innerHTML += `<h3>New Places I Have Been</h3>`
       let newmarks = await Promise.all(sitemap
         .filter(trail => !been.includes(trail))
         .sort(chron)
         .map(trail => fetch(`${site}/${asSlug(trail)}.json`).then(res => res.json()).then(mark)))
-      result.innerHTML += newmarks.join("<br>\n")
+      window.result.innerHTML += newmarks.join("<br>\n")
       return
     }
 
@@ -84,7 +96,7 @@
       /^S(?!W )/, /^SW \d/, /^SW [A-Z]/,
       /^T/, /^U/, /^V/, /^W/, /^X/, /^Y/, /^Z/,
     ].map(tr)
-    result.innerHTML = `<table>
+    window.result.innerHTML = `<table>
       <thead><tr>
         <th>Chronologial Destinations
         <th>Places I Have Been
@@ -95,27 +107,30 @@
 
   function links(list) {
     let want = []
-    for (maybe of list) {
+    for (let maybe of list) {
       let m = maybe.match(/\[\[(.*?)\]\]/)
       if (m) want.push(m[1])
     }
     return want.sort()
   }
 
+
+
   function trail(title) {
     const stops = [
       'Chronological', 'Comforts', 'Compass', 'Creeks ', 'Cross Check', 'Culverts', 'Crossing', 'Curated',
       'Edit', 'Environmental', 'Garden Home Junction', 'Heritage', 'Historic',
       'Incremental', 'Jeffries Creek', 'Kalama', 'King\'s North', 'Leaflet', 'Marshall Proposed',
-      'Movable', 'Navigate', 'Near', 'Pandemic', 'Places', 'Portland', 'Red Electric Trail System', 'Round',
+      'Movable', 'Navigate', 'Near', 'Pandemic', 'Places', 'Portland Urban', 'Red Electric Trail System', 'Round',
       'Sisters', 'Sleeping', 'Southwest', 'Spark',
       'Terminal', 'Things', 'Topo', 'Trail', 'Trees', 'Tryon Creek Trail System', 'Tuning',
-      'Wandering', 'Ward', 'Wider', 'Workflow', 'Welcome', 'West',
+      'Wandering', 'Ward', 'Wider', 'Workflow', 'Welcome', 'West Multnomah',
       'Spring 20', 'Summer 20', 'Fall 20', 'Winter 20'
     ]
     for (stop of stops) {
       if (title.startsWith(stop)) return false
     }
+    if (blocklist.includes(title)) return false
     if (title.includes('Nina')) return false
 
     if (title == 'Iron Mountain Park') return false

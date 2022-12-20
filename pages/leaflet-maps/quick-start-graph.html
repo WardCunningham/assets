@@ -1,0 +1,59 @@
+<head>
+  <meta charset="UTF-8">
+  <script src="https://unpkg.com/@hpcc-js/wasm@1.20.1/dist/index.min.js"></script>
+  <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+</head>
+<div id=diagram></div>
+
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const quote = name => `"${name.replaceAll(/ /g,'\n')}"`
+  const dot = ['digraph { rankdir=LR']
+  
+  import * as live from './live.js'
+  const sitemap = await fetch(`//${live.site}/system/sitemap.json`).then(res => res.json())
+  console.log(sitemap)
+  const page = await live.page('System Maps from Images')
+  console.log({page})
+
+  dot.push(quote(page.title))
+  backlinks(page.title)
+
+
+  const data = await live.fold(page,'data')
+  console.log({data})
+  const titles = data.map(item => live.link(item.text))
+  console.log({titles})
+
+  titles.forEach(title => {
+    dot.push(`${quote(page.title)} -> ${quote(title)}`)
+  })
+
+  const pages = await Promise.all(titles.map(title => live.page(title)))
+  console.log({pages})
+  const locs = pages.map(page => live.locs(page.story))
+  console.log({locs})
+  // locs.flat().forEach(loc => L.marker(loc).addTo(mymap))
+
+  dot.push('}')
+  hpccWasm.graphviz.layout(dot.join("\n"), "svg", "dot").then(svg => {
+
+    diagram.innerHTML = svg.replaceAll(/(width|height)=".*?"/g,'');
+    diagram.addEventListener('click', event => goto(event.target))
+  })
+
+  function goto(div) {
+    const title = div.parentElement.querySelector('title').textContent
+    frame.link(frame.asSlug(title))
+  }
+
+  function backlinks(title) {
+    const want = frame.asSlug(title)
+    const parents = sitemap.filter(info => Object.keys(info.links||{}).includes(want))
+    parents.forEach(parent =>
+      dot.push(`${quote(parent.title)} -> ${quote(title)}  [style=dotted]`))
+  }
+
+
+</script>

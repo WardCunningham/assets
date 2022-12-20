@@ -1,0 +1,138 @@
+<div id=report>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const pairs = array => array.slice(0,-1).map((e,i) => [e,array[i+1]])
+  const stretch = (here,there,step) => {
+      const dist = distance(here,there)*5280
+      const count = Math.floor(dist/100)
+      const stride = dist/count
+      const dy = there[0]-here[0]
+      const dx = there[1]-here[1]
+      for (let i=0; i<count; i++) {
+        const lat = dy * (i*stride/dist) + here[0]
+        const lon = dx * (i*stride/dist) + here[1]
+        step([lat,lon])
+      }
+    }
+
+  const story = (await frame.context()).page.story
+  const marks = story
+    .find(item => item.type == 'map')
+    .text.split(/\n/)
+    .filter(marker => !marker.startsWith('BOUNDARY'))
+    .map(marker => {
+      const [_,lat,lon,label] = marker.match(/^(.+?), *(.+?) (.*)$/)
+      return {latlon:[+lat,+lon],label}
+    })
+  const days = story
+    .find(item => item.type == 'code')
+    .text.split(/\n/)
+  const late = {"2022-10-15":1588}
+  const tracks = await Promise.all(days.map(date => track(date.trim())))
+  const route = marks
+  const steps = []
+  pairs(route).forEach(([here,there]) =>
+    stretch(here.latlon, there.latlon, step => steps.push(step)))
+
+  window.report.innerHTML = `
+    <button onclick=doroute(event)>route</button>
+    <button onclick=dospans(event)>spans</button>
+    <button onclick=dotrack(event)>track</button>
+    <button onclick=dodownload(event)>download</button>
+  `
+
+  window.doroute = event => {
+    report(route.map(r => r.latlon),'Route Detail','Feet between route markers.',event)
+  }
+
+  window.dospans = event => {
+    report(steps,'Route as Steps','Feet beteen steps fit between markers.',event)
+  }
+
+  window.dotrack = event => {
+    const spots = tracks[0].map(spot => spot.where)
+    report(spots,'Track Detail','Feet between tracker spots.',event)
+  }
+
+  window.dodownload = event => {
+    const traces = []
+    let trace = {x:[],y:[],text:[],name:'route',mode:'markers'}
+    traces.push(trace)
+    let x0 = 0
+    let x1 = 0
+    pairs(route).forEach(([here,there],i) => {
+      const dist = distance(here.latlon,there.latlon)*5280
+      x1 = x0 + dist
+      trace.x.push(x0)
+      trace.y.push(1)
+      trace.text.push(here.label)
+      x0 = x1
+    })
+
+    tracks.forEach ((track,i) => {
+      trace = {x:[],y:[],name:days[i],mode:'line'}
+      traces.push(trace)
+      x0 = late[days[i]] || 0
+      pairs(track).forEach(([here,there],i) => {
+        const miles = distance(here.where,there.where)
+        const hours = (there.when - here.when)/1000/3600
+        x1 = x0 + miles*5280
+        trace.x.push((x0+x1)/2)
+        trace.y.push(miles/hours)
+        x0 = x1
+      })
+    })
+
+    frame.download(JSON.stringify(traces,null,2),'plot-data.json','application/json')
+  }
+
+  function report (spots, title, text, event) {
+    let sum = 0
+    const rows = pairs(spots)
+      .map(([here,there]) => {
+        const dist = distance(here,there)*5280
+        sum += dist
+        return `${sum.toFixed(0)} += Δ ${dist.toFixed(0)}`
+      })
+    const story = [
+      {type:'paragraph',text},
+      {type:'code',text:rows.join("\n")}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  async function track(date) {
+    const raw = await fetch(`http://home.c2.com:3030/track/${date}`)
+      .then(res => res.text())
+    const dups = new Set()
+    const data = raw.trim().split(/\r?\n/)
+      .map(text => JSON.parse(text.trim()))
+      .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
+      .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long)
+      .filter(r => r.hotspots[0].hold_time < 10000)
+      .filter(r => {const dup = dups.has(r.payload); dups.add(r.payload); return !dup})
+    const log = data.map(r => {
+      const m = r.decoded.payload
+      const when = r.hotspots[0].reported_at - r.hotspots[0].hold_time
+      const where = [m.latitude,m.longitude]
+      const who = r.hotspots[0].name
+      return {when, where, who}
+    })
+    log.sort((a,b) => a.when - b.when)
+    return log
+  }
+
+  function distance(here,there) {
+    // http://js.ward.asia.wiki.org/great-circle-distance.html
+    let rad = (deg) => 2 * Math.PI * deg / 360
+    let sin = Math.sin
+    let cos = Math.cos
+    let acos = Math.acos
+    let [lat1,lon1] = here.map(deg => rad(deg))
+    let [lat2,lon2] = there.map(deg => rad(deg))
+    let earth = 3958.8
+    return (earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))) || 0
+  }
+
+</script>

@@ -4,6 +4,11 @@
   <tr><td><td>
 </table>
 
+<style>
+  table {width: 100%; table-layout: fixed;}
+  img {width: 100%}
+</style>
+
 <script type=module>
 
   let assets = `http://trails.ward.asia.wiki.org/assets/pages`
@@ -29,7 +34,7 @@
     let {trail,folder,image} = images[Math.floor(Math.random() * images.length)]
     let src = `${assets}/${folder}/${image}`
     let img = new Image()
-    img.addEventListener('load', () => td.innerHTML = `<img width=100% src="${src}" title="${trail}">`)
+    img.addEventListener('load', () => td.innerHTML = `<img src="${src}" title="${trail}">`)
     img.src = src
   }
 

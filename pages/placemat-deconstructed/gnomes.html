@@ -1,0 +1,71 @@
+<svg viewBox="0 0 400 500">
+  
+  <!-- https://stackoverflow.com/questions/16983442/how-to-specify-the-portion-of-the-image-to-be-rendered-inside-svgimage-tag -->
+
+  // G N O M E S
+
+  <svg  class=gnome height=150 width=90 x=000 y=0 viewBox="247 91 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+  <svg  class=gnome height=150 width=90 x=100 y=0 viewBox="353 584 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+
+  <svg  class=gnome height=150 width=90 x=200 y=0 viewBox="332 140 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+  <svg  class=gnome height=150 width=90 x=300 y=0 viewBox="614 786 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+  
+  <svg  class=gnome height=150 width=90 x=000 y=160 viewBox="715 103 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+  <svg  class=gnome height=150 width=90 x=100 y=160 viewBox="996 529 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+
+  <svg  class=gnome height=150 width=90 x=200 y=160 viewBox="894 580 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+  <svg  class=gnome height=150 width=90 x=300 y=160 viewBox="1130 871 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+
+
+  // H O L L Y
+
+  <svg  class=gnome height=150 width=90 x=000 y=320 viewBox="89 318 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+  <svg  class=gnome height=150 width=90 x=100 y=320 viewBox="1126 576 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+
+  <svg  class=gnome height=150 width=90 x=200 y=320 viewBox="773 482 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+  <svg  class=gnome height=150 width=90 x=300 y=320 viewBox="916 786 150 150">
+    <image x=0px y=0px width=1280px height=1032px href=gnomes.jpeg />
+  </svg>
+  
+
+</svg>
+
+<script type=module>
+
+console.log(document.querySelectorAll(".gnome"))
+document.querySelectorAll(".gnome")
+  .forEach(elem => elem.addEventListener('mousemove',(event) => {
+    if(!event.ctrlKey) return
+    if(!(event.movementX || event.movementY)) return
+    const [dx,dy] = [event.movementX, event.movementY]
+    const [x,y,w,h] = elem.getAttribute('viewBox').split(/ /)
+    const box = [+x-dx, +y-dy, w, h].join(' ')
+    console.log(box)
+    elem.setAttribute('viewBox', box)
+  }
+))
+
+</script>
+

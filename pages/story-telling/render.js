@@ -23,7 +23,7 @@ function resolve(page, text) {
       // trouble(`Can't link to ${title}`, page.title)
       return `<font color=gray>${title}</font>`
     }
-  }).replace(/\[(https?:.*?) (.*?)\]/g,'<a href="$1">$2</a> '+linkmark())
+  }).replace(/\[(https?:.*?) (.*?)\]/g,'<a href="$1">$2</a>'+linkmark())
 }
 
 export function render (site, page) {

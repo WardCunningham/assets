@@ -1,0 +1,15 @@
+{
+  "name": "croquet-node",
+  "version": "1.0.0",
+  "description": "Node test for Croquet",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Croquet Corp",
+  "license": "ISC",
+  "dependencies": {
+    "@croquet/croquet": "^1.1.0-12"
+  },
+  "type":"module"
+}

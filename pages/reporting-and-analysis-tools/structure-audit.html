@@ -1,0 +1,68 @@
+<!-- <p></button><p>
+  <button onclick=dodownload(event)>download</button>
+</p>
+ --><p id=choices onchange=dotarget(event)></p>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+</style>
+<script type=module>
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {composite} from 'http://hsc.fed.wiki/assets/home/composite.js'
+  import {dotify} from 'http://hsc.fed.wiki/assets/home/dotify.js'
+
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  const assets = await frame.assets()
+  const graphs = await assets.filter(asset => asset.file.endsWith('.graph.json'))
+  await Promise.all(graphs.map(asset =>
+    Graph.fetch(asset.url).then(graph => {asset['graph'] = graph})))
+  window.choices.innerHTML = graphs.map((asset,idx) =>
+    `<input type=radio name=choice value=${idx}> ${asset.file}`).join("<br>")
+  resize()
+
+  window.dotarget = function (event) {
+    const chosen = graphs[event.target.value]
+    console.log(chosen)
+    const story = [
+      {type:'paragraph',text:`Structure Audit of ${chosen.file}.`},
+      {type:'html',text:audit(chosen.graph)}
+    ]
+    frame.open({title:'Audit Report',story},event.shiftKey)
+  }
+
+  function audit(graph) {
+    const red = x => `<font color=red>${x}</font>`
+    const {nodes,rels} = graph
+    const html = []
+    html.push(`<h3>nodes</h3>`)
+    graph.nodes.forEach((n,i) => {
+      const ci = (x) => rels[x] && rels[x].to==i ? x : red(x)
+      const co = (x) => rels[x] && rels[x].from==i ? x : red(x)
+      html.push(`<p>${i}: ${n.type} "${n.props.name}"<br>&nbsp;&nbsp;&nbsp;&nbsp;
+        in ${n.in.map(ci).join(', ')}
+        out ${n.out.join(', ')}`)
+    })
+    html.push(`<h3>relations</h3>`)
+    graph.rels.forEach((r,i) => {
+      const cf = (x) => nodes[x] && nodes[x].out.includes(i) ? x : red(x)
+      const ct = (x) => nodes[x] && nodes[x].in.includes(i) ? x : red(x)
+      html.push(`<p>${i}: ${r.type}<br>&nbsp;&nbsp;&nbsp;&nbsp;
+        from ${cf(r.from)}
+        to ${ct(r.to)}`)
+    })
+    return html.join("\n")
+  }
+
+  window.dodownload = function (event) {
+    const obj = {nodes:comp.nodes, rels:comp.rels}
+    const text = JSON.stringify(obj,null,2)
+    frame.download(text,'comp.graph.json','application/json')
+  }
+
+  function resize(max=800) {
+    const height = Math.min(max, document.body.offsetHeight)
+    window.parent.postMessage({action: "resize", height }, "*")
+  }
+
+</script>

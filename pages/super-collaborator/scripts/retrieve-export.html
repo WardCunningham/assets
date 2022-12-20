@@ -1,0 +1,45 @@
+<p><div id=exports>working</div>
+<p><div id=choices onchange=dotarget(event)></div>
+
+<style>
+  td {vertical-align:top; padding:4px;}
+</style>
+
+<script type=module>
+  import {Graph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/graph.js'
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {composite} from 'http://hsc.fed.wiki/assets/home/composite.js'
+  import {dotify} from 'http://hsc.fed.wiki/assets/home/dotify.js'
+
+  const assets = await frame.assets()
+  const exports = assets.filter(asset => asset.file.endsWith('.jsonl'))
+  let items
+  let comp = new Graph()
+  let title = ''
+
+  window.exports.innerHTML = exports.map((asset,i) => 
+    `<span onclick=doshow(${i})>${asset.file.replace(/\.jsonl$/,'')}</span>`).join("<br>\n")
+
+  window.doshow = async i => {
+    window.choices.innerHTML = ''
+    const text = await fetch(exports[i].url).then(res => res.text())
+    items = text.split(/\n/).map(json => JSON.parse(json))
+    window.choices.innerHTML = items.map((item,i) =>
+      `<input type=checkbox value=${i}> ${item.name}`).join("<br>")
+  }
+
+  window.dotarget = function (event) {
+    console.log(event.target)
+    const checked = [...window.choices.querySelectorAll('input[type=checkbox]:checked')]
+    const chosen = checked.map(input => items[input.value])
+    title = chosen.map(choice => choice.name.split('.')[0]).join('-')
+    comp = composite(chosen)
+    const story = [
+      {type:'paragraph',text:`Composite of ${chosen.length} graphs.`},
+      {type:'graphviz',text:dotify(comp)}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+
+</script>

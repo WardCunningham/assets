@@ -1,0 +1,29 @@
+<center>
+<table id=game></table>
+<p>
+  <button onclick=doreset(event)>reset</button>
+  <button onclick=dorandom(event)>random</button>
+</p>
+<script type=module>
+
+// B O A R D
+  const [rows, cols] = [3,3]
+  window.game.innerHTML = `<tr>${`<td><img src=heads.jpeg>`.repeat(cols)}`.repeat(rows)
+
+// M O V E S
+  const imgs = document.querySelectorAll('img')
+  const rev = jpeg => jpeg =='tails.jpeg' ? 'heads.jpeg' : 'tails.jpeg'
+  const flip = img => img.setAttribute('src', rev(img.getAttribute('src')))
+  const near = (i,n) => [-1,1].map(j => +i+j).filter(k => k>=0 && k<n)
+  const row = (r,c) => near(r,rows).map(rr => flip(imgs[rr*cols+c]))
+  const col = (r,c) => near(c,cols).map(cc => flip(imgs[r*cols+cc]))
+  const adj = (r,c) => {row(r,c); col(r,c)}
+  const move = n => {flip(imgs[n]); adj(Math.floor(n/cols),n%cols)}
+
+// P L A Y
+  imgs.forEach((img,n) => img.addEventListener('click', () => move(n)))
+  window.doreset = () => imgs.forEach(img => img.setAttribute('src','heads.jpeg'))
+  window.dorandom = () => move(Math.floor(Math.random()*imgs.length))
+
+
+</script>

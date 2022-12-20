@@ -1,0 +1,109 @@
+{
+  "nodes": [
+    {
+      "type": "Person",
+      "in": [],
+      "out": [
+        0,
+        1,
+        2
+      ],
+      "props": {
+        "name": "",
+        "location": ""
+      }
+    },
+    {
+      "type": "Ideal",
+      "in": [
+        0,
+        3
+      ],
+      "out": [
+        4
+      ],
+      "props": {
+        "name": "",
+        "scope": ""
+      }
+    },
+    {
+      "type": "Group",
+      "in": [
+        1,
+        4
+      ],
+      "out": [
+        5
+      ],
+      "props": {
+        "name": "",
+        "members": ""
+      }
+    },
+    {
+      "type": "Action",
+      "in": [
+        2,
+        5
+      ],
+      "out": [
+        3
+      ],
+      "props": {
+        "name": "",
+        "target": ""
+      }
+    }
+  ],
+  "rels": [
+    {
+      "type": "Holds",
+      "from": 0,
+      "to": 1,
+      "props": {
+        "strength": ""
+      }
+    },
+    {
+      "type": "Fosters",
+      "from": 0,
+      "to": 2,
+      "props": {
+        "role": ""
+      }
+    },
+    {
+      "type": "Performs",
+      "from": 0,
+      "to": 3,
+      "props": {
+        "effort": ""
+      }
+    },
+    {
+      "type": "Serves",
+      "from": 3,
+      "to": 1,
+      "props": {
+        "impact": ""
+      }
+    },
+    {
+      "type": "Motivates",
+      "from": 1,
+      "to": 2,
+      "props": {
+        "appeal": ""
+      }
+    },
+    {
+      "type": "Engages",
+      "from": 2,
+      "to": 3,
+      "props": {
+        "numbers": ""
+      }
+    }
+  ]
+}

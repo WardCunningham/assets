@@ -1,0 +1,31 @@
+<head>
+  <script src='https://cdn.plot.ly/plotly-2.14.0.min.js'></script>
+</head>
+
+<body>
+  <div id='plot'></div>
+  <!-- <o><center><img width=45% src=http://bike.ward.asia.wiki.org/assets/plugins/image/87f618b52995f83afc0f1fcddab1d0f3.jpg> -->
+  <script type=module>
+    // https://plotly.com/javascript/line-charts/#adding-names-to-line-and-scatter-plot
+    const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+    const data = await fetch(`../${params.data||'data'}/plot-data.json`).then(res => res.json())
+    for (const trace of data) {
+      trace.hovertemplate = "%{y:.1f} mph<br>%{x:.0f} ft"
+      while(trace.y[0]<1) {
+        trace.x.shift()
+        trace.y.shift()
+      }
+      while(trace.y.slice(-1)[0]<1) {
+        trace.x.pop()
+        trace.y.pop()
+      }
+    }
+    const layout = {
+      showlegend:false,
+      margin:{l:20, r:0, b:50, t:0, pad:0},
+      paper_bgcolor:'rgba(0,0,0,0)',
+      plot_bgcolor:'rgba(0,0,0,0)'
+    }
+    Plotly.newPlot('plot', data, layout);
+  </script>
+</body>

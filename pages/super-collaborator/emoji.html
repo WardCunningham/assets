@@ -1,0 +1,33 @@
+<p>Choose a persistent Emoji to represent you in the HSC.</p>
+<p id=have></p>
+<p id=want onclick=dowant(event)></p>
+
+<style>
+  p {width: 12em;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: x-large;}
+</style>
+
+<script type=module>
+
+  const emoji = await fetch('./emoji.txt')
+    .then(res => res.text())
+    .then(txt => txt.split(/\n/))
+  window.want.innerHTML = emoji
+    .map((ch,i) => `<span value=${i}>${ch}</span>`).join(' ')
+  have()
+
+  function have () {
+    const m = document.cookie.match(/\bface=(\d+)\b/)
+    if (m) window.have.innerText = `We have ${emoji[+m[1]]} for you now.`
+  }
+
+  window.dowant = event => {
+    const value = event.target.getAttribute('value')
+    document.cookie = `face=${value};samesite`
+    have()
+  }
+
+</script>

@@ -1,0 +1,14 @@
+<table id=result></table>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const cmp = (a,b) => a==b ? '=' : a>b ? '>' : '<'
+  const context = await frame.context()
+  const lines = context.page.story[2].text.split(/\n/)
+  let sum = 0
+  window.result.innerHTML = lines
+    .reverse()
+    .map(line => line.split(/ /))
+    .map(([a,n]) => [a,+n,sum,sum += +n])
+    .map(([a,n,s,x]) => ['<tr>',s,cmp(s,n),n,a].join('<td>'))
+    .join("\n")
+</script>

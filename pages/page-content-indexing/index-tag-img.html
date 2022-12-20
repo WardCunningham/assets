@@ -1,0 +1,56 @@
+<p id=buttons><button onclick=dobegin()>begin</button></p>
+<div id=result onclick=dobrowse(event)></div>
+<style>span {cursor:pointer; color:blue;}</style>
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+
+  const file = 'index-tag-img.json'
+  const site = await index.site('ward.dojo.fed.wiki')
+  const find = story => index.tags(story,'img')
+  const base = index.base(site,find)
+  const have = []
+
+  const showresult = () => {
+    window.result.innerHTML = Object.values(base.cache())
+      .filter(info => info)
+      .map(info => `<span>${info.title}</span> × ${info.finds.length}`)
+      .join("<br>\n")
+  }
+
+  window.dobrowse = event => {
+    if(event.target.tagName != 'SPAN') return
+    frame.link(event.target.innerText,event.shiftKey)
+  }
+
+  window.dobegin = async event => {
+    const assets = await frame.assets()
+    const url = assets.filter(asset => asset.file == file)[0].url
+    await base.reload(url)
+    showresult()
+    window.domore()
+  }
+
+  window.domore = async () => {
+    const todo = site.sitemap
+      .filter(info => !(info.slug in base.cache()) && !have.includes(info.slug))
+      .slice(0,6)
+      .map(info => info.slug)
+    if(!todo.length) return
+    have.push(...todo)
+    const pages = await site.pages(todo)
+    base.index(pages)
+    showresult()
+    window.buttons.innerHTML = `
+      <button onclick=domore()>more</button>
+      ${have.length} new edits    
+      <button onclick=dodownload()>download</button>
+      ${Object.keys(base.cache()).length} cached titles
+    `
+  }
+
+  window.dodownload = event =>
+    frame.download(JSON.stringify(base.cache(),null,2),file,'application/json')
+
+</script>

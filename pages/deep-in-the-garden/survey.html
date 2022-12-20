@@ -1,0 +1,248 @@
+<p id=buttons>
+  <button onclick=dosurvey(event)>survey</button>
+  <button onclick=doprint(event)>download</button>
+</p>
+<div id=report></div>
+<style>
+  body { font-family: verdana, helvetica, sans; font-size: smaller; }
+  td { border: 1px solid gray; padding: 4px; text-align:center;  }
+  table { border-collapse: collapse; }
+</style>
+
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  const tick = value => {window.report.innerText += ' .'; return value}
+
+  const cols = []
+  let maps = null
+  let graphs = null
+  let beauty = null
+
+  const page = (await frame.context()).page
+  const sites = page.story
+    .filter(item => item.type=='reference')
+    .map(item => item.site)
+  const assets = (await frame.assets())
+    .filter(asset =>
+      asset.dir == "pages/deep-in-the-garden/graphs" &&
+      asset.file.endsWith('.graph.json'))
+  window.report.innerText = `ready with ${sites.length} references, ${assets.length} graph assets`
+
+  window.dosurvey = async event => {
+    const format = (row,col) => cols[col].garden[row].length
+    await loader()
+    await refresh()
+    survey()
+    window.report.innerHTML = `
+      <table>
+      ${[0,1,2,3,4,5,6,7,8].map(row =>
+        `<tr><td>${row}${[0,1,2].map(col =>
+          `<td onclick=docell(event,${row},${col})>${format(row,col)}`).join('')}`).join('')}
+      </table>`
+  }
+
+  window.docell = (event,row,col) => {
+    const cells = order(row,col)
+    const site = sites[col]
+    console.log({row,col,site,cells})
+    const title = `${row} clicks from ${site.split(/\./)[0]}'s story`
+    const story = [
+      {type:'paragraph',text:`Page references are grouped by the breadth of sharing among authors when ${row} steps into the garden.`},
+      {type:'paragraph',text:`Forks are all shown together ordered by last edit date.`},
+      ...cells.map((cell,j) => [
+        {type:'pagefold',text:['unanomous','shared','solo'][j]},
+        ...cell.map((titlet,i) => {
+          const {slug,title} = titlet
+          const found = sites
+            .map((site,i) => ({i,site,info:maps[i].find(info => info.slug == slug)}))
+            .filter(find => find.info)
+          return found
+            .sort((a,b) => a.info.date - b.info.date)
+            .map(({i,site,info}) => {
+              const haiku = beauty.find(haiku => haiku.site==site && haiku.slug==slug)
+              const text = `${new Date(info.date).toLocaleString()} (${haiku.links}/${haiku.items})`
+              return {type:'reference',site,slug,title,text}
+            })
+        }).flat()
+      ]).flat()
+    ].flat()
+    frame.open({title,story},event.shiftKey)
+  }
+
+  async function loader() {
+    window.report.innerText = ''
+    maps = await Promise.all(
+      sites.map(site => fetch(`//${site}/system/sitemap.json`)
+        .then(res => tick(res.json()))))
+    graphs = await Promise.all(
+      assets.map(asset => fetch(asset.url)
+        .then(res => tick(res.text()))
+        .then(text => JSON.parse(text))
+        .then(json => new Graph(json.nodes, json.rels))
+      ))
+    sites.forEach((site,i) => {
+      const map = maps[i]
+      const garden = [
+        graphs[i].nodes
+        .filter(node => node.type=='Story')
+        .map(node => frame.asSlug(node.props.name))]
+      cols.push({site,map,garden})
+    })
+  }
+
+  async function refresh() {
+    beauty = await fetch('./beauty.json').then(res => res.ok ? res.json() : [])
+    let updates = []
+    const work = cols.map(async col => {
+      const {site,map} = col
+      const todo = map.map(info => {
+        const slug = info.slug
+        const have = beauty.find(haiku => haiku.site==site && haiku.slug==info.slug)
+        if(Math.random()<1.0 && (!have || have.date < info.date))
+          return fetch(`http://${site}/${slug}.json`)
+            .then(res => res.json())
+            .then(page => update(site,slug,page,have))
+        else
+          return null
+      })
+      return Promise.all(todo)
+    })
+    await Promise.all(work)
+    if(updates.length) {
+      console.log({updates})
+      window.buttons.innerHTML +=
+        `<span title="${updates.join("\n")}">${updates.length} haiku updates</span>
+        <button onclick=dohaiku(event)>download</button>`
+    }
+
+    function update(site,slug,page,have) {
+      updates.push(slug)
+      const date = Date.now()
+      const items = page.story
+        .filter(item => ['paragraph','markdown'].includes(item.type))
+      const blanks = items
+        .filter(item => !item.text.match(/\S/))
+      const links = items
+        .map(item => parse(item.text))
+        .flat()
+        .filter(uniq)
+      const haiku = {
+        site,slug,date,
+        items:items.length-blanks.length,
+        blanks:blanks.length,
+        links:links.length}
+      if(have)
+        Object.assign(have,haiku)
+      else
+        beauty.push(haiku)
+      window.report.innerText += ' .'
+
+      function parse(text) {
+        const link = /\[\[(.*?)\]\]/g
+        const titles = []
+        let m
+        while(m = link.exec(text))
+          titles.push(m[1])
+        return titles
+      }
+    }
+  }
+
+  window.dohaiku = event => {
+    const json = JSON.stringify(beauty,null,2)
+    frame.download(json,'beauty.json','application/json')
+  }
+
+  function survey() {
+    for (let depth=1; depth<=8; depth++) {
+      cols.forEach(col => {
+        const have = col.garden.flat()
+        const here = col.garden.slice(-1)[0]
+        const need = here
+          .map(slug => {
+            const info = col.map.find(info => info.slug == slug)
+            if(info?.links) {return Object.keys(info.links)}
+            else return []})
+          .flat()
+          .filter(slug => !have.includes(slug))
+          .filter(uniq)
+        col.garden.push(need)
+      })
+    }
+  }
+
+  window.doprint = event => {
+    const uniques = new Set()
+
+    const color = (site,titlet) => {
+      const {title,slug} = titlet
+      uniques.add(slug)
+      const haiku = beauty.find(haiku => haiku.site==site && haiku.slug==slug)
+      if(!haiku) return title
+      const {items,links} = haiku
+      const highlight =
+        (items==6 && links==3) ? '#afa' :
+        (items>=5 && items<=7 && links>=2 && links<=4) ? '#efe' :
+        null
+      return highlight ? `<span style="background-color:${highlight}">${title}</span>` : title
+    }
+    const format = row => {
+      const ordered = [0,1,2].map(col => order(row,col))
+      const html = [];
+      [0,1,2].forEach(agree => {
+        html.push('<tr>');
+        [0,1,2].forEach(col => {
+          const site = cols[col].site
+          const titles = ordered[col][agree].map(titlet => color(site,titlet))
+          html.push('<td>')
+          html.push(titles.join("<br>\n"))
+        })
+        html.push(`<td>${uniques.size} uniques`)
+      })
+      return html.join("\n")
+    }
+    const html = `
+      <style>
+        body { font-family: verdana, helvetica, sans; font-size: smaller; }
+        td { border: 1px solid gray; padding: 4px; text-align:left; vertical-align:top; }
+        table { border-collapse: collapse; }
+      </style>
+      <table>
+      ${[0,1,2,3,4,5,6,7].map(row =>
+        `<tr><td colspan=4 style="background-color:lightgray;">${row} clicks from story
+         ${format(row)}`).join("\n")}
+      </table>
+    `
+    frame.download(html,'DeepGarden.html','text/html')
+  }
+
+  function order (row,col) {
+    const {garden, map} = cols[col]
+    const slugs = garden[row]
+    const agreements = []
+    const pages = slugs.map(slug => {
+      const info = map.find(info => info.slug == slug)
+      const agree = count(slug,row)
+      return {title:info?.title||slug, slug, agree}
+    });
+    [3,2,1].forEach(agree => {
+      const agreement = pages
+        .filter(page => page.agree == agree)
+      agreements.push(agreement)
+    })
+    return agreements
+  }
+
+  function count(slug, row) {
+    let count = 0
+    for (const col of cols) {
+      for (const slugs of col.garden.slice(0,row+1)) {
+        if(slugs.includes(slug)) count++
+      }
+    }
+    return count
+  }
+
+</script>
