@@ -1,5 +1,5 @@
 // record spark spots
-// usage: mkdir data; deno run --allow-net --allow-write=data record.js 10.0.1.113
+// usage: while true; do ~/.deno/bin/deno run --allow-net --allow-write=data record.js 10.0.1.113; done
 
 console.log(new Date())
 
@@ -47,7 +47,7 @@ function record(spots) {
 }
 
 function watchdog() {
-  if(Date.now() > active+60000) {
+  if(Date.now() > active+120000) {
     console.log('watchdog', new Date())
     Deno.exit(1)
   }
