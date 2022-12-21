@@ -1,6 +1,7 @@
 import {Graph} from './graph.js'
 import * as cypher from './cypher.js'
 import {composite} from './composite.js'
+import {becypher} from './becypher.js'
 
 export const croquet = {model:null, view:null}
 
@@ -177,6 +178,16 @@ export class BeamView extends Croquet.View {
           .filter(uniq).sort().join('-') + '.graph.json'
         download(poem.graph.stringify(null,2),filename,'application/json')
       }
+    } else
+    if (text === "/cypher") {
+      const poems = [...window.beamlist.querySelectorAll('input[type=checkbox]:checked')]
+        .map(e => this.beam()[+e.value])
+      const poem = composite(poems)
+      const cypher = becypher(poem.graph)
+      const filename = poems
+        .map(poem => poem.name.replace(/[^a-zA-Z0-9]/g,''))
+        .filter(uniq).sort().join('-') + '.cypher'
+      download(cypher,filename,'application/x-cypher')
     } else
     if (text === "/export") {
       const stream = this.beam().map(item => JSON.stringify(item)).join("\n")
