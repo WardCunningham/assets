@@ -6,12 +6,12 @@
   <pre id="result">working</pre>
   <div id="graph" style="width:100%;height:90%;"></div>
 
-  <script>
+  <script type=module>
 
   // file:///Users/ward/FedWiki/assets/plugins/datalog/plot-datalog.html?protocol=http:&site=found.ward.bay.wiki.org&slug=esp8266-datalog&chunk=day&keep=3
 
   function hashed(hash, assign) {
-    op=assign.split(/=/)
+    let op=assign.split(/=/)
     if (op[1]) hash[op[0]]=op[1]
     return hash
   }
@@ -54,7 +54,7 @@
     let samples = logs.length-1
     for (let i = 0; i < samples; i++)
       sum += (logs[i+1].clock-logs[i].clock)
-    result.innerHTML = `Sample period ${(sum/samples/1000).toFixed(0)} seconds.`
+    window.result.innerHTML = `Sample period ${(sum/samples/1000).toFixed(0)} seconds.`
   }
 
 // [
@@ -95,7 +95,7 @@
           let readings = Object.values(result.data)
           if (readings.length>0) {
             have.add(name)
-            trace = traces[name] = traces[name] || {x:[],y:[],name:name}
+            let trace = traces[name] = traces[name] || {x:[],y:[],name:name}
             trace.x.push(date)
             trace.y.push(fahrenheit(readings))
           }
@@ -107,7 +107,8 @@
         traces[name].y.push(null)
       }
     }
-    Plotly.plot('graph', Object.values(traces))
+    Plotly.plot(window.graph, Object.values(traces))
+    window.graph.on('plotly_relayout',data => console.log(data))
   }
 
   sample()
