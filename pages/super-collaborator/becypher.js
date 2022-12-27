@@ -5,8 +5,8 @@ export function becypher(graph) {
     .map(([k,v]) => `${k}:${JSON.stringify(v)}`)
     .join(',')
   graph.nodes.forEach((node,nid) =>
-    cypher.push(`create (n${nid}:${node.type} {${kv(node.props)}})`))
+    cypher.push(`merge (n${nid}:${node.type} {${kv(node.props)}})`))
   graph.rels.forEach(rel =>
-    cypher.push(`create (n${rel.from})-[:${rel.type} {${kv(rel.props)}}]->(n${rel.to})`))
+    cypher.push(`merge (n${rel.from})-[:${rel.type} {${kv(rel.props)}}]->(n${rel.to})`))
   return cypher.join("\n")
 }
