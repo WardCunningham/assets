@@ -1,0 +1,95 @@
+<p><table onchange=dochoice(event)><tr>
+  <td id=site>
+  <td id=prop>
+  <td id=vals>
+</table>
+<p><table style="border-collapse:collapse;" id=result onclick=doopen(event)></table>
+<style>
+  td {vertical-align:top; }
+  #result td { border: 1px solid gray; padding: 4px; text-align:center;  }
+</style>
+
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const sites = context.page.story
+    .filter(item => item.type == 'data')
+
+  window.site.innerHTML = sites
+    .map(item => 
+      `<input type=radio id=site${item.text} name=site value="${item.text}">
+      <label for=site${item.text}>${item.text}</label>`)
+    .join("<br>")
+
+  window.prop.innerHTML = sites[0].columns
+    .map(key => 
+      `<input type=radio id=prop${key} name=prop value="${key}">
+      <label for=prop${key}>${key}</label>`)
+    .join("<br>")
+
+  const choice = {}
+  let counts
+  window.dochoice = event => {
+    const target = event.target
+    const name = target.getAttribute('name')
+    const value = target.getAttribute('value')
+    console.log({target,name,value})
+    choice[name] = value
+    if (['vals'].includes(name)) {
+      console.log({value})
+      console.log(counts[value])
+      const keys = ['year','pages','domain','owner']
+      window.result.innerHTML = counts[value]
+        .map(row => ['<tr>',...keys.map(key => row[key])].join('<td>'))
+        .join("\n")
+    } else
+    if (['site','prop'].includes(name)){
+      delete choice['vals']
+      counts = tally()
+      window.vals.innerHTML = Object.keys(counts)
+        .map(key =>
+          `<input type=radio id=vals${key} name=vals value="${key}">
+          <label for=vals${key}>${key} × ${counts[key].length}</label>`)
+        .join("<br>")
+    }
+  }
+
+  window.doopen = event => {
+    const target = event.target
+    const value = target.innerText
+    if (value.includes('.')) {
+      console.log(value)
+      window.parent.postMessage({
+        action:"doInternalLink",
+        title: "Welcome Visitors",
+        site: value,
+        keepLineup: event.shiftKey
+      }, "*")
+    }
+  }
+
+  function tally() {
+    const counts = {}
+    if (choice.prop) {
+    for (const site of sites) {
+      if (choice.site && site.text != choice.site) continue
+      site.data.forEach(row => {
+        let val = row[choice.prop]
+        switch (choice.prop) {
+          case 'date': val = Math.floor((Date.now()-val)/(365*24*60*60*1000))+' years ago'; break
+          case 'year': val = '20'+val.split('/')[2]; break
+          case 'pages': val = 10**Math.floor(Math.log10(val)); break
+          case 'domain': val = val.split('.').slice(-2).join('.').slice(0,14); break
+          case 'owner': val = (val||'Unclaimed').slice(0,14); break
+        }
+        counts[val] ||= []
+        counts[val].push(row)
+      })
+    }}
+    console.log({counts})
+    return Object.fromEntries(Object.entries(counts).sort((a,b) => b[1].length - a[1].length))
+  }
+
+
+
+</script>
