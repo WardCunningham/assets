@@ -1,8 +1,11 @@
 <p id=buttons>
   <button onclick=dosurvey(event)>survey</button>
-  <button onclick=doprint(event)>download</button>
 </p>
 <div id=report></div>
+<p id=details hidden=true>
+  <button onclick=doprint(event)>as table</button>
+  <button onclick=dographs(event)>as graphs</button>
+</p>
 <style>
   body { font-family: verdana, helvetica, sans; font-size: smaller; }
   td { border: 1px solid gray; padding: 4px; text-align:center;  }
@@ -37,10 +40,12 @@
     survey()
     window.report.innerHTML = `
       <table>
+      <tr><th><th>${cols.map(col => `${col.site.slice(0,1)}`).join("<th>")}
       ${[0,1,2,3,4,5,6,7,8].map(row =>
         `<tr><td>${row}${[0,1,2].map(col =>
           `<td onclick=docell(event,${row},${col})>${format(row,col)}`).join('')}`).join('')}
       </table>`
+    window.details.hidden = false
   }
 
   window.docell = (event,row,col) => {
@@ -175,7 +180,6 @@
 
   window.doprint = event => {
     const uniques = new Set()
-
     const color = (site,titlet) => {
       const {title,slug} = titlet
       uniques.add(slug)
@@ -210,6 +214,7 @@
         table { border-collapse: collapse; }
       </style>
       <table>
+      <tr><th>${cols.map(col => `${col.site}`).join("<th>")}
       ${[0,1,2,3,4,5,6,7].map(row =>
         `<tr><td colspan=4 style="background-color:lightgray;">${row} clicks from story
          ${format(row)}`).join("\n")}
@@ -243,6 +248,77 @@
       }
     }
     return count
+  }
+
+  window.dographs = event => {
+    // all 1-click gateways for which there is some agreement
+    const ordered = [0,1,2]
+      .map(col => order(1,col))
+    const gateways = ordered
+      .map(agreed => agreed.slice(0,2))
+      .flat(2)
+      .filter(agreed => agreed.title != agreed.slug)
+      .map(agreed => agreed.title)
+      .filter(uniq)
+      .sort()
+    const beam = gateways.map(name => {
+      const graph = new Graph()
+      graph.addNode('Garden',{name})
+      const nids = {}
+
+      const incoming = (map,from,to,then) => {
+        const info = map.find(info => info.slug == from)
+        if(Object.keys(info?.links||{}).includes(to)) {
+          if(!(info.title in nids)) {
+            nids[info.title] = graph.addNode('Story',{name:info.title})
+          }
+          then(nids[info.title])
+        }
+      }
+
+      const outgoing = (map,from,then) => {
+        const info1 = map.find(info => info.slug == from)
+        Object.keys(info1?.links||{}).forEach(to => {
+          const info2 = map.find(info => info.slug == to)
+          if(info2) {
+            const title = info2.title || info2.slug
+            if(!(title in nids)) {
+              nids[title] = graph.addNode('Garden',{name:title})
+            }
+            then(nids[title])
+          }
+        })
+      }
+
+      let here = frame.asSlug(name)
+      let next = []
+      let prev = []
+      cols.forEach(col => {
+        next = []
+        prev = []
+        let type = `${col.site.toUpperCase()[0]}1`
+        col.garden[0].forEach(story =>
+          incoming(col.map, story, here, nid => next.push(graph.addRel(type,nid,0))))
+        const more = [2,3]
+        more.forEach(now => {
+          prev = next
+          next = []
+          type = `${col.site.toUpperCase()[0]}${now}`
+          prev.forEach(rid => {
+            const old = graph.rels[rid].to
+            here = frame.asSlug(graph.nodes[old].props.name)
+            outgoing(col.map, here, nid => next.push(graph.addRel(type,old,nid)))
+          })
+        })
+      })
+
+      console.log({name,graph})
+      return {name,graph}
+    })
+    const jsonl = beam
+      .map(poem => JSON.stringify(poem))
+      .join("\n")
+    frame.download(jsonl,'AgreedGatewayGraphs.jsonl','application/jsonl')
   }
 
 </script>
