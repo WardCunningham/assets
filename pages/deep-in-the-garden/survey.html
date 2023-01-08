@@ -103,13 +103,14 @@
 
   async function refresh() {
     beauty = await fetch('./beauty.json').then(res => res.ok ? res.json() : [])
+    console.log({beauty})
     let updates = []
     const work = cols.map(async col => {
       const {site,map} = col
       const todo = map.map(info => {
         const slug = info.slug
         const have = beauty.find(haiku => haiku.site==site && haiku.slug==info.slug)
-        if(Math.random()<1.0 && (!have || have.date < info.date))
+        if(Math.random()<1.0 && (!have || have.date != info.date))
           return fetch(`http://${site}/${slug}.json`)
             .then(res => res.json())
             .then(page => update(site,slug,page,have))
@@ -127,8 +128,9 @@
     }
 
     function update(site,slug,page,have) {
+      console.log('update',{site,slug,page,have})
       updates.push(slug)
-      const date = Date.now()
+      const date = maps[sites.indexOf(site)].find(p => p.slug == slug).date
       const items = page.story
         .filter(item => ['paragraph','markdown'].includes(item.type))
       const blanks = items
