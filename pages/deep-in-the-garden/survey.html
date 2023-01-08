@@ -35,7 +35,11 @@
 
   window.dosurvey = async event => {
     const format = (row,col) => cols[col].garden[row].length
+    window.buttons.querySelector('button').disabled = true
     await loader()
+    if(event.shiftKey) {
+      showsitemaps()
+    }
     await refresh()
     survey()
     window.report.innerHTML = `
@@ -261,12 +265,17 @@
       .map(agreed => agreed.title)
       .filter(uniq)
       .sort()
-    const beam = gateways.map(name => {
-      const graph = new Graph()
-      graph.addNode('Garden',{name})
-      const nids = {}
+    console.log({gateways})
+    const beam = []
+    gateways.forEach(name => {
 
-      const incoming = (map,from,to,then) => {
+      const done = (graph,info) => {
+        const name = info.title || info.slug
+        const node = graph.nodes.find(node => node.props.name == name)
+        return !!node
+      }
+
+      const incoming = (graph,nids,map,from,to,then) => {
         const info = map.find(info => info.slug == from)
         if(Object.keys(info?.links||{}).includes(to)) {
           if(!(info.title in nids)) {
@@ -276,11 +285,11 @@
         }
       }
 
-      const outgoing = (map,from,then) => {
+      const outgoing = (graph,nids,map,from,then) => {
         const info1 = map.find(info => info.slug == from)
         Object.keys(info1?.links||{}).forEach(to => {
           const info2 = map.find(info => info.slug == to)
-          if(info2) {
+          if(info2 && !done(graph,info2)) {
             const title = info2.title || info2.slug
             if(!(title in nids)) {
               nids[title] = graph.addNode('Garden',{name:title})
@@ -294,31 +303,68 @@
       let next = []
       let prev = []
       cols.forEach(col => {
+
+        const graph = new Graph()
+        graph.addNode('Garden',{name})
+        const nids = {}
         next = []
         prev = []
-        let type = `${col.site.toUpperCase()[0]}1`
-        col.garden[0].forEach(story =>
-          incoming(col.map, story, here, nid => next.push(graph.addRel(type,nid,0))))
-        const more = [2,3]
-        more.forEach(now => {
-          prev = next
-          next = []
-          type = `${col.site.toUpperCase()[0]}${now}`
-          prev.forEach(rid => {
-            const old = graph.rels[rid].to
-            here = frame.asSlug(graph.nodes[old].props.name)
-            outgoing(col.map, here, nid => next.push(graph.addRel(type,old,nid)))
-          })
-        })
-      })
 
-      console.log({name,graph})
-      return {name,graph}
+        let type = `${col.site.toUpperCase()[0]}1`
+        col.garden[0].forEach(story => {
+          incoming(graph,nids,col.map, story, here, nid => {
+            next.push(graph.addRel(type,nid,0))
+          })})
+
+        if (graph.nodes[0].in.length) {
+          const more = [2,3]
+          more.forEach(now => {
+            prev = next
+            next = []
+            type = `${col.site.toUpperCase()[0]}${now}`
+            prev.forEach(rid => {
+              const old = graph.rels[rid].to
+              here = frame.asSlug(graph.nodes[old].props.name)
+              console.log({type,here})
+              outgoing(graph,nids,col.map, here, nid => next.push(graph.addRel(type,old,nid)))
+            })
+          })
+          const n = `${name} ${col.site.toUpperCase()[0]}`
+          console.log({name:n, nodes:graph.nodes.length, rels:graph.rels.length, graph})
+          beam.push({name:n, graph})
+        }
+      })
     })
     const jsonl = beam
       .map(poem => JSON.stringify(poem))
       .join("\n")
     frame.download(jsonl,'AgreedGatewayGraphs.jsonl','application/jsonl')
+  }
+
+  function showsitemaps() {
+    const slugs = cols
+      .map(col => col.map
+        .map(info => info.slug))
+      .flat()
+      .filter(uniq)
+      .sort()
+    console.log({slugs})
+    const show = info => `${info?.title||''}<br>${Object.keys(info?.links||{}).sort().join("<br>")}`
+    const cell = (slug,col) => `<td>${show(col.map.find(info => info.slug==slug))}`
+    const row = slug => `<tr><td>${slug}${cols.map(col => cell(slug,col)).join('')}`
+    const html = `
+      <style>
+        body { font-family: verdana, helvetica, sans; font-size: smaller; }
+        td { border: 1px solid gray; padding: 4px; text-align:left; vertical-align:top; }
+        table { border-collapse: collapse; }
+        .sticky {top: 0; position: sticky}
+      </style>
+      <table>
+      ${['<tr>','',...cols.map(col => `${col.site}`)].join("<th class=sticky>")}
+      ${slugs.map(row).join("\n")}
+      </table>
+      `
+    frame.download(html,'ShowSitemaps.html','text/html')
   }
 
 </script>
