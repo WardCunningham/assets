@@ -1,0 +1,125 @@
+<p>
+  <button onclick=dopreview(event)>preview</button>
+  <button onclick=dodownload(event)>download</button>
+</p>
+<table id=choices onchange=dochoice(event)></table>
+<div id=result></div>
+
+<style>
+  td {vertical-align:top;}
+</style>
+
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  import {dotify} from 'http://hsc.fed.wiki/assets/home/dotify.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  const gateways = ['Agile Mindset', 'Audacious Aspiration', 'Believing Eyes', 'Cartesian Mindset', 'Creative Genius', 'Deep Listening', 'Deep Truth', 'Designed InGenuity (DIG)', 'Eureka Moments', 'Learn Faster', 'Learning Confidence', 'Learning Cycles', 'Taylorism', 'The Dayton Practice']
+  const authors = ['David', 'Jess', 'Thompson', 'Book']
+  const clicks = [1,2,3,4]
+  const chosen = {
+    gateway:'Agile Mindset',
+    author:'David',
+    clicks:'1'
+  }
+
+  let graph
+
+  const choices = (type,list) =>
+    list.map((choice,i) => `
+      <input type=radio id=${type}${i} name=${type} value="${choice}" ${i?'':'checked'}>
+      <label for=${type}${i}>${choice}</label>`).join('<br>')
+
+  window.choices.innerHTML = `<tr>
+    <td>${choices('gateway',gateways)}
+    <td>${choices('author',authors)}
+    <td>${choices('clicks',clicks)}`
+
+  window.dochoice = async event => {
+    const target = event.target
+    const name = target.getAttribute('name')
+    const value = target.getAttribute('value')
+    chosen[name] = value
+    console.log(chosen)
+    window.result.innerText = ''
+    graph = await clickto()
+  }
+
+  window.dodownload = event => {
+    const filename = `${frame.asSlug(chosen.gateway)}-${chosen.author}.graph.json`
+    frame.download(graph.stringify(null,2),filename,'application/json')
+  }
+
+  window.dopreview = event => {
+    const title = `${chosen.gateway} (${chosen.author})`
+    const story = [
+      {type:'paragraph',text:`We'll explain this preview soon.`},
+      {type:'graphviz',text:dotify({graph,merged:{nids:[]}})}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  graph = await clickto()
+
+  async function clickto () {
+    const slug = frame.asSlug(chosen.gateway)
+    const author = chosen.author
+    const initial = author[0].toUpperCase()
+    const site = `${author}.reimage.fed.wiki`
+    const sitemap = await fetch(`http://${site}/system/sitemap.json`).then(res => res.json())
+    const siteinfo = slug => sitemap.find(info => info.slug==slug)
+    const clicks = chosen.clicks
+
+    const graph = new Graph()
+    const nids = {}
+    const done = []
+    let todo = [slug]
+    window.result.innerHTML = `<p>${siteinfo(slug) ? slug : 'N/A'}</p>`
+
+    for (let click=2; click<=clicks; click++) {
+      done.push(...todo)
+      todo = doit(click, todo).filter(slug => !done.includes(slug))
+       window.result.innerHTML += `<p>${todo.join(', ')}</p>`
+    }
+    return graph
+
+
+
+    function doit(click,todo) {
+      const next = []
+      todo.forEach(slug => {
+        const info = siteinfo(slug)
+        if(info) {
+          const links = Object.keys(info.links||{})
+          goto(initial+click, slug, links)
+          next.push(...links)
+        }
+      })
+      return next.filter(uniq)
+    }
+
+    function goto(type, slug, links) {
+      links.forEach(link =>
+        graph.addRel(type, node(slug), node(link)))
+    }
+
+    function node(slug) {
+      const info = siteinfo(slug)
+      const type = info ? 'Garden' : 'Slug'
+      const name = info?.title || slug
+      if(!(name in nids)) {
+          nids[name] = graph.addNode(type,{name})
+        }
+      return nids[name] 
+    }
+
+  }
+
+
+
+
+
+
+</script>
