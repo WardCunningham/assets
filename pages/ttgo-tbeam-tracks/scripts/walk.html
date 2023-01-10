@@ -30,6 +30,7 @@
     .text.split(/\n/)
   const late = {"2022-10-15":1588}
   const tracks = await Promise.all(days.map(date => track(date.trim())))
+  console.log(tracks)
   const route = marks
   const steps = []
   pairs(route).forEach(([here,there]) =>
@@ -40,6 +41,7 @@
     <button onclick=dospans(event)>spans</button>
     <button onclick=dotrack(event)>track</button>
     <button onclick=dodownload(event)>download</button>
+    <button onclick=dointerpolate(event)>interpolate</button>
   `
 
   window.doroute = event => {
@@ -83,6 +85,7 @@
         x0 = x1
       })
     })
+    traces[traces.length-1].line = {width:5}
 
     frame.download(JSON.stringify(traces,null,2),'plot-data.json','application/json')
   }
@@ -133,6 +136,93 @@
     let [lat2,lon2] = there.map(deg => rad(deg))
     let earth = 3958.8
     return (earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))) || 0
+  }
+
+  window.dointerpolate = event => {
+    // const origin = [9,5,6,5,5,4,3,7,15,3,5,4,4,3,3]
+    const hist = route.map(_ => [])
+    let here
+    tracks.map(track => {
+      here = 0
+      const dist = (r,t) => distance(route[r].latlon, track[t].where)
+      const close = (r) => {
+        const near = track
+           .map((_,t) => [dist(r,t),t])
+          .filter(a => a[1]>here && a[1]<(here+20))
+          .sort((a,b) => a[0]-b[0]);
+        if(near.length) {
+          here = near[0][1]
+          return near[0]
+        }
+        else {
+          return [99,99]
+        }
+      }
+      route.map((mark,r) => hist[r].push(close(r)[1]))
+    })
+
+    const title = 'Walks Interpolated'
+    const text = route
+      .map((mark,r) => `${mark.label}\n  ${hist[r].join(" ")}`)
+      .join("\n")
+    const closeness = route
+      .map((mark,r) => mark.label+"\n"+hist[r]
+        .map((hist,i) => Math.trunc(5280*distance(route[r].latlon,tracks[i][hist].where)))
+        .join(" "))
+      .join("\n")
+    const markers = route
+      .map((mark,r) => hist[r]
+        .map((hist,i) => `${tracks[i][hist].where} ${mark.label}`)
+        .join("\n"))
+      .join("\n")
+    const crossings = route
+      .map((mark,r) => hist[r]
+        .map((hist,i) => `${cross(tracks[i],hist,mark).where} ${mark.label} ${new Date(tracks[i][hist].when).toISOString().split('T')[0]}`)
+        .join("\n"))
+      .join("\n")
+    const story = [
+      {type:'paragraph', text:`We compute where tracks pass marks and measure attributes of these segments thus produced.`},
+      {type:'code', text},
+      {type:'code', text:closeness},
+      {type:'paragraph',text:`Here we mark the gps samples that will be one end or another of interpolation.`},
+      {type:'map', text:markers},
+      {type:'paragraph',text:`Here we we show the interpolated locations adjacent to a mark.`},
+      {type:'map', text:crossings}
+    ]
+    frame.open({title,story},event.shiftKey)
+
+    function cross(track, close, mark) {
+      // improve on track[close] by interpolating crossing of a line through mark
+      const moving = mark.label.match(/\(([NSEW])\)/)[1]
+      const [mlat,mlon] = mark.latlon
+      const [clat,clon] = track[close].where
+
+      let other
+      switch(moving) {
+        case 'N': other = close + (clat < mlat ? 1 : -1); break
+        case 'S': other = close + (clat > mlat ? 1 : -1); break
+        case 'E': other = close + (clon < mlon ? 1 : -1); break
+        case 'W': other = close + (clon > mlon ? 1 : -1); break
+      }
+      if (other >= track.length) return {where:[mlat,mlon]}
+      const [olat,olon] = track[other].where
+
+      const [cdy,cdx] = [clat-mlat, clon-mlon]
+      const [ody,odx] = [olat-mlat, olon-mlon]
+
+      let xlat,xlon
+      switch(moving) {
+        case 'N': case 'S':
+          xlat = mlat
+          xlon = cdy/(cdy+ody) * (clon-olon) + clon
+          break
+        case 'E': case 'W':
+          xlon = mlon
+          xlat = cdx/(cdx+odx) * (clat-olat) + clat
+          break
+      }
+      return {where:[xlat,xlon]}
+    }
   }
 
 </script>
