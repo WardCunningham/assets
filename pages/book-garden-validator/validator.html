@@ -1,0 +1,65 @@
+<p>Validator Under Construction</p>
+<p>
+  <button onclick=dorefresh(event)>refresh</button> after editing book pages<br>
+  <button onclick=dopreview(event)>preview</button> to see validaton summary<br>
+  <button onclick=dodownload(event) disabled>download</button> super collaborator details
+</p>
+<div id=report></div>
+<style>
+  button {width:80px;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+  const report = msg => window.report.innerHTML += msg + "<br>"
+  
+  let site
+  let stories
+
+
+  // B U T T O N S
+
+  window.dorefresh  = async event => {
+    window.report.innerText = ''
+    report(`refreshed at ${new Date().toLocaleTimeString()}`)
+    site = await index.site(`book.reimage.fed.wiki`)
+    report(`${site.sitemap.length} pages in book sitemap`)
+    const context = await frame.context()
+    stories = index.links(index.folds(context.page.story).stories)
+    report(`${stories.length} stories linked from here`)
+  }
+
+  dorefresh(null)
+
+  window.dopreview = async event => {
+    const preview = [{type:'paragraph',text:`Link checked for stories and garden.`}]
+    const works = await getworks()
+    works.forEach(work => {
+      preview.push({type:'markdown',text:`# ${work.author}`})
+      preview.push({type:'paragraph',text:`${work.titles.length} titles in [[${work.author}]]`})
+      const missing = work.titles
+        .filter(title => !site.info(title))
+        .map(title => `- [[${title}]]`)
+        .join("\n")
+      if(missing)
+        preview.push({type:'markdown',text:`missing story titles:\n${missing}`})
+    })
+    const title = 'Book Validation Report'
+    frame.open({title,story:preview},event.shiftKey)
+  }
+
+
+  // A G G R E G A T I O N S
+
+  async function getworks () {
+    const pages = await Promise.all(stories.map(title => site.page(title)))
+    return pages.map(page => ({
+      author:page.title,
+      titles:page.story
+        .filter(item => item.type=='reference')
+        .map(item => item.title)
+    }))
+
+  }
+
+</script>
