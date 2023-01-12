@@ -25,6 +25,7 @@
     window.report.innerText = ''
     report(`refreshed at ${new Date().toLocaleTimeString()}`)
     site = await index.site(`book.reimage.fed.wiki`)
+    console.log(site.info('deep-listening'))
     report(`${site.sitemap.length} pages in book sitemap`)
     const context = await frame.context()
     stories = index.links(index.folds(context.page.story).stories)
@@ -34,8 +35,11 @@
   dorefresh(null)
 
   window.dopreview = async event => {
+    console.log(site.info('deep-listening'))
     const preview = [{type:'paragraph',text:`Link checked for stories and garden.`}]
     const works = await getworks()
+    const blocks = allslugs(works)
+    console.log({blocks})
     works.forEach(work => {
       preview.push({type:'markdown',text:`# ${work.author}`})
       preview.push({type:'paragraph',text:`${work.titles.length} titles in [[${work.author}]]`})
@@ -46,7 +50,8 @@
       if(missing)
         preview.push({type:'markdown',text:`missing story titles:\n${missing}`})
     })
-    const gates = await allgates(works)
+    const gates = allgates(works)
+    console.log({gates})
     const present = gates
       .map(gate => site.info(gate))
       .filter(info => info)
@@ -65,9 +70,18 @@
   }
 
   window.dodownload = async event => {
+    console.log(site.info('deep-listening'))
     const beam = []
     const nids = {}
+
     const works = await getworks()
+    const blocks = works
+      .map(work => work.titles
+        .map(title => frame.asSlug(title)))
+      .flat()
+      .sort()
+      .filter(uniq)
+    console.log({blocks})
     works.forEach(work => {
       const graph = new Graph()
       let here = graph.addNode('Work',{name:work.author})
@@ -77,10 +91,25 @@
         const type = site.info(title) ? 'Story' : 'Slug'
         const next = graph.addNode(type,{name:title})
         graph.addRel(`${initial}0`,here,next)
+        clickto(blocks,1,1,title,graph,next)
         here = next
-        clickto(1,1,title,graph,here)
       })
     })
+
+    const gates = allgates(works)
+    console.log({gates})
+    const gateways = gates
+      .map(gate => site.info(gate))
+      .filter(info => info)
+    gateways.forEach(info => {
+      // if (info.slug='deep-listening') debugger
+      const name = info.title
+      const graph = new Graph()
+      let here = graph.addNode('Garden',{name})
+      beam.push({name, graph})
+      clickto(blocks,1,3,name,graph,here)
+    })
+
     const jsons = beam.map(poem => JSON.stringify(poem))
     frame.download(jsons.join("\n"),'Book-Story-Garden.jsonl','application/json')
   }
@@ -88,7 +117,7 @@
 
   // A G G R E G A T I O N S
 
-  async function getworks () {
+  async function getworks() {
     const pages = await Promise.all(stories.map(title => site.page(title)))
     return pages.map(page => ({
       author:page.title,
@@ -98,28 +127,41 @@
     }))
   }
 
-  async function allgates (works) {
-    const gates = []
-    works.forEach(work =>
-      work.titles.forEach(title =>
-        gates.push(...Object.keys(site.info(title)?.links||{}))))
-    console.log({gates})
-    return gates
+  function allslugs(works) {
+    return works
+      .map(work => work.titles
+        .map(title => frame.asSlug(title)))
+      .flat()
       .sort()
       .filter(uniq)
   }
 
-  function clickto (level,limit,title,graph,here) {
+  function allgates(works) {
+    const blocks = allslugs(works)
+    const gates = []
+    works.forEach(work =>
+      work.titles.forEach(title =>
+        gates.push(...Object.keys(site.info(title)?.links||{}))))
+    return gates
+      .filter(gate => !blocks.includes(gate))
+      .sort()
+      .filter(uniq)
+  }
+
+  function clickto(blocks,level,limit,title,graph,here) {
     const info = site.info(title)
     if(!info) return
     const links = Object.keys(info.links||{})
+      .filter(link => !blocks.includes(link))
     links.forEach(link => {
-      const type = site.info(link) ? 'Garden' : 'Slug'
+      const info = site.info(link)
+      if(!info) return
+      const type = info ? 'Garden' : 'Slug'
       const name = info.title
       const next = graph.addNode(type,{name})
       graph.addRel(`B${level}`,here,next)
       if (level < limit) {
-        clickto (level+1,limit,link,graph,next)
+        clickto (blocks,level+1,limit,link,graph,next)
       }
     })
 
