@@ -12,33 +12,42 @@
 <script type=module>
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  import * as index from ''
-  const site = `photos.ward.dojo.fed.wiki`
-  const assets = `http://${site}/assets`
-  const index = await fetch(`${assets}/image-index.json`).then(res => res.json())
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 
-  document.querySelector('table').addEventListener('click', event => {
-    const title = event.target.getAttribute('title')
-    const message = {action:"doInternalLink", title, keepLineup: event.shiftKey}
-    window.parent.postMessage(message, "*")
-  })
+  const domain = `photos.ward.dojo.fed.wiki`
+  const assets = `http://${domain}/assets`
+  const site = await index.site(domain)
+  // const images = await fetch(`${assets}/data/photo-index.json`).then(res => res.json())
 
-  const images = []
-  for (const folder in json)
-    for (const trail in json[folder])
-      for (const image of json[folder][trail])
-        images.push({trail,folder,image})
-  const i=0
+  const titles = site.sitemap
+    .filter(info => info.slug.endsWith('-photos'))
+    .map(info => info.title)
+  const pages = await site.pages(titles)
+  const images = pages
+    .map(page => page.story)
+    .flat()
+    .filter(item => item.type == 'image')
+    .map(item => `http://${domain}${item.url}`)
+  console.log({images})
+
+  // document.querySelector('table').addEventListener('click', event => {
+  //   const title = event.target.getAttribute('title')
+  //   const message = {action:"doInternalLink", title, keepLineup: event.shiftKey}
+  //   window.parent.postMessage(message, "*")
+  // })
+
+  let tds = document.querySelectorAll('td')
+  let i=0
   while(i<6) show()
   setInterval(show,2000)
 
   function show() {
-    const td = document.querySelectorAll('td')[i++%6]
-    const {trail,folder,image} = images[Math.floor(Math.random() * images.length)]
-    const src = `${assets}/${folder}/${image}`
-    const img = new Image()
-    img.addEventListener('load', () => td.innerHTML = `<img src="${src}" title="${trail}">`)
-    img.src = src
+    console.log({i})
+    let src = images[Math.floor(Math.random() * images.length)]
+    tds[i++%6].innerHTML = `<img src="${src}" title="tbd">`
+  //   let img = new Image()
+  //   // img.addEventListener('load', () => tds[i++%6].innerHTML = `<img src="${src}" title="tbd">`)
+  //   img.src = src
   }
 
 </script>
