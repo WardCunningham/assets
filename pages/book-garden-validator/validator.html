@@ -25,7 +25,6 @@
     window.report.innerText = ''
     report(`refreshed at ${new Date().toLocaleTimeString()}`)
     site = await index.site(`book.reimage.fed.wiki`)
-    console.log(site.info('deep-listening'))
     report(`${site.sitemap.length} pages in book sitemap`)
     const context = await frame.context()
     stories = index.links(index.folds(context.page.story).stories)
@@ -35,10 +34,10 @@
   dorefresh(null)
 
   window.dopreview = async event => {
-    console.log(site.info('deep-listening'))
     const preview = [{type:'paragraph',text:`Link checked for stories and garden.`}]
     const works = await getworks()
     const blocks = allslugs(works)
+    console.log({sitemap:site.sitemap})
     console.log({blocks})
     works.forEach(work => {
       preview.push({type:'markdown',text:`# ${work.author}`})
@@ -70,7 +69,6 @@
   }
 
   window.dodownload = async event => {
-    console.log(site.info('deep-listening'))
     const beam = []
     const nids = {}
 
@@ -81,6 +79,7 @@
       .flat()
       .sort()
       .filter(uniq)
+    console.log({sitemap:site.sitemap})
     console.log({blocks})
     works.forEach(work => {
       const graph = new Graph()
@@ -102,7 +101,6 @@
       .map(gate => site.info(gate))
       .filter(info => info)
     gateways.forEach(info => {
-      // if (info.slug='deep-listening') debugger
       const name = info.title
       const graph = new Graph()
       let here = graph.addNode('Garden',{name})
@@ -155,9 +153,8 @@
       .filter(link => !blocks.includes(link))
     links.forEach(link => {
       const info = site.info(link)
-      if(!info) return
       const type = info ? 'Garden' : 'Slug'
-      const name = info.title
+      const name = info?.title || link
       const next = graph.addNode(type,{name})
       graph.addRel(`B${level}`,here,next)
       if (level < limit) {
