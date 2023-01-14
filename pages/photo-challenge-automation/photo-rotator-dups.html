@@ -1,0 +1,36 @@
+<table id=result>
+  <tr><th>photos<th>dups<th>seconds
+</table>
+<style>
+  td {text-align:center}
+</style>
+<script type=module>
+
+  const pick = n => Math.floor(Math.random()*n)
+  const show = html => window.result.innerHTML += html
+  const io = () => new Promise(done => setTimeout(done))
+  const inc = (a,i) => {a[i]++; return a}
+  const zeros = n => new Array(n).fill(0)
+
+  const photos = [0,1,2,3,4,5]
+  const slots = photos.length
+  const days = 14
+
+  const dups = () => photos
+    .reduce(inc, zeros(days))
+    .filter(freq => freq > 0)
+    .sort((a,b) => b-a)[0]
+
+  let want = 2
+  for (let time=1; time<1000000; time++) {
+    const slot = time % slots
+    photos[slot] = pick(days)
+    if (dups() == want) {
+      show(`<tr><td>${photos.join(",")}<td>${want}<td>${time}`)
+      await io()
+      if (want == slots) break
+      want++
+    }
+  }
+
+</script>
