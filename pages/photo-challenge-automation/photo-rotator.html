@@ -14,11 +14,12 @@
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 
+  const any = a => a[Math.floor(Math.random() * a.length)]
+
   const domain = `photos.ward.dojo.fed.wiki`
   const assets = `http://${domain}/assets`
   const site = await index.site(domain)
   // const images = await fetch(`${assets}/data/photo-index.json`).then(res => res.json())
-
   const titles = site.sitemap
     .filter(info => info.slug.endsWith('-photos'))
     .map(info => info.title)
@@ -28,7 +29,6 @@
     .flat()
     .filter(item => item.type == 'image')
     .map(item => `http://${domain}${item.url}`)
-  console.log({images})
 
   // document.querySelector('table').addEventListener('click', event => {
   //   const title = event.target.getAttribute('title')
@@ -36,14 +36,15 @@
   //   window.parent.postMessage(message, "*")
   // })
 
-  let tds = document.querySelectorAll('td')
+  let tds = [...document.querySelectorAll('td')]
   let i=0
   while(i<6) show()
   setInterval(show,2000)
 
   function show() {
-    console.log({i})
-    let src = images[Math.floor(Math.random() * images.length)]
+    const have = tds.map(td => td.querySelector('img')?.getAttribute('src'))
+    const want = images.filter(image => !have.includes(image))
+    let src = any(want)
     tds[i++%6].innerHTML = `<img src="${src}" title="tbd">`
   //   let img = new Image()
   //   // img.addEventListener('load', () => tds[i++%6].innerHTML = `<img src="${src}" title="tbd">`)
