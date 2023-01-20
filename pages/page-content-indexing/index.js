@@ -112,15 +112,16 @@ export function index(site, oldindex) {
 }
 
 export function update(site, oldindex, finder) {
-  const key = page => ({date:site.info(page.title).date, site:asSlug(page.title), title:page.title})
+  const key = page => ({date:site.info(page.title).date, slug:asSlug(page.title), title:page.title})
   const get = title => site.page(title).then(page => Object.assign(key(page),finder(page)))
   const old = title => oldindex.find(info => info.title == title)
   const changes = site.changed(oldindex)
   for (const title of changes.removed)
     oldindex.splice(oldindex.findIndex(info => info.title == title),1)
-  return Promise.all([
-    changes.created.map(title => get(title).then(info => oldindex.push(info))),
+  const result =Promise.all([
+    changes.created.map(title => get(title).then(info => {oldindex.push(info); return info})),
     changes.newer.map(title => get(title).then(info => Object.assign(old(title),info))),
     changes.older.map(title => get(title).then(info => Object.assign(old(title),info))),
-  ])
+  ].flat())
+  return result
 }

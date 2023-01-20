@@ -112,9 +112,7 @@ window.dofolds = async event => {
 let oldindex = await fetch(testindex).then(res => res.json())
 
 const finder = page => {
-  const finding = {img:index.tags(page.story,'img')}
-  console.log({page,finding})
-  return finding
+  return {img:index.tags(page.story,'img')}
 }
 
 window.doindex = async event => {
