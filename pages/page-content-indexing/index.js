@@ -5,9 +5,8 @@ export const asCopy = obj => JSON.parse(JSON.stringify(obj))
 // F E T C H
 
 export async function site(domain) {
-  const site = domain
-  const sitemap = await fetch(`//${site}/system/sitemap.json`).then(res => res.json())
-  return {sitemap,info,newer,page,pages}
+  const sitemap = await fetch(`//${domain}/system/sitemap.json`).then(res => res.json())
+  return {sitemap,info,newer,changed,page,pages}
 
   function info(title) {
     const slug = asSlug(title)
@@ -20,9 +19,18 @@ export async function site(domain) {
       .map(info => info.title)
   }
 
+  function changed(oldmap) {
+    const titles = info => info.title || info.slug
+    const created = sitemap.filter(info => !oldmap.find(old => old.slug == info.slug)).map(titles)
+    const removed = oldmap.filter(old => !sitemap.find(info => old.slug == info.slug)).map(titles)
+    const older = sitemap.filter(info => {const old = oldmap.find(old => old.slug == info.slug); return old && info.date < old.date}).map(titles)
+    const newer = sitemap.filter(info => {const old = oldmap.find(old => old.slug == info.slug); return old && info.date > old.date}).map(titles)
+    return {created,removed,older,newer}
+  }
+
   function page(title) {
     const slug = asSlug(title)
-    return fetch(`//${site}/${slug}.json`).then(res => res.json())
+    return fetch(`//${domain}/${slug}.json`).then(res => res.ok ? res.json() : null)
   }
 
   function pages(titles) {
@@ -54,7 +62,7 @@ export function links(items) {
 export function locs(items) {
   const locs = []
   for (const item of items) {
-    if(item.type == 'image' && item.location) {
+    if(item?.type == 'image' && item.location) {
       locs.push([+item.location.latitude, +item.location.longitude])
     }
   }
@@ -66,7 +74,7 @@ export function tags(items,tag) {
   const tags = []
   let m
   for (const item of items) {
-    if(item.type == 'html') {
+    if(item?.type == 'html') {
       const text = item.text
       while(m = link.exec(text)) {
         tags.push(m[0])
@@ -79,7 +87,7 @@ export function tags(items,tag) {
 export function folds(items) {
   const folds = items
     .map((item, index) => ({item, index}))
-    .filter(fold => fold.item.type == 'pagefold')
+    .filter(fold => fold?.item.type == 'pagefold')
   return folds.reduce((sum,each,i,a) => {
     if(each.item.text != '.') {
       const upto = (a[i+1]?.index)||9999
@@ -93,23 +101,26 @@ export function folds(items) {
 
 // I N D E X
 
-export function base(site,finder) {
-  let cache = {}
-  return {cache: () => cache, index, reload}
+export function index(site, oldindex) {
+  const details = [`${site.sitemap.length} pages`]
+  const changes = site.changed(oldindex)
+  const updates = changes.created.length + changes.older.length + changes.newer.length
+  if(updates) details.push(`${updates} updated`)
+  const removes = changes.removed.length
+  if(removes) details.push(`${removes} removed`)
+  return details.join(", ")
+}
 
-  async function reload(url) {
-    cache = await fetch(url).then(res => res.json())
-  }
-
-  function index(pages) {
-    const finds = pages
-      .map(page => {
-        const title = page.title
-        const finds = finder(page.story)
-        const info = finds?.length ? {title, finds} : null
-        return cache[asSlug(title)] = info
-      })
-    return finds
-  }
-
+export function update(site, oldindex, finder) {
+  const key = page => ({date:site.info(page.title).date, site:asSlug(page.title), title:page.title})
+  const get = title => site.page(title).then(page => Object.assign(key(page),finder(page)))
+  const old = title => oldindex.find(info => info.title == title)
+  const changes = site.changed(oldindex)
+  for (const title of changes.removed)
+    oldindex.splice(oldindex.findIndex(info => info.title == title),1)
+  return Promise.all([
+    changes.created.map(title => get(title).then(info => oldindex.push(info))),
+    changes.newer.map(title => get(title).then(info => Object.assign(old(title),info))),
+    changes.older.map(title => get(title).then(info => Object.assign(old(title),info))),
+  ])
 }
