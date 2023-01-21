@@ -1,56 +1,83 @@
-<p id=buttons><button onclick=dobegin()>begin</button></p>
-<div id=result onclick=dobrowse(event)></div>
-<style>span {cursor:pointer; color:blue;}</style>
+<div id=timer></div>
+<p id=buttons>
+  <button onclick=doindex(event) disabled>index</button>
+  <button onclick=doupdate(event) disabled>update</button>
+  <button onclick=dodownload(event) disabled>download</button>
+</p>
+<p id=stats></p>
+<p id=result onclick=dobrowse(event)></p>
+<style>
+  span {cursor:pointer; color:blue;}
+  body {position:relative;}
+  #timer {position: absolute;top: 0;right: 0;text-align: right;}
+</style>
 <script type=module>
 
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 
+  let t0 = Date.now()
+  const dt = label => {window.timer.innerHTML += `${label}: ${Date.now()-t0} ms<br>`}
   const file = 'index-tag-img.json'
   const site = await index.site('ward.dojo.fed.wiki')
-  const find = story => index.tags(story,'img')
-  const base = index.base(site,find)
-  const have = []
+  dt('sitemap')
 
-  const showresult = () => {
-    window.result.innerHTML = Object.values(base.cache())
-      .filter(info => info)
-      .map(info => `<span>${info.title}</span> × ${info.finds.length}`)
-      .join("<br>\n")
-  }
+  let imagemap = []
+
+  // const showresult = () => {
+  //   window.result.innerHTML = Object.values(base.cache())
+  //     .filter(info => info)
+  //     .map(info => `<span>${info.title}</span> × ${info.finds.length}`)
+  //     .join("<br>\n")
+  // }
 
   window.dobrowse = event => {
     if(event.target.tagName != 'SPAN') return
-    frame.link(event.target.innerText,event.shiftKey)
+    // frame.link(event.target.innerText,event.shiftKey)
+    window.parent.postMessage({
+      action:"doInternalLink",
+      title: event.target.innerText,
+      site: 'ward.dojo.fed.wiki',
+      keepLineup: event.shiftKey
+    }, "*")
   }
 
-  window.dobegin = async event => {
-    const assets = await frame.assets()
-    const url = assets.filter(asset => asset.file == file)[0].url
-    await base.reload(url)
-    showresult()
-    window.domore()
+  window.doindex = async event => {
+    t0 = Date.now()
+    const assets = (await frame.assets()).filter(asset => asset.file == file)
+    if(assets.length) {
+      imagemap = await fetch(assets[0].url).then(res => res.json())
+    }
+    window.stats.innerHTML=index.index(site,imagemap)
+    event.target.nextElementSibling.disabled = false
+    dt('index')
+    refresh()
   }
 
-  window.domore = async () => {
-    const todo = site.sitemap
-      .filter(info => !(info.slug in base.cache()) && !have.includes(info.slug))
-      .slice(0,6)
-      .map(info => info.slug)
-    if(!todo.length) return
-    have.push(...todo)
-    const pages = await site.pages(todo)
-    base.index(pages)
-    showresult()
-    window.buttons.innerHTML = `
-      <button onclick=domore()>more</button>
-      ${have.length} new edits    
-      <button onclick=dodownload()>download</button>
-      ${Object.keys(base.cache()).length} cached titles
-    `
+  window.doupdate = async event => {
+    const finder = page => ({img:index.tags(page.story,'img')})
+    t0 = Date.now()
+    await index.update(site,imagemap,finder)
+    window.stats.innerHTML=index.index(site,imagemap)
+    event.target.nextElementSibling.disabled = false
+    dt('update')
+    refresh()
   }
 
-  window.dodownload = event =>
-    frame.download(JSON.stringify(base.cache(),null,2),file,'application/json')
+  window.dodownload = event => {
+    t0 = Date.now()
+    frame.download(JSON.stringify(imagemap,null,2),file,'application/json')
+    dt('download')
+  }
 
+  function refresh() {
+    const pages = imagemap
+      .filter(info => info.img?.length)
+    window.result.innerHTML = pages
+      .sort((a,b) => b.date - a.date)
+      .map(info => `<span>${info.title}</span> (${info.img.length})`)
+      .join("<br>")
+  }
+
+  window.buttons.firstElementChild.disabled=false
 </script>

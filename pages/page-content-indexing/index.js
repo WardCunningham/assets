@@ -21,11 +21,11 @@ export async function site(domain) {
 
   function changed(oldmap) {
     const titles = info => info.title || info.slug
-    const created = sitemap.filter(info => !oldmap.find(old => old.slug == info.slug)).map(titles)
-    const removed = oldmap.filter(old => !sitemap.find(info => old.slug == info.slug)).map(titles)
+    const more = sitemap.filter(info => !oldmap.find(old => old.slug == info.slug)).map(titles)
+    const less = oldmap.filter(old => !sitemap.find(info => old.slug == info.slug)).map(titles)
     const older = sitemap.filter(info => {const old = oldmap.find(old => old.slug == info.slug); return old && info.date < old.date}).map(titles)
     const newer = sitemap.filter(info => {const old = oldmap.find(old => old.slug == info.slug); return old && info.date > old.date}).map(titles)
-    return {created,removed,older,newer}
+    return {more,less,older,newer}
   }
 
   function page(title) {
@@ -104,10 +104,12 @@ export function folds(items) {
 export function index(site, oldindex) {
   const details = [`${site.sitemap.length} pages`]
   const changes = site.changed(oldindex)
-  const updates = changes.created.length + changes.older.length + changes.newer.length
-  if(updates) details.push(`${updates} updated`)
-  const removes = changes.removed.length
-  if(removes) details.push(`${removes} removed`)
+  const altered = changes.older.length + changes.newer.length
+  if(altered) details.push(`${altered} altered`)
+  const more = changes.more.length
+  if(more) details.push(`${more} more`)
+  const less = changes.less.length
+  if(less) details.push(`${less} less`)
   return details.join(", ")
 }
 
@@ -116,10 +118,10 @@ export function update(site, oldindex, finder) {
   const get = title => site.page(title).then(page => Object.assign(key(page),finder(page)))
   const old = title => oldindex.find(info => info.title == title)
   const changes = site.changed(oldindex)
-  for (const title of changes.removed)
+  for (const title of changes.less)
     oldindex.splice(oldindex.findIndex(info => info.title == title),1)
   const result =Promise.all([
-    changes.created.map(title => get(title).then(info => {oldindex.push(info); return info})),
+    changes.more.map(title => get(title).then(info => {oldindex.push(info); return info})),
     changes.newer.map(title => get(title).then(info => Object.assign(old(title),info))),
     changes.older.map(title => get(title).then(info => Object.assign(old(title),info))),
   ].flat())
