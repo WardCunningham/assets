@@ -1,0 +1,36 @@
+<button onclick=dolaunch(event)>launch</button> <span id=site></span>
+
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+
+  // const context = await frame.context()
+  const neighbors = await frame.neighbors()
+  const domain = neighbors[0]
+
+  window.site.innerText = `${domain} survey`
+
+  const probes = 'http://code.fed.wiki/assets/pages/site-survey-factory/probes'
+  const {probe,format} = await import(`${probes}/ImageTagSurvey.js`)
+  console.log(probe)
+  console.log(probe({story:[]}))
+
+  window.dolaunch = async event => {
+    const site = await index.site(domain)
+    const asof = new Date().toLocaleString()
+    // const probe = page => survey.probe(page)
+    const survey = []
+    await index.update(site,survey,probe)
+    const text = `http://code.fed.wiki/assets/pages/site-survey-factory/update.html\nHEIGHT 0`
+    const story = [
+      {type:'paragraph', text:`Survey results from ${asof}.`},
+      {type:'html', text:format(survey)},
+      {type:'reference',site: "code.fed.wiki",slug:"site-survey-factory",title:"Site Survey Factory",
+        text: "Create and maintain a site survey by selecting and repeatedly applying one of several probes."},
+      {type:'frame', text, survey}
+    ]
+    const title = 'Image Tag Survey'
+    frame.open({title,story}, event.shiftKey)
+  }
+
+</script>
