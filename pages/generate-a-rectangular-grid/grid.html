@@ -12,9 +12,6 @@
 
 <head>
   <meta charset="UTF-8">
-  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js" integrity="sha256-qXBd/EfAdjOA2FGrGAG+b3YBn2tn5A6bhz+LSgYD96k=" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@hpcc-js/wasm@1.20.1/dist/index.min.js"></script>
-  <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
 </head>
 
 <body style="background-color:white;">
@@ -27,6 +24,10 @@
    let grid= {}
    let history = {}
    let drawing = false
+
+   // from apl, https://aplwiki.com/wiki/Index_Generator
+   // in js, https://stackoverflow.com/questions/3746725/how-to-create-an-array-containing-1-n
+   const iota = n => [...new Array(n).keys()]
 
 
    // S I M U L A T I O N
@@ -48,16 +49,17 @@
        });
 
        const generateRow = (y, i) =>
-           _.range(0, sizeX)
+           iota(sizeX)
             .map(x => x + margin)
             .map(x => x + (i % 2 === 0 ? 0 : stepX / 2))
             .map(x => getHexagon(x, y));
 
-       return _.flatten(
-           _.range(0, sizeY)
+       return (
+          iota(sizeY)
             .map(y => y * stepY)
             .map(y => y + margin)
             .map((y, i) => generateRow(y, i))
+            .flat()
        );
    };
 
@@ -76,20 +78,10 @@
    // V I S U A L I Z A T I O N
 
    function refresh() {
-       let text = JSON.stringify({grid, history}, null, 2).replace(/"/g,'')
+       let text = JSON.stringify({grid, history}).replace(/"/g,'').replace(/},/g,"},\n")
        output.innerHTML = `<pre>${text}</pre>`
    }
 
-   function graphviz() {
-       let rows = Object.keys(history).sort()
-       let edges = rows.map(flow => `${flow} [label="${history[flow]}"]`)
-       let dot = `digraph { rankdir=RL; node [shape=box style=filled fillcolor=gold]; \n${edges.join("\n")} }`
-       drawing = true
-       hpccWasm.graphviz.layout(dot, "svg", "dot").then(svg => {
-           chart.innerHTML = svg.replace(/width="\d+pt" height="\d+pt"/,'');
-           drawing = false
-       })
-   }
 
   </script>
 </body>
