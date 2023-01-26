@@ -1,1 +1,49 @@
-<button>update</button>
+<button onclick=doupdate(event)>update</button> <span id=site></span>
+
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+
+  const home = `http://code.fed.wiki/assets/pages/site-survey-factory`
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const module = params['probe'] || `ImageTagSurvey`
+  const title = module.replaceAll(/([a-z])([A-Z])/g,'$1 $2')
+  console.log({module,title})
+
+  const update = {
+    text:`${home}/update.html?probe=${module}\nHEIGHT 0`
+  }
+  const factory = {
+    site: "code.fed.wiki",
+    slug:"site-survey-factory",
+    title:"Site Survey Factory",
+    text: "Create and maintain a site survey by selecting and repeatedly applying one of several probes."
+  }
+
+  const neighbors = await frame.neighbors()
+  const domain = neighbors[0]
+
+  window.site.innerText = `${domain} survey`
+
+  const probes = `${home}/probes`
+  const {probe,format} = await import(`${probes}/${module}.js`)
+
+  const site = await index.site(domain)
+  const survey = (await frame.context())
+    .page.story.find(item => item.survey).survey
+  const status = index.index(site,survey)
+  window.site.innerText = `${domain} ${status}`
+
+  window.doupdate = async event => {
+    const asof = new Date().toLocaleString()
+    await index.update(site,survey,probe)
+    const story = [
+      {type:'paragraph', text:`Survey results from ${asof}.`},
+      {type:'html', text:format(survey)},
+      {type:'reference', ...factory},
+      {type:'frame', ...update, survey}
+    ]
+    frame.open({title,story}, event.shiftKey)
+  }
+
+</script>
