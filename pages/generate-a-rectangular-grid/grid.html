@@ -1,0 +1,96 @@
+
+<html>
+
+    <!--
+
+         Generate a Rectangular Grid
+
+         We generate a rectangular grid of sizeX * sizeY hexagonal neurons
+         with normalized euclidian distance of 1 between each neighbor
+
+    -->
+
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js" integrity="sha256-qXBd/EfAdjOA2FGrGAG+b3YBn2tn5A6bhz+LSgYD96k=" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@hpcc-js/wasm@1.20.1/dist/index.min.js"></script>
+  <script> var hpccWasm = window["@hpcc-js/wasm"]; </script>
+</head>
+
+<body style="background-color:white;">
+  <div id="output">waiting</div><br>
+  <div id="chart"></div>
+
+
+  <script>
+
+   let grid= {}
+   let history = {}
+   let drawing = false
+
+
+   // S I M U L A T I O N
+
+   const delay = time => new Promise(res => setTimeout(res,time));
+   const norm = mean => mean*(Math.random() + Math.random());
+
+   // generate a rectangular grid of sizeX * sizeY hexagonal neurons
+   // with normalized euclidian distance of 1 between each neighbor
+   const generateGrid = (sizeX, sizeY) => {
+       const margin = 1;
+
+       const stepX = 1;
+       // Pythagoras to the rescue
+       const stepY = Math.sqrt(Math.pow(stepX, 2) - Math.pow(stepX / 2, 2));
+
+       const getHexagon = (x, y) => ({
+           pos: [x, y]
+       });
+
+       const generateRow = (y, i) =>
+           _.range(0, sizeX)
+            .map(x => x + margin)
+            .map(x => x + (i % 2 === 0 ? 0 : stepX / 2))
+            .map(x => getHexagon(x, y));
+
+       return _.flatten(
+           _.range(0, sizeY)
+            .map(y => y * stepY)
+            .map(y => y + margin)
+            .map((y, i) => generateRow(y, i))
+       );
+   };
+
+   stream();
+
+   async function stream () {
+       while (true) {
+           grid = generateGrid (13, 13);
+           history = Date.now();
+           await delay(norm(1200));
+           refresh();
+       };
+   };
+
+
+   // V I S U A L I Z A T I O N
+
+   function refresh() {
+       let text = JSON.stringify({grid, history}, null, 2).replace(/"/g,'')
+       output.innerHTML = `<pre>${text}</pre>`
+   }
+
+   function graphviz() {
+       let rows = Object.keys(history).sort()
+       let edges = rows.map(flow => `${flow} [label="${history[flow]}"]`)
+       let dot = `digraph { rankdir=RL; node [shape=box style=filled fillcolor=gold]; \n${edges.join("\n")} }`
+       drawing = true
+       hpccWasm.graphviz.layout(dot, "svg", "dot").then(svg => {
+           chart.innerHTML = svg.replace(/width="\d+pt" height="\d+pt"/,'');
+           drawing = false
+       })
+   }
+
+  </script>
+</body>
+</html>
