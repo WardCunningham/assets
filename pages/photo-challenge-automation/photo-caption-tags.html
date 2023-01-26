@@ -1,0 +1,67 @@
+<div id=result></div>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+  div.box {padding:8px; margin-bottom:8px; background-color: #ddd;}
+  img {width:115; height:86;}
+  span {font-size:x-large; color:gray;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const module = params['probe'] || `ImageCaptionSurvey`
+  const title = module.replaceAll(/([a-z])([A-Z])/g,'$1 $2')
+  const home = `http://code.fed.wiki/assets/pages/site-survey-factory`
+  const probes = `${home}/probes`
+  const {probe,format} = await import(`${probes}/${module}.js`)
+  const neighbors = await frame.neighbors()
+  const domain = neighbors[0]
+  const site = await index.site(domain)
+  const page = await site.page(title)
+  const survey = page.story.find(item => item.survey).survey
+
+  await index.update(site,survey,probe)
+  const wants = survey.filter(info => info.title.endsWith(' Photos'))
+  const tags = wants
+    .map(info => info.images.map(image => image.text.trim().split(/ +/)))
+    .flat(2).filter(uniq)
+  const tuples = tags
+    .map(tag => {
+      const refs = []
+      for(const info of wants) {
+        for(const image of info.images) {
+          if(image.text.trim().split(/ +/).includes(tag)) {
+            image.title = info.title
+            refs.push(image)
+          }
+        }
+      }
+      return {tag,refs}
+    })
+    .filter(tuple => tuple.refs.length>1)
+    .sort((a,b) => b.refs.length - a.refs.length)
+  console.log({tuples})
+
+  const html = tuples
+    .map(tuple => {
+      const pix = tuple.refs
+        .map(ref => `<span onclick=dolink(event)><img data-title="${ref.title}" src="http://${domain}${ref.url}"></span>`)
+      return `<div class=box ${pix.join(" ")}<br><span>${tuple.tag}</span></div>`
+    })
+    .join(`<br>`)
+  console.log({html})
+  window.result.innerHTML = `<center>${html}</center>`
+
+  window.dolink = event => {
+    const target = event.target
+    const dataset = target.dataset
+    const title = dataset.title
+    console.log({event,target,dataset,title})
+    if(!title) return
+    frame.link(title,event.shiftKey)
+  }
+
+</script>
