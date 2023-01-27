@@ -15,7 +15,7 @@
 </head>
 
 <body style="background-color:white;">
-  <div id="chart"></div>
+  <div id="chart" onclick=doopen(event)></div>
   <div id="output">waiting</div>
 
   <script>
@@ -68,8 +68,8 @@
        while (true) {
            grid = generateGrid (13, 13);
            history = Date.now();
-           await delay(norm(1200));
            refresh();
+           await delay(norm(1200));
        };
    };
 
@@ -80,20 +80,54 @@
        let text = JSON.stringify({grid, history}).replace(/"/g,'').replace(/},/g,"},\n")
        output.innerHTML = `<pre>${text}</pre>`
        chart.innerHTML = `
-           <svg version="1.1" width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-               ${svg}
+           <svg version="1.1" width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+               ${svg()}
            </svg>
        `
    }
 
    function svg() {
         // https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Getting_Started
-        return `
-           <rect width="100%" height="100%" fill="red" />
-           <circle cx="150" cy="100" r="80" fill="green" />
-           <text x="150" y="125" font-size="60" text-anchor="middle" fill="white">SVG</text>
-        `
+        // return `
+        //    <rect width="100%" height="100%" fill="red" />
+        //    <circle cx="150" cy="100" r="80" fill="green" />
+        //    <text x="150" y="125" font-size="60" text-anchor="middle" fill="white">SVG</text>
+        // `
+
+        const scale = 300/15
+        const colors = ['silver','gray','maroon','red','purple','fuchsia','green','lime','olive','yellow','navy','blue','teal','aqua']
+        const svg = []
+        for (const {pos} of grid) {
+            const color = colors[Math.floor(Math.random()*colors.length)]
+            svg.push(`<circle info="${pos}"
+                cx="${pos[0]*scale}" cy="${pos[1]*scale}"
+                r="8" fill="${color}" />`)
+        }
+        return svg.join("\n")
    }
+
+   function doopen(event) {
+        const info = event.target.getAttribute('info')
+        const color = event.target.getAttribute('fill')
+        if(!info || !color) return
+        console.log({info,color})
+        const title = `${color?.toUpperCase()} Item Clicked`
+        const story = [
+            {type:'paragraph',text:`Click arrived at ${new Date().toLocaleTimeString()}`},
+            {type:'code',text:`pos: [${info}]`}
+        ]
+        open({title,story},event.shiftKey)
+   }
+
+   // http://code.fed.wiki/frame-integration-promises.html
+   function open(page, keepLineup=false, forks=[]) {
+      const asCopy = obj => JSON.parse(JSON.stringify(obj))
+      let date = Date.now()
+      for (let item of page.story) item.id ||= (Math.random()*10**20).toFixed(0)
+      page.journal ||= [{type:'create', date, item:asCopy(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+      let message = {action: "showResult", page, keepLineup}
+      window.parent.postMessage(message, "*")
+    }
 
 
   </script>
