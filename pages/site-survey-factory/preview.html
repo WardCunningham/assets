@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+  <meta charset="utf-8">
+  <body>
+    <style>textarea
+      {width: 100%; height:60px; display: block;}</style>
+    <textarea id=input placeholder="drop page flag here"
+      ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)"></textarea>
+    <div id=module></div>
+    <div id=trouble></div>
+    <div id=results></div>
+    <div id=report></div>
+
+  <script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const module = params['probe'] || `ImageTagSurvey`
+  const title = module.replaceAll(/([a-z])([A-Z])/g,'$1 $2')
+  console.log({module,title})
+  const home = `http://code.fed.wiki/assets/pages/site-survey-factory`
+
+  const probes = `${home}/probes`
+  const {version,probe,format} = await import(`${probes}/${module}.js`)
+  console.log({probes,version,probe,format})
+  window.module.innerHTML = `module: ${module}<br>version: ${version}`
+
+  window.over = function (event) {
+    event.preventDefault()
+  }
+
+  window.drop = async function (ev) {
+    // From: https://github.com/fedwiki/wiki-plugin-journalmatic/blob/master/client/check-page.html
+    event.preventDefault();
+    window.trouble.innerText = ''
+    window.results.innerText = ''
+    window.report.innerText = ''
+    const show_error = msg => {window.trouble.innerText = msg}
+    let dt = ev.dataTransfer
+    if (dt != null) {
+      let types = dt.types
+      if ((types != null) && (types.includes('text/uri-list') || types.includes('text/x-moz-urlz'))) {
+        let url = dt.getData('URL')
+        if (url != null) {
+          // we have a url
+          // but is it a page?
+          let found, ignore, origin, ref, site, slug
+          if (found = url.match(/^(https?:)\/\/([a-zA-Z0-9:.-]+)(\/([a-zA-Z0-9:.-]+)\/([a-z0-9-]+(_rev\d+)?))+$/)) {
+            let protocol = found[1]
+            let origin = found[2]
+            let site = found[4]
+            let slug = found[5]
+            if (['view','local','origin'].includes(site)) {
+              site = origin
+            }
+            // we have a wiki page
+            let pageURL = protocol + '//' + site + '/' + slug + '.json'
+            console.info('we have a page', pageURL)
+            preview(pageURL)
+          } else {
+            show_error('That does not look like a page flag!')
+          }
+        } else {
+          show_error('Unrecognised item dropped')
+        }
+      } else {
+        show_error('Unrecognised item dropped')
+      }
+    }
+  }
+
+  async function preview(url) {
+    window.results.innerText = url
+    console.log({url})
+    const page = await fetch(url).then(res => res.json())
+    const title = page.title
+    const info = Object.assign({title},probe(page))
+    window.results.innerHTML = `<pre>${JSON.stringify(info,null,2)}</pre>`
+    const html = format([info])
+    window.report.innerHTML = html
+  }
+  
+</script>
+</body>
+</html>
