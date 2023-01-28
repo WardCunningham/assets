@@ -3,30 +3,30 @@
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import * as index from 'http://code.fed.wiki/assets/v1/index.js'
-
   const home = `http://code.fed.wiki/assets/pages/site-survey-factory`
+
   const params = Object.fromEntries(new URLSearchParams(location.search).entries())
   const module = params['probe'] || `ImageTagSurvey`
   const title = module.replaceAll(/([a-z])([A-Z])/g,'$1 $2')
-  console.log({module,title})
-
-  const update = {
-    text:`${home}/update.html?probe=${module}\nHEIGHT 0`
-  }
-  const factory = {
-    site: "code.fed.wiki",
-    slug:"site-survey-factory",
-    title:"Site Survey Factory",
-    text: "Create and maintain a site survey by selecting and repeatedly applying one of several probes."
-  }
 
   const neighbors = await frame.neighbors()
-  const domain = neighbors[0]
+  const domain = params['domain'] || neighbors[0]
 
   window.site.innerText = `${domain} survey`
 
   const probes = `${home}/probes`
-  const {probe,format} = await import(`${probes}/${module}.js`)
+  const {version,probe,format} = await import(`${probes}/${module}.js`)
+
+  const update = {
+    text:`${home}/update.html?probe=${module}&version=${version}&domain=${domain}\nHEIGHT 0`
+  }
+  const factory = {
+    site: "code.fed.wiki",
+    slug: "site-survey-factory",
+    title: "Site Survey Factory",
+    text: "Create and maintain a site survey by selecting and repeatedly applying a probe."
+  }
+
 
   const site = await index.site(domain)
   const survey = (await frame.context())
