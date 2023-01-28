@@ -8,14 +8,14 @@ export function probe(page) {
     .filter(item => item.text.match(/\w/))
   return {haiku:{
     items:items.length,
-    para:linked(items).length}}
+    links:linked(items).length}}
 }
 
 export function format(survey) {
-  const ideal = info => Math.abs(6-info.haiku.para)+Math.abs(3-info.haiku.links)
+  const ideal = info => Math.abs(3-info.haiku.links)+Math.abs(6-info.haiku.items)
   return survey
     .sort((a,b) => ideal(a) - ideal(b))
-    .map(info => `[[${info.title}]] ${info.haiku.para}/${info.haiku.links}`)
+    .map(info => `[[${info.title}]] ${info.haiku.links}/${info.haiku.items}`)
     .join('<br>')
 }
 
