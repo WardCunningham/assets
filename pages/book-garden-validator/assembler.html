@@ -4,7 +4,8 @@
   <button onclick=dopreview(event)>preview</button> for last minute summary<br>
   <button onclick=doprint(event)>print</button> to print assembly as html
 </p>
-<div id=report></div>
+<p id=report></p>
+<p id=progress></p>
 <style>
   button {width:80px;}
 </style>
@@ -14,6 +15,7 @@
   import {prolog, render} from './render.js'
   const uniq = (value, index, self) => self.indexOf(value) === index
   const report = msg => window.report.innerHTML += msg + "<br>"
+  const dots = pages => {console.log({pages});window.progress.innerText += '. '.repeat(pages.length)+"\n"}
   
   let domain = `book.reimage.fed.wiki`
   let site
@@ -38,7 +40,7 @@
     const preview = [{type:'paragraph',text:`Assembled elements for html print. Here we stop short of reading the actual pages.`}]
     const title = 'Book Assembly Preview'
     const html = []
-    await assemble(feature => html.push(`
+    await assemble('fast', feature => html.push(`
       <details>
         <summary>${summary(feature)}</summary>
         ${details(feature)}
@@ -48,44 +50,82 @@
     frame.open({title,story:preview},event.shiftKey)
 
     function summary(feature) {
-      const html = `${feature.type} ${feature.title ? `[[${feature.title}]]` : ''}`
+      const html = `${feature.type} ${feature.title ? `[[${feature.title}]]` : feature.count || ''}`
       return feature.type=='slug' ? `<font color=brown>${html}</font>` : html
     }
 
     function details(feature) {
       return feature.html || feature.synopsis || 'unavailable at this time'
     }
-
   }
 
   window.doprint = async event => {
     const html = [prolog]
-    await assemble(feature => html.push(feature.html || `<pre>${JSON.stringify(feature,null,2)}</pre>`))
+    await assemble('slow',feature => html.push(feature.html || `<pre>${JSON.stringify(feature,null,2)}</pre>`))
     frame.download(html.join("\n"),'book-assembly.html','text/html')
   }
 
 
   // A S S E M B L E R S
 
-  async function assemble(emit) {
+  async function assemble(speed,emit) {
+    window.progress.innerText = ''
     const works = await getworks()
     emit({type:'preface',synopsis:'Preface will go here.'})
-    emit({type:'index',html:`<h3>Index</h3><ul>${index()}</ul>`})
-    works.forEach(work => {
+    emit({type:'index', count:`${stories.length} works`, html:`<h3>Index</h3><ul>${index([...stories,'Garden'])}</ul>`})
+    for (const work of works) {
       const html = render(domain,work.page).join("\n")
       emit({type:'work', title:work.author, html})
-      work.titles.forEach(title => {
-        const info = site.info(title)
-        const type = info ? 'story' : 'slug'
-        emit({type, title, synopsis:info?.synopsis || 'not available'})
-      })
-    })
+      let todos = await batch('story', work.titles)
+      todos.map(todo => emit(todo))
+    }
 
-    function index () {
-      return [...stories,'Garden']
+    const marks = []
+    const troubles = []
+    const roots = works
+      .map(work => work.titles)
+      .flat()
+      .filter(uniq)
+      .filter(title => site.info(title))
+      .map(title => frame.asSlug(title))
+
+    mark(roots,roots,marks,troubles)
+    const garden = marks
+      .map(mark => site.info(mark).title)
+      .sort()
+    emit({type:'index', count:`${garden.length} pages, ${troubles.length} with link slugs`, html:`<h3>marks Index</h3><ul>${index(garden)}</ul>`})
+    let todos = await batch('garden', garden)
+    todos.forEach(todo => emit(todo))
+    troubles.forEach(({root,bad}) =>
+      emit({type:'slug', title:site.info(root).title, synopsis:`Can't resolve: ${bad.map(slug=>`[[${slug}]]`).join(", ")}`}))
+
+
+    function index (titles) {
+      return titles
         .map(title => `<li> ${title}`)
         .join("\n")
     }
+
+    async function batch (kind, titles) {
+      const todos = titles.map(title => {
+        const info = site.info(title)
+        const synopsis = info?.synopsis
+        const type = info ? kind : 'slug'
+        return {type, title, info, synopsis}
+      })
+      if(speed=='slow') {
+        const ready = todos.filter(todo => todo.info)
+        const pages = await site.pages(ready.map(todo => todo.title))
+        dots(pages)
+        ready.forEach(todo => {
+          const slug = frame.asSlug(todo.title)
+          const page = pages.find(page => frame.asSlug(page.title) == slug)
+          todo.html = render(domain,page).join("\n")
+        })
+      }
+      return todos
+    }
+
   }
 
 
@@ -93,6 +133,7 @@
 
   async function getworks() {
     const pages = await Promise.all(stories.map(title => site.page(title)))
+    dots(pages)
     return pages.map(page => ({
       page,
       author:page.title,
@@ -100,6 +141,18 @@
         .filter(item => item.type=='reference')
         .map(item => item.title)
     }))
+  }
+
+  function mark(more,story,marks,misses) {
+    const ok = slug => site.info(slug) && !(story.includes(slug))
+    for(const root of more) {
+      const links = Object.keys(site.info(root).links||{})
+      const good = links.filter(slug => ok(slug) && !marks.includes(slug))
+      marks.push(...good)
+      const bad = links.filter(slug => !ok(slug))
+      if(bad.length && !story.includes(root)) misses.push({root,bad})
+      mark(good,story,marks,misses)
+    }
   }
 
 
