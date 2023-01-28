@@ -1,4 +1,7 @@
-// find img tags in html plugins
+// Find img tags in html plugins
+// See http://code.fed.wiki/image-tag-survey-probe.html
+
+export const version = '0.1.0'
 
 import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 

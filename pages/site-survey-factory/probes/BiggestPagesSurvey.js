@@ -1,4 +1,7 @@
-// find bigest pages
+// Record five indicators of unusually large pages
+// See http://ward.dojo.fed.wiki/biggest-pages-survey-probe.html
+
+export const version = '0.1.0'
 
 const keys = ['json','story','text','edits','title']
 

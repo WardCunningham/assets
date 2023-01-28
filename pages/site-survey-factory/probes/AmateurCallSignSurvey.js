@@ -1,6 +1,8 @@
 // Find amateur call signs in text of any items
 // See http://ft8.ward.asia.wiki.org/call-sign-survey-probe.html
 
+export const version = '0.1.0'
+
 import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 const uniq = (value, index, self) => self.indexOf(value) === index
 

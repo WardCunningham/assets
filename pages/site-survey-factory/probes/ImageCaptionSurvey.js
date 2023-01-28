@@ -1,6 +1,8 @@
 // Find all located and captioned images
 // See http://photos.ward.dojo.fed.wiki/image-caption-survey-probe.html
 
+export const version = '0.1.0'
+
 // {
 // "type": "image",
 // "id": "6f5472890e6cc304",

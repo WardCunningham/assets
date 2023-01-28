@@ -1,4 +1,5 @@
-// find img tags in html plugins
+// Record page metrics indicating conformance to the haiku page expectation
+// See http://ward.dojo.fed.wiki/haiku-metrics-survey-probe.html
 
 export const version = '0.1.0'
 
@@ -15,7 +16,7 @@ export function format(survey) {
   const ideal = info => Math.abs(3-info.haiku.links)+Math.abs(6-info.haiku.items)
   return survey
     .sort((a,b) => ideal(a) - ideal(b))
-    .map(info => `[[${info.title}]] ${info.haiku.links}/${info.haiku.items}`)
+    .map(info => `[[${info.title}]] ${info.haiku.links}/${info.haiku.items} ${ideal(info)<.5 ? "🟢" : ""}`)
     .join('<br>')
 }
 
