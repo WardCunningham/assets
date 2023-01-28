@@ -1,4 +1,4 @@
-<div id=result></div>
+<div><center id=result></center></div>
 <style>
   body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
   div.box {padding:8px; margin-bottom:8px; background-color: #ddd;}
@@ -10,6 +10,7 @@
   import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 
   const uniq = (value, index, self) => self.indexOf(value) === index
+  const delay = time => new Promise(res => setTimeout(res,time))
 
   const params = Object.fromEntries(new URLSearchParams(location.search).entries())
   const module = params['probe'] || `ImageCaptionSurvey`
@@ -45,15 +46,12 @@
     .sort((a,b) => b.refs.length - a.refs.length)
   console.log({tuples})
 
-  const html = tuples
-    .map(tuple => {
-      const pix = tuple.refs
-        .map(ref => `<span onclick=dolink(event)><img data-title="${ref.title}" src="http://${domain}${ref.url}"></span>`)
-      return `<div class=box ${pix.join(" ")}<br><span>${tuple.tag}</span></div>`
-    })
-    .join(`<br>`)
-  console.log({html})
-  window.result.innerHTML = `<center>${html}</center>`
+  for (const tuple of tuples) {
+    const pix = tuple.refs.map(ref =>
+      `<span onclick=dolink(event)><img data-title="${ref.title}" src="http://${domain}${ref.url}"></span>`)
+    window.result.innerHTML += `<div class=box ${pix.join(" ")}<br><span>${tuple.tag}</span></div><br>`
+    await delay(500)
+  }
 
   window.dolink = event => {
     const target = event.target
