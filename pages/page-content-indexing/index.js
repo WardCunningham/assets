@@ -121,7 +121,7 @@ export function update(site, oldindex, finder) {
   for (const title of changes.less)
     oldindex.splice(oldindex.findIndex(info => info.title == title),1)
   const result =Promise.all([
-    changes.more.map(title => get(title).then(info => {oldindex.push(info); return info})),
+    changes.more.slice(0,500).map(title => get(title).then(info => {oldindex.push(info); return info})),
     changes.newer.map(title => get(title).then(info => Object.assign(old(title),info))),
     changes.older.map(title => get(title).then(info => Object.assign(old(title),info))),
   ].flat())
