@@ -4,8 +4,7 @@
   <body>
     <style>textarea
       {width: 100%; height:60px; display: block;}</style>
-    <textarea id=input placeholder="drop page flag here"
-      ondrop="drop(event)" ondragover="over(event)" ondragenter="over(event)"></textarea>
+    <textarea id=input placeholder="drop page flag here"></textarea>
     <div id=module></div>
     <div id=trouble></div>
     <div id=results></div>
@@ -26,11 +25,9 @@
   console.log({probes,version,probe,format})
   window.module.innerHTML = `module: ${module}<br>version: ${version}`
 
-  window.over = function (event) {
-    event.preventDefault()
-  }
-
-  window.drop = async function (ev) {
+  document.querySelector('textarea').addEventListener('dragenter', event => event.preventDefault())
+  document.querySelector('textarea').addEventListener('dragover', event => event.preventDefault())
+  document.querySelector('textarea').addEventListener('drop', ev => {
     // From: https://github.com/fedwiki/wiki-plugin-journalmatic/blob/master/client/check-page.html
     event.preventDefault();
     window.trouble.innerText = ''
@@ -68,7 +65,8 @@
         show_error('Unrecognised item dropped')
       }
     }
-  }
+
+  })
 
   async function preview(url) {
     window.results.innerText = url
@@ -76,7 +74,7 @@
     const page = await fetch(url).then(res => res.json())
     const title = page.title
     const info = Object.assign({title},probe(page))
-    window.results.innerHTML = `<pre>${JSON.stringify(info,null,2)}</pre>`
+    window.results.innerHTML = `<pre style="white-space: pre-wrap;">${JSON.stringify(info,null,2)}</pre>`
     const html = format([info])
     window.report.innerHTML = html
   }
