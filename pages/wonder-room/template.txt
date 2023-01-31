@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head><meta charset="utf-8">
+    <style>
+      .name-container { display: none; }
+      #nameInput { display: none; }
+      div:has(> #nameInput) { display: none; }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import {load} from "https://croquet.io/webshowcase/v1.js";
+      load({
+          title: "$title", 
+          showcase: "gallery", 
+          avatars: 'wonderland',
+          cards: [
+              // each item in cards array has a 'place' to specify the location in the art gallery
+              // 'type' is either "image", "pdf", or "video"
+              // 'path' specifies the location of the asset, either as full URL or as path relative to this html file
+              $cards
+          ],
+          voiceChat: true,
+          appId: "com.me.ralf.barkow.webshowcase",
+          apiKey: "$key",
+      });
+    </script>
+  </body>
+</html>

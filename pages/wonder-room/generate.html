@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<p>
+  <button onclick=dopreview(event)>preview</button>
+  <button onclick=dodownload(event)>download</button>
+</p>
+<p id=result></p>
+
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const codes = context.page.story.filter(item => item.type == 'code')
+  const cards = codes.map(item => eval(`({${item.text}})`))
+  console.log({context,codes,cards})
+  window.result.innerText = `${codes.length} of 9 places`
+
+  window.dopreview = event => {
+    const title = `${context.title} Preview`
+    const story = cards.map((card,i) => [
+      { type: 'paragraph',
+        text: `Place ${i+1}: [${card.path} ${card.type}]  ${card.urlLink ? `[${card.urlLink} link]` : ''}`},
+      (card.type == 'pdf' ?
+      { type:'frame',
+        text:`https://docs.google.com/gview?url=${card.path}`} :
+      { type:'html',
+        text:`<p><img width=100% src="${card.path}"></p>`})
+    ]).flat()
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.dodownload = async event => {
+    const js = card => Object.entries(card).map(e => `${e[0]}:"${e[1]}"`).join(",")
+    const file = `${context.slug}.html`
+    const defn = cards.map((card,i) => `{place: ${i+1}, ${js(card)}}`).join(",\n")
+    const key = "1EluL1AJur4C9uCarlklHIdDKCGO0AExnEHKJCuEe"
+    const html = (await fetch('./template.txt').then(res => res.text()))
+      .replace(/\$title/,context.title)
+      .replace(/\$cards/,defn)
+      .replace(/\$key/,key)
+    frame.download(html,file,'application/html')
+  }
+
+</script>
