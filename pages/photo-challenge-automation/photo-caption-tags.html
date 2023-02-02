@@ -26,6 +26,9 @@
 
   await index.update(site,survey,probe)
   const wants = survey.filter(info => info.title.endsWith(' Photos'))
+  const photos = wants
+    .map(info => info.images.map(image => {image.title = info.title; return image}))
+    .flat()
   const tags = wants
     .map(info => info.images.map(image => image.text.trim().split(/ +/)))
     .flat(2).filter(uniq)
@@ -42,24 +45,61 @@
       }
       return {tag,refs}
     })
-    .filter(tuple => tuple.refs.length>1)
     .sort((a,b) => b.refs.length - a.refs.length)
-  console.log({tuples})
+  console.log({wants,photos,tags,tuples})
 
-  for (const tuple of tuples) {
-    const pix = tuple.refs.map(ref =>
-      `<span onclick=dolink(event)><img data-title="${ref.title}" src="http://${domain}${ref.url}"></span>`)
-    window.result.innerHTML += `<div class=box ${pix.join(" ")}<br><span>${tuple.tag}</span></div><br>`
-    await delay(500)
+  const html = tuples => {
+    const html = []
+    for (const tuple of tuples) {
+      const pix = tuple.refs.map(ref =>
+        `<span onclick=dolink(event)><img width=100% data-title="${ref.title}" data-text="${ref.text}" src="http://${domain}${ref.url}"></span>`)
+      html.push(`<div class=box ${pix.join(" ")}<br><span>${tuple.tag}</span></div><br>`)
+    }
+    return html.join("\n")
   }
+
+  window.result.innerHTML = html(tuples.filter(tuple => tuple.refs.length>1))
 
   window.dolink = event => {
     const target = event.target
     const dataset = target.dataset
     const title = dataset.title
-    console.log({event,target,dataset,title})
     if(!title) return
-    frame.link(title,event.shiftKey)
+    const tags = dataset.text.trim().split(/ +/)
+    if(params['drill']=='tags') {
+      const title = tags.join(' ').replaceAll(/\b[a-z]/g, ch => ch.toUpperCase())
+      const story = [
+        {type:'html',text:html(tuples.filter(tuple => tags.includes(tuple.tag)))}
+      ]
+      frame.open({title, story},event.shiftKey)
+    }
+    else if (params['drill']=='joined') {
+      const title = tags.join(' ').replaceAll(/\b[a-z]/g, ch => ch.toUpperCase())
+      const url = target.getAttribute('src')
+      const regexp = new RegExp(tags.map(tag=>`\\b${tag}\\b`).join('|'))
+      const story = [
+        {type:'paragraph',text:'This featured photograph shares at least one tag with each of the photos that follow.'},
+        {type:'image',text:dataset.text,size:'wide',url},
+        ...wants
+          .map(info => {
+            const list = info.images
+              .filter(image => !url.endsWith(image.url))
+              .filter(image => image.text.match(regexp))
+              .map(image => ({type:'image',text:image.text,size:'thumbnail',url:image.url}))
+            console.log({info,regexp,list})
+            return [
+              // {type:'pagefold',text:'week'},
+              // {type:'paragraph',text:`[[${info.title}]]`},
+              // {type:'pagefold',text:'.'},
+              ...list
+            ]})
+          .flat()
+      ]
+      frame.open({title, story},event.shiftKey)
+    }
+    else {
+      frame.link(title,event.shiftKey)      
+    }
   }
 
 </script>
