@@ -11,6 +11,11 @@
 
   const uniq = (value, index, self) => self.indexOf(value) === index
   const delay = time => new Promise(res => setTimeout(res,time))
+  const latlon = image => {
+    const [latitude, longitude] = image.latlon
+    return {latitude, longitude}
+  }
+
 
   const params = Object.fromEntries(new URLSearchParams(location.search).entries())
   const module = params['probe'] || `ImageCaptionSurvey`
@@ -63,43 +68,29 @@
   window.dolink = event => {
     const target = event.target
     const dataset = target.dataset
-    const title = dataset.title
-    if(!title) return
+    if(!dataset.title) return
     const tags = dataset.text.trim().split(/ +/)
-    if(params['drill']=='tags') {
-      const title = tags.join(' ').replaceAll(/\b[a-z]/g, ch => ch.toUpperCase())
-      const story = [
-        {type:'html',text:html(tuples.filter(tuple => tags.includes(tuple.tag)))}
-      ]
-      frame.open({title, story},event.shiftKey)
-    }
-    else if (params['drill']=='joined') {
-      const title = tags.join(' ').replaceAll(/\b[a-z]/g, ch => ch.toUpperCase())
-      const url = target.getAttribute('src')
-      const regexp = new RegExp(tags.map(tag=>`\\b${tag}\\b`).join('|'))
-      const story = [
-        {type:'paragraph',text:'This featured photograph shares at least one tag with each of the photos that follow.'},
-        {type:'image',text:dataset.text,size:'wide',url},
-        ...wants
-          .map(info => {
-            const list = info.images
-              .filter(image => !url.endsWith(image.url))
-              .filter(image => image.text.match(regexp))
-              .map(image => ({type:'image',text:image.text,size:'thumbnail',url:image.url}))
-            console.log({info,regexp,list})
-            return [
-              // {type:'pagefold',text:'week'},
-              // {type:'paragraph',text:`[[${info.title}]]`},
-              // {type:'pagefold',text:'.'},
-              ...list
-            ]})
-          .flat()
-      ]
-      frame.open({title, story},event.shiftKey)
-    }
-    else {
-      frame.link(title,event.shiftKey)      
-    }
+    const title = tags.join(' ').replaceAll(/\b[a-z]/g, ch => ch.toUpperCase())
+    const url = target.getAttribute('src')
+    const location = latlon(photos.find(image => url.endsWith(image.url)))
+    const regexp = new RegExp(tags.map(tag=>`\\b${tag}\\b`).join('|'))
+    const story = [
+      {type:'paragraph',text:`This featured photograph shares a tag with each of the following photos. From [[${dataset.title}]]`},
+      {type:'image',text:dataset.text,size:'wide',location,url},
+      ...wants.map(info => info.images
+        .filter(image => !url.endsWith(image.url))
+        .filter(image => image.text.match(regexp))
+        .map(image => ({
+          type:'image',
+          text:image.text,
+          size:'thumbnail',
+          location:latlon(image),
+          url:image.url
+        }))
+      ).flat(),
+      {type:'map',text:'PAGE'}
+    ]
+    frame.open({title, story},event.shiftKey)
   }
 
 </script>
