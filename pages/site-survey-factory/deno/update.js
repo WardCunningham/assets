@@ -2,7 +2,7 @@
 // deno run --allow-read --allow-write --allow-net update.js index.code.fed.wiki
 
 import * as index from '../../page-content-indexing/index.js'
-import * as probe from '../probes/ImageTagSurvey.js'
+import * as probe from '../probes/JournalForkSurvey.js'
 
 const domain = Deno.args[0] || 'index.code.fed.wiki'
 const [site,survey] = await Promise.all([
