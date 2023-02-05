@@ -1,4 +1,4 @@
-// incrementally survey a sight using a preconfigured probe
+// incrementally survey a site using a preconfigured probe
 // deno run --allow-read --allow-write --allow-net update.js index.code.fed.wiki
 
 import * as index from '../../page-content-indexing/index.js'
