@@ -17,24 +17,14 @@
   const any = a => a[Math.floor(Math.random() * a.length)]
 
   const domain = `photos.ward.dojo.fed.wiki`
-  const assets = `http://${domain}/assets`
   const site = await index.site(domain)
-  // const images = await fetch(`${assets}/data/photo-index.json`).then(res => res.json())
-  const titles = site.sitemap
+  const page = await site.page('image-caption-survey')
+  const survey = page.story.find(item => item.survey).survey
+  const images = survey
     .filter(info => info.slug.endsWith('-photos'))
-    .map(info => info.title)
-  const pages = await site.pages(titles)
-  const images = pages
-    .map(page => page.story)
+    .map(info => info.images)
     .flat()
-    .filter(item => item.type == 'image')
-    .map(item => `http://${domain}${item.url}`)
-
-  // document.querySelector('table').addEventListener('click', event => {
-  //   const title = event.target.getAttribute('title')
-  //   const message = {action:"doInternalLink", title, keepLineup: event.shiftKey}
-  //   window.parent.postMessage(message, "*")
-  // })
+    .map(image => image.url)
 
   let tds = [...document.querySelectorAll('td')]
   let i=0
