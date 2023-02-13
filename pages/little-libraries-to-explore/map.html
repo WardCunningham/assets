@@ -1,0 +1,38 @@
+<p>
+  <button onclick=dopreview(event)>preview</button> libraries within map bounds.
+</p>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const assets = (await frame.assets())
+    .filter(asset => asset.file.endsWith('.json'))
+  const pins = await fetch(assets[0].url).then(res => res.json())
+
+  window.dopreview = async event => {
+    const lineup = await frame.sources('region')
+    const region = lineup[0].regionData
+    const within = (lat, lon) =>
+      lat > region.south &&
+      lat < region.north &&
+      lon > region.west &&
+      lon < region.east
+    const markup = pins.libraries
+      .map(obj => ({
+        id:obj.id,
+        lat:obj.Library_Geolocation__Latitude__s,
+        lon:obj.Library_Geolocation__Longitude__s
+      }))
+      .filter(lib => within(lib.lat,lib.lon))
+      .map(lib => `${lib.lat.toFixed(7)}, ${lib.lon.toFixed(7)} Library ${lib.id}`)
+      .join("\n")
+    const text = `We've found these free libraries. [https://littlefreelibrary.org/ site]`
+    const title = 'Little Libraries'
+    const story = [
+      {type:'paragraph',text},
+      {type:'paragraph',text:'See [[Little Libraries to Explore]]'},
+      {type:'map',text:markup}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+
+</script>
