@@ -65,9 +65,19 @@
     return html.join("\n")
   }
 
+  const list = tuples => {
+    return tuples
+      .map(tuple => tuple.tag)
+      .sort()
+      .join(" ")
+  }
+
   window.result.innerHTML =
     `${html(tuples.filter(tuple => tuple.refs.length >= 3))}
-    <button onclick=dodownload(event)>download</button>`
+    <button onclick=dodownload(event)>download</button>
+    <p>${list(tuples.filter(tuple => tuple.refs.length == 2))}</p>
+    <p>${list(tuples.filter(tuple => tuple.refs.length == 1))}</p>
+    `
 
   window.dolink = event => {
     const target = event.target
