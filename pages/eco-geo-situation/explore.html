@@ -1,0 +1,63 @@
+<p id=buttons>working</p>
+<p id=choices></p>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  const context = await frame.context()
+  const {situated,community} = context.page.story.find(item => item.type == 'frame')
+  console.log({situated,community})
+
+  const surveys = await Promise.all(community
+    .map(domain => fetch(`//${domain}/institution-survey.json`)
+      .then(res => res.json())
+      .then(page => page.story
+        .find(item => item.type == 'frame').survey
+        .filter(info => info.insts.length)))
+  )
+  console.log({surveys})
+
+  const defn = node => {
+    for(const survey of surveys)
+      for(const info of survey)
+        for(const inst of info.insts)
+          if(inst.node == node)
+            return inst
+  }
+  const pierson = defn("Marc Pierson")
+  console.log({pierson})
+
+  const know = surveys
+    .map(survey => survey
+      .map(info => info.insts
+        .map(inst => inst.node)))
+    .flat(2)
+    .filter(uniq)
+    .sort()
+  console.log({know})
+
+  const seen = situated
+    .map(node => defn(node))
+    .map(inst => inst.rels)
+    .flat(2)
+    .filter(uniq)
+    .sort()
+  console.log({seen})
+
+  const need = know
+    .filter(node => !situated.includes(node))
+  console.log({need})
+
+  window.choices.innerHTML = need
+    .map((node,i) => `
+      <input type="checkbox" id="c${i}" name="c${i}" ${seen.includes(node) ? 'checked' : ''}>
+      <label for="c${i}">${node}</label>
+    `).join('<br>')
+
+
+  window.buttons.innerHTML = `
+    <button onclick=docontinue(event)>continue</button> adding selected institutions
+  `
+</script>

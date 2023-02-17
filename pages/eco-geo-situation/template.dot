@@ -1,0 +1,53 @@
+strict digraph Institutions {
+  
+  rankdir=BT
+  
+  fontname="Helvetica,Arial,sans-serif"
+  node [fontname="Helvetica,Arial,sans-serif"]
+  edge [fontname="Helvetica,Arial,sans-serif"]
+
+subgraph cluster_0 {
+label = "EcoBioPhysical\nWorld";
+style=filled;
+color="#aaf098";
+node [style=filled,color=white];
+fontsize=18;
+
+x ->Homestead [style=invis]
+
+Homestead -> Landscape -> Ecosystem -> Watershed -> Bioregion -> Earth;
+    
+}
+  
+
+y [style=invis]
+x [style=invis]
+
+subgraph cluster_1 {
+label = "GeoPolitical\nWorld";
+style=filled;
+color="#5ccfec";
+node [style=filled,color=white];
+fontsize=18;
+
+y -> Individual [style=invis]
+Individual->Household->Neighborhood->Municipality->County->State-> Nation -> Multinational -> UN;
+    
+    
+}
+
+subgraph cluster_2 {
+label = "Institutions";
+node [style=filled];
+fontsize=30;
+
+y ->Individual [style=invis];
+
+<<Institutions>>
+    
+[color=black penwith=7]
+  }
+
+
+
+}

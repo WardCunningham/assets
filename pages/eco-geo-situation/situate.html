@@ -1,0 +1,47 @@
+<p id=buttons></p>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js' 
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+  
+  const context = await frame.context()
+  const community = index.folds(context.page.story)
+    .community.map(ref => ref.site)
+  const defns = context.page.story
+    .filter(item => item.type == 'markdown')
+    .map(item => item.text)
+    .filter(text => text.startsWith('INSTITUTION'))
+  const situated = []
+  const dot = []
+  for (const defn of defns) {
+    const lines = defn
+      .split(/\n/)
+      .map(line => line.trim())
+    const here = lines.shift().replace(/INSTITUTION */,'')
+      situated.push(here)
+    for (const line of lines) {
+      const rels = (here+line)
+        .split(/=>/)
+        .map(node => `"${node.trim().replace(/ +/g,'\n')}"`)
+        .join('->')
+      dot.push(rels)
+    }
+  }
+
+
+  window.dopreview = async event => {
+    const explore = 'http://ward.dojo.fed.wiki/assets/pages/eco-geo-situation/explore.html'
+    const template = await fetch('./template.dot').then(res => res.text())
+    const text = template.replace('<<Institutions>>',dot.join("\n"))
+    const title = 'Situated Institutions'
+    const story = [
+      {type:'paragraph',text:'Constructed diagram. See [[Eco Geo Situation]]'},
+      {type:'graphviz',text},
+      {type:'frame',text:explore,situated,community}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.buttons.innerHTML = `
+    <button onclick=dopreview(event)>preview</button> situated institutions
+  `
+</script>
