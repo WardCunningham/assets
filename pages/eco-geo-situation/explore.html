@@ -12,17 +12,32 @@
     .find(item => item.type == 'frame' && item.community)
   console.log({situated,community})
 
+  const {probe,format} = await import(
+    `http://code.fed.wiki/assets/pages/site-survey-factory/probes/InstitutionSurvey.js`)
+  const sites = await Promise.all(community
+    .map(domain => index.site(domain))
+  )
+
   const surveys = await Promise.all(community
     .map(domain => fetch(`//${domain}/institution-survey.json`)
       .then(res => res.json())
       .then(page => page.story
-        .find(item => item.type == 'frame').survey
-        .filter(info => info.insts.length)))
-  )
+        .find(item => item.type == 'frame').survey)))
   console.log({surveys})
 
+  const deltas = await Promise.all(sites
+    .map((site,i) => index.update(site,surveys[i],probe))
+  )
+  console.log({deltas})
+
+  const shortsurveys = surveys
+    .map(survey => survey
+      .filter(info => info.insts.length))
+
+  console.log({shortsurveys})
+
   const defn = node => {
-    for(const survey of surveys)
+    for(const survey of shortsurveys)
       for(const info of survey)
         for(const inst of info.insts)
           if(inst.node == node)
@@ -31,7 +46,7 @@
   const pierson = defn("Marc Pierson")
   console.log({pierson})
 
-  const know = surveys
+  const know = shortsurveys
     .map(survey => survey
       .map(info => info.insts
         .map(inst => inst.node)))
