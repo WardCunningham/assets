@@ -101,17 +101,33 @@
 
   }
 
-  window.dodownload = event => {
+  window.dodownload = async event => {
+    const template = await fetch('./template.dot')
+      .then(res => res.text())
+      .then(text => text.split(/\n/))
+    const physical = template
+      .find(line => line.startsWith('Homestead'))
+      .split(/ *-> */)
+    const political = template
+      .find(line => line.startsWith('Individual'))
+      .split(/ *-> */)
+    console.log({physical,political})
+
+    const kind = name =>
+      physical.includes(name) ? 'Physical' :
+      political.includes(name) ? 'Political' :
+      'Institution'
+
     const beam = []
     for (const node of know) {
       const inst = defn(node)
       const graph = new Graph()
       const nids = {}
-      nids[node] = graph.addNode('Inst',{name:node})
+      nids[node] = graph.addNode(kind(node),{name:node})
       for(const rel of inst.rels) {
         const other = rel[0]
         if(!(other in nids)) {
-          nids[other] = graph.addNode('Inst',{name:other})
+          nids[other] = graph.addNode(kind(other),{name:other})
         }
         graph.addRel('Relates',nids[node],nids[other],{})
       }

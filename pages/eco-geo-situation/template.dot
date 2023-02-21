@@ -15,7 +15,7 @@ fontsize=18;
 
 x ->Homestead [style=invis]
 
-Homestead -> Landscape -> Ecosystem -> Watershed -> Bioregion -> Earth;
+Homestead -> Landscape -> Ecosystem -> Watershed -> Bioregion -> Earth
     
 }
   
@@ -31,7 +31,7 @@ node [style=filled,color=white];
 fontsize=18;
 
 y -> Individual [style=invis]
-Individual->Household->Neighborhood->Municipality->County->State-> Nation -> Multinational -> UN;
+Individual->Household->Neighborhood->Municipality->County->State-> Nation -> Multinational -> UN
     
     
 }
