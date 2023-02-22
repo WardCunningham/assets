@@ -125,11 +125,14 @@
       const nids = {}
       nids[node] = graph.addNode(kind(node),{name:node})
       for(const rel of inst.rels) {
-        const other = rel[0]
-        if(!(other in nids)) {
-          nids[other] = graph.addNode(kind(other),{name:other})
+        let here = node
+        for (const other of rel) {
+          if(!(other in nids)) {
+            nids[other] = graph.addNode(kind(other),{name:other})
+          }
+          graph.addRel('Relates',nids[here],nids[other],{})
+          here = other
         }
-        graph.addRel('Relates',nids[node],nids[other],{})
       }
       beam.push({name:node,graph})
     }
