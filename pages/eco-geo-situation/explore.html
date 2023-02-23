@@ -124,9 +124,9 @@
       const survey = shortsurveys[community.indexOf(domain)]
       const graph = new Graph()
       beam.push({name:domain,graph})
-      graph.addNode('Site',{name:domain})
+      graph.addNode('Site',{name:domain,url:`http://${domain}`})
       for (const info of survey) {
-        const nid = graph.addNode('Page',{name:info.title})
+        const nid = graph.addNode('Page',{name:info.title,url:`http://${domain}/${info.slug}.html`})
         graph.addRel(source,0,nid)
         for (const inst of info.insts) {
           graph.addRel(source,nid,graph.addNode('Institution',{name:inst.node}))
