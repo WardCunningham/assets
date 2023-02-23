@@ -119,22 +119,34 @@
       'Institution'
 
     const beam = []
-    for (const node of know) {
-      const inst = defn(node)
+    for (const domain of community) {
+      const source = domain.charAt(0)
+      const survey = shortsurveys[community.indexOf(domain)]
       const graph = new Graph()
-      const nids = {}
-      nids[node] = graph.addNode(kind(node),{name:node})
-      for(const rel of inst.rels) {
-        let here = node
-        for (const other of rel) {
-          if(!(other in nids)) {
-            nids[other] = graph.addNode(kind(other),{name:other})
+      beam.push({name:domain,graph})
+      graph.addNode('Site',{name:domain})
+      for (const info of survey) {
+        const nid = graph.addNode('Page',{name:info.title})
+        graph.addRel(source,0,nid)
+        for (const inst of info.insts) {
+          graph.addRel(source,nid,graph.addNode('Institution',{name:inst.node}))
+          const {node,rels} = inst
+          const igraph = new Graph()
+          beam.push({name:node,graph:igraph})
+          const nids = {}
+          nids[node] = igraph.addNode(kind(node),{name:node})
+          for(const rel of inst.rels) {
+            let here = node
+            for (const other of rel) {
+              if(!(other in nids)) {
+                nids[other] = igraph.addNode(kind(other),{name:other})
+              }
+              igraph.addRel(source,nids[here],nids[other],{})
+              here = other
+            }
           }
-          graph.addRel('Relates',nids[here],nids[other],{})
-          here = other
         }
       }
-      beam.push({name:node,graph})
     }
     const jsonl = beam
       .map(poem => JSON.stringify(poem))
