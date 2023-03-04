@@ -1,26 +1,26 @@
 <h3>Fetch</h3>
 <p>
-  <button onclick=dosite(event)>site</button>
-  <button onclick=doinfo(event)>info</button>
-  <button onclick=donewer(event)>newer</button>
-  <button onclick=dochanged(event)>changed</button>
-  <button onclick=dopage(event)>page</button>
-  <button onclick=dopages(event)>pages</button>
+  <button onclick=dosite(event) title="site(domain)">site</button>
+  <button onclick=doinfo(event) title="site.info(title)">info</button>
+  <button onclick=donewer(event) title="site.newer(epoch)">newer</button>
+  <button onclick=dochanged(event) title="site.changed(sitemap)">changed</button>
+  <button onclick=dopage(event) title="site.page(title)">page</button>
+  <button onclick=dopages(event) title="site.pages(titles)">pages</button>
 </p>
 
 <h3>Find</h3>
 <p>
-  <button onclick=dolinks(event)>links</button>
-  <button onclick=dolocs(event)>locs</button>
-  <button onclick=dotags(event)>tags</button>
-  <button onclick=dofolds(event)>folds</button>
+  <button onclick=dolinks(event) title="links(items)">links</button>
+  <button onclick=dolocs(event) title="locs(items)">locs</button>
+  <button onclick=dotags(event) title="tags(items,tag)">tags</button>
+  <button onclick=dofolds(event) title="folds(items)">folds</button>
 </p>
 
 <h3>Index</h3>
 <p>
-  <button onclick=doindex(event)>index</button>
-  <button onclick=doupdate(event)>update</button>
-  <button onclick=dodownload(event)>download</button>
+  <button onclick=doindex(event) title="index(site,index)">index</button>
+  <button onclick=doupdate(event) title="update(site,index,probe)">update</button>
+  <button onclick=dodownload(event) title="download(string,file,mime)">download</button>
 </p>
 <!-- <p id=counts></p> -->
 
