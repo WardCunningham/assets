@@ -27,7 +27,8 @@ export function probe(page) {
         +(+item.location?.latitude).toFixed(7),
         +(+item.location?.longitude).toFixed(7)
       ],
-      url:item.url
+      url:item.url,
+      id:item.id
     }))
   console.log('images',images)
   return {images}
