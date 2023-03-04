@@ -1,0 +1,59 @@
+<div id=search>working</div>
+<div id=result></div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  const neighbors = await frame.neighbors()
+  const pages = (await Promise.all(
+      neighbors.map(site =>
+        fetch(`//${site}/image-label-survey.json`)
+        .then(res => res.ok ? res.json() : null)
+        .then(page => Object.assign(page,{site}))
+        .catch(err => null)
+      )
+    ))
+    .filter(page => page)
+  const surveys = pages
+    .map(page => page.story
+      .find(item => item.type=='frame' && item.survey)
+      .survey.filter(info => info.labels.length))
+  console.log({pages,surveys})
+  const count = surveys.reduce((sum,each) => sum+each.length, 0)
+  console.log({count})
+  window.search.innerHTML = `
+    <input type=text placeholder="Search" autocomplete=off> ${count} pages
+  `
+
+  const input = window.search.querySelector('input')
+  input.addEventListener('keydown',event => {
+    if(event.key=='Enter') dosearch(input.value)
+  })
+
+  function dosearch(text) {
+    const result = []
+    const words = text.toLowerCase().split(/\s+/)
+    console.log({words})
+    surveys.forEach((survey,i) => {
+      const hits = survey
+        .filter(info => info.labels
+          .find(label => label.toLowerCase().includes(words[0])))
+        .map(info => info.title)
+      result.push(...hits)
+      console.log({i,hits})
+    })
+    window.result.innerHTML = result
+      .filter(uniq)
+      .sort()
+      .map(title => `<span onclick=doshow(event)>${title}</span>`)
+      .join("<br>")
+  }
+
+  window.doshow = event => {
+    const target = event.target
+    const title = target.innerText
+    console.log({event,target,title})
+    frame.link(title,event.shiftKey)
+  }
+  
+</script>
