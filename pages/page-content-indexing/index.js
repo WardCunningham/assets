@@ -5,7 +5,7 @@ export const asCopy = obj => JSON.parse(JSON.stringify(obj))
 // F E T C H
 
 export async function site(domain) {
-  const sitemap = await fetch(`//${domain}/system/sitemap.json`).then(res => res.json())
+  const sitemap = await fetch(`http://${domain}/system/sitemap.json`).then(res => res.json())
   return {sitemap,info,newer,changed,page,pages}
 
   function info(title) {
@@ -30,7 +30,7 @@ export async function site(domain) {
 
   function page(title) {
     const slug = asSlug(title)
-    return fetch(`//${domain}/${slug}.json`).then(res => res.ok ? res.json() : null)
+    return fetch(`http://${domain}/${slug}.json`).then(res => res.ok ? res.json() : null)
   }
 
   function pages(titles) {
