@@ -6,18 +6,26 @@ export const version = '0.1.0'
 import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 
 export function probe(page) {
-  const insts = page.story
-    .filter(item => item.type == 'markdown')
-    .filter(item => item.text.startsWith('INSTITUTION'))
-    .map(item => item.text.trim().split("\n"))
-    .map(([node,...rels]) => ({
-      node:node.trim().replace(/INSTITUTION */,''),
-      rels:rels
-        .map(line => line.trim())
-        .filter(line => line.startsWith('=>'))
-        .map(line => line.split(/ *=> */).slice(1))
-    }))
-  return {insts}
+  try {
+    const insts = page.story
+      .filter(item => item.type == 'markdown')
+      .filter(item => item.text.startsWith('INSTITUTION'))
+      .map(item => item.text.trim().split("\n"))
+      .map(([node,...rels]) => ({
+        node:node.trim().replace(/INSTITUTION */,''),
+        rels:rels
+          .map(line => line.trim())
+          .filter(line => line.startsWith('=>'))
+          .map(line => line.split(/ *=> */).slice(1))
+      }))
+    return {insts}
+  } catch(e) {
+    console.log('InstitutionSurvey Probe Error')
+    console.log(page.title)
+    console.log(e)
+    return {insts:[]}
+  }
+
 }
 
 export function format(survey) {
