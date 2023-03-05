@@ -1,17 +1,18 @@
 <h3>Inputs</h3>
 <p>
-  <button onclick=docontext(event)>context</button>
-  <button onclick=doneighbors(event)>neighbors</button>
-  <button onclick=dosources(event)>sources</button>
-  <button onclick=doassets(event)>assets</button>
+  <button onclick=docontext(event) title="context()">context</button>
+  <button onclick=doneighbors(event) title="neighbors()">neighbors</button>
+  <button onclick=dosources(event) title="sources('assets')">sources</button>
+  <button onclick=doassets(event) title="assets()">assets</button>
 </p>
 
 <h3>Outputs</h3>
 <p>
-  <button onclick=dolink(event)>link</button>
-  <button onclick=doopen(event)>open</button>
-  <button onclick=doimporter(event)>importer</button>
-  <button onclick=dodownload(event)>download</button>
+  <button onclick=dolink(event) title="link(title,event.shiftKey)">link</button>
+  <button onclick=doremote(event) title="link({site,title},event.shiftKey)">remote</button>
+  <button onclick=doopen(event) title="open(page,event.shiftKey)">open</button>
+  <button onclick=doimporter(event) title="importer(pages,event.shiftKey)">importer</button>
+  <button onclick=dodownload(event) title="download(text,filename,'text/plain')">download</button>
 </p>
 
 <pre id=result></pre>
@@ -52,6 +53,12 @@ function report(result) {
 
 window.dolink = event => {
   frame.link("recent-changes",event.shiftKey)
+}
+
+window.doremote = event => {
+  const title = "Recent Changes"
+  const site = "fed.wiki.org"
+  frame.link({site,title},event.shiftKey)
 }
 
 window.doopen = event => {

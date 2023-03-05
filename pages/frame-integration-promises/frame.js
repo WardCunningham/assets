@@ -75,7 +75,12 @@ export function neighbors() {
 // O U T P U T
 
 export function link(title, keepLineup=false) {
-  window.parent.postMessage({action:"doInternalLink",title,keepLineup},"*")
+  const msg = {action:"doInternalLink",keepLineup}
+  if (typeof title === 'object')
+    Object.assign(msg,title)
+  else
+    Object.assign(msg,{title})
+  window.parent.postMessage(msg,"*")
 }
 
 export function open(page, keepLineup=false, forks=[]) {
