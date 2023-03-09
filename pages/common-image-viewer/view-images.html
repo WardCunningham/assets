@@ -1,0 +1,6 @@
+<div id=list></div>
+<style>img{width:32%; border:1px solid; margin:3px;}</style>
+<script type=module>
+  const status = await fetch('/plugin/assets/list?assets=plugins%2Fimage').then(res => res.json())
+  window.list.innerHTML = status.files.map(file => `<img src="/assets/plugins/image/${file}">`).join('')
+</script>
