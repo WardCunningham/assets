@@ -1,0 +1,111 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+
+  const context = await frame.context()
+  console.log({context})
+
+  const surveys = context.page.story
+    .filter(item => item.type == 'reference' && item.slug == 'item-tag-survey')
+  await Promise.all(surveys.map(async item => {
+    const page = await fetch(`http://${item.site}/${item.slug}.json`).then(res => res.json())
+    item.survey = page.story
+      .find(item => item.type == 'frame')
+      .survey
+  }))
+  console.log({surveys})
+
+  const tags = surveys
+    .map(ref => ref.survey
+      .filter(info => info.itemtags.length)
+      .map(info => info.itemtags
+        .map(item => item.tags.split(/ /)
+          .map(tag => ({
+            word:tag,
+            text:item.text,
+            tags:item.tags,
+            id:item.id,
+            site:ref.site,
+            slug:info.slug,
+            title:info.title})
+          )
+        )
+      )
+    )
+    .flat(3)
+    .sort((a,b) => a.title > b.title ? 1 : -1)
+  console.log({tags})
+
+  const counts = tags
+    .map(tag => tag.word)
+    .reduce((sum,each) => {sum[each]=(sum[each]||0)+1; return sum},{})
+  console.log({counts})
+
+  const members = Object.entries(counts)
+    .reduce((sum,[key,value]) => {sum[value]=(sum[value]||[]); sum[value].push(key); return sum},{})
+  console.log({members})
+
+  window.result.innerHTML = Object.entries(members)
+    .sort((a,b) => b[0]-a[0])
+    .map(([key,value]) => `
+      <div><h3>${key}</h3>
+      ${value.sort()
+        .map(word => `<span onclick=doclick(event)>${word}</span>`)
+        .join(" ")}
+      </div>`)
+    .join("")
+
+  window.doclick = event => {
+    const target = event.target
+    const word = target.innerText
+    const head = target.parentElement.firstChild.innerText
+    console.log({head,word})
+    const title = `${word} × ${head}`
+    const hits = tags
+      .filter(tag => tag.word == word)
+    console.log({hits})
+
+    const story = hits
+      .map(tag => ({
+        type: "reference",
+        id: tag.id,
+        site: tag.site,
+        slug: tag.slug,
+        title: tag.title,
+        text: tag.text
+      }))
+
+    const laterals = hits
+      .map(tag => tag.tags.split(/ /))
+      .flat()
+      .filter(tag => tag != word)
+      .filter(uniq)
+    console.log({laterals})
+
+    const iseq = (a,b) => a.site == b.site && a.slug == b.slug
+    const isany = (v,b) => v.reduce((sum,each) => sum||iseq(each, b), false)
+
+    for (const lateral of laterals) {
+      const hitx = tags
+        .filter(tag => tag.word==lateral)
+        .filter(tag => !isany(hits,tag))
+      console.log({hitx})
+      if (!hitx.length) continue
+      if (!story.map(item => item.text).includes('lateral'))
+        story.push({type:'pagefold',text:'lateral'})
+      story.push({type:'markdown',text:`# ${lateral} × ${hitx.length}`})
+      hitx.forEach(tag => story.push({
+        type: "reference",
+        id: tag.id,
+        site: tag.site,
+        slug: tag.slug,
+        title: tag.title,
+        text: tag.text
+      }))
+    }
+
+    frame.open({title,story},event.shiftKey)
+  }
+
+</script>
