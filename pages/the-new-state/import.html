@@ -1,0 +1,20 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  window.result.innerHTML = await fetch('index.html').then(res => res.text())
+
+  document.querySelectorAll('a').forEach(elem =>
+    elem.addEventListener('click',async event => {
+      event.preventDefault()
+      const href = event.target.getAttribute('href')
+      const text = await fetch(href).then(res => res.text())
+      format(event,text)
+    }))
+
+  function format(event,text) {
+    const title = `The New State ${event.target.innerText}`
+    const story = text.split(/(\r|\n)(\r|\n)/)
+      .map(part => ({type:'paragraph',text:part.replace(/\r|\n/g,' ')}))
+    frame.open({title,story},event.shiftKey)
+  }
+</script>
