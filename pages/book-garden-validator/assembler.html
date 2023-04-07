@@ -98,6 +98,7 @@
     todos.forEach(todo => emit(todo))
     troubles.forEach(({root,bad}) =>
       emit({type:'slug', title:site.info(root).title, synopsis:`Can't resolve: ${bad.map(slug=>`[[${slug}]]`).join(", ")}`}))
+    console.log({roots,garden,marks,troubles})
 
 
     function index (titles) {
