@@ -36,9 +36,12 @@
     const want = images.filter(image => !have.includes(image))
     let src = any(want)
     tds[i++%6].innerHTML = `<img src="${src}" title="tbd">`
-  //   let img = new Image()
-  //   // img.addEventListener('load', () => tds[i++%6].innerHTML = `<img src="${src}" title="tbd">`)
-  //   img.src = src
+    let img = new Image()
+    img.addEventListener('load', (e) => {
+      console.log('load',e)
+      // tds[i++%6].innerHTML = `<img src="${src}" title="tbd">`
+    })
+    img.src = src
   }
 
 </script>
