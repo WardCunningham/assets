@@ -99,10 +99,11 @@
           text:image.text,
           size:'thumbnail',
           location:latlon(image),
-          url:image.url
+          url:image.url,
+          id:image.id
         }))
       ).flat(),
-      {type:'map',text:'PAGE'}
+      {type:'map',text:`PAGE\n[[Find Photos in Region]]`}
     ]
     frame.open({title, story},event.shiftKey)
   }
@@ -110,10 +111,24 @@
   window.dodownload = event => {
     const beam = []
     for (const tuple of tuples) {
+      if(tuple.refs.length < 3) continue
       const graph = new Graph()
       const nid = graph.addNode('Tag',{name:tuple.tag})
+      const nids = {}
       beam.push({name:tuple.tag,graph})
+      for (const ref of tuple.refs) {
+        const url = ref.url
+        if(!(url in nids)) {
+          nids[url] = graph.addNode('Photo',{
+            name:ref.text.replace(/ /g,'\n'),
+            url:`http://photos.ward.dojo.fed.wiki${url}`
+          })
+        }
+        const from = nids[url]
+        graph.addRel('',nid,nids[url],{})
+      }
     }
+    console.log({beam})
     const jsons = beam.map(poem => JSON.stringify(poem))
     frame.download(jsons.join("\n"),'Photo-Tags.jsonl','application/json')
   }
