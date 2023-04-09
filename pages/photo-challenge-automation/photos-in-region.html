@@ -9,7 +9,6 @@
   import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 
   const lineup = await frame.sources('region')
-  console.log({lineup})
   const region = lineup[0].regionData
   const within = (lat, lon) =>
     lat > region.south &&
@@ -58,11 +57,10 @@
   window.dophoto = event => {
     const target = event.target
     const url = target.getAttribute('src')
-    const who = info => info.images.find(image => url.endsWith(image.url))
-    const hit = hits.find(info => who(info))
-    const image = who(hit)
+    const want = info => info.images.find(image => url.endsWith(image.url))
+    const hit = hits.find(info => want(info))
+    const image = want(hit)
     const title = `From ${hit.title}`
-    console.log({target,hit,image,url,title})
     const [latitude,longitude] = image.latlon
     const location = {latitude,longitude}
     const story = [
