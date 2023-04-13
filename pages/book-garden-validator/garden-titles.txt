@@ -35,7 +35,7 @@ Deep Learning
 Deep Listening
 Deep Truth
 Deep Work
-Designed InGenuity
+Designed InGenuity (DIG)
 Dominant Themes
 Dormant Phase
 Early Adopters
@@ -69,7 +69,6 @@ Learn Faster
 Learner Tools
 Learning Confidence
 Learning Cycles
-Learning Manifesto
 Learning Pods
 Learning Questions
 Learning Sprint

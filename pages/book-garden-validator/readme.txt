@@ -1,4 +1,5 @@
 We start with a list of garden pages. This can be copy-pasted from Book Garden Validator with some exta editing.
+Make sure every line is terminated with a newline.
 This is saved as garden-titles.txt.
 We erase the existing contents of the ./diagrams subdirectory.
 Then regenerate the desired garden page diagram with this command line:

@@ -2,8 +2,11 @@
 <button onclick="download()">download</button>
 <table><tr><td><pre id=todo><td><pre id=done></table>
 
-<script>
+<script type=module>
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
   let site = 'http://asia.wiki.org'
+  let sitemap = await fetch('http://plugins.dojo.fed.wiki/system/sitemap.json').then(res => res.json())
+  console.log({sitemap})
   let exprt = {}
   start()
 
@@ -17,14 +20,27 @@
     }
   }
 
+  function newer(page) {
+    let have = sitemap
+      .find(info => info.slug == asSlug(page.title))
+    let want = page.journal.slice().reverse()
+      .find(action => action.type != 'fork')
+    console.log({title:page.title,have,want})
+    return want.date > have.date
+  }
+
   async function scrape(slug) {
     let page = await fetch(`${site}/${slug}.json`).then(res => res.json())
-    done.innerHTML += `${slug}\n`
-    exprt[slug] = page
+    if (newer(page)) {
+      done.innerHTML += `${slug} (newer)\n`
+      exprt[slug] = page
+    } else {
+      done.innerHTML += `${slug}\n`
+  }
     todo.innerHTML = todo.innerHTML.replace(slug,'')
   }
 
-  async function download() {
+  window.download = async function download() {
     let string = JSON.stringify(exprt,null,2)
     let file = 'about-pages.json'
     var data = "data:text/json;charset=utf-8," + encodeURIComponent(string);
