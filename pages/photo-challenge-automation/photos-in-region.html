@@ -9,7 +9,9 @@
   import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 
   const lineup = await frame.sources('region')
+  if(!lineup.length) window.result.innerText = 'need map region'
   const region = lineup[0].regionData
+
   const within = (lat, lon) =>
     lat > region.south &&
     lat < region.north &&
@@ -37,7 +39,7 @@
       return info
     })
     .filter(info => info.images.length)
-    .sort((a,b) => b.date - a.date)
+    .sort((a,b) => a.date - b.date)
 
   window.result.innerHTML = ''
   for (const info of hits) {
