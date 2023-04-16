@@ -1,0 +1,114 @@
+<button onclick=dopreview(event)>preview</button>
+<p id=result>working</p>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+  span {cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+
+  // const uniq = (value, index, self) => self.indexOf(value) === index
+  // const delay = time => new Promise(res => setTimeout(res,time))
+  // const latlon = image => {
+  //   const [latitude, longitude] = image.latlon
+  //   return {latitude, longitude}
+  // }
+
+  const today = new Date().toLocaleDateString()
+
+
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const module = params['probe'] || `ImageCaptionSurvey`
+  const title = module.replaceAll(/([a-z])([A-Z])/g,'$1 $2')
+  const home = `http://code.fed.wiki/assets/pages/site-survey-factory`
+  const probes = `${home}/probes`
+  const {probe,format} = await import(`${probes}/${module}.js`)
+  const neighbors = await frame.neighbors()
+  const domain = neighbors[0]
+  const site = await index.site(domain)
+  const page = await site.page(title)
+  const survey = page.story.find(item => item.survey).survey
+
+  await index.update(site,survey,probe)
+  const wants = survey.filter(info => info.title.endsWith(' Photos'))
+  const photos = wants
+    .map(info => info.images.map(image => {image.title = info.title; return image}))
+    .flat()
+  const groups = [
+    {label:'at my home',images:[]},
+    {label:'close to home',images:[]},
+    {label:'in my hometown',images:[]},
+    {label:'away from home',images:[]},
+    {label:'a long way away',images:[]}
+  ]
+  for (const image of photos) {
+    const r = distance([45.4701524,-122.7459657],image.latlon)
+    const group =
+      r<.03 ? groups[0] :
+      r<.55 ? groups[1] :
+      r<10 ? groups[2] :
+      r<100 ? groups[3] :
+      groups[4]
+    image.r = r.toFixed(4)
+    group.images.push(image)
+  }
+  window.result.innerHTML = groups
+    .map(group => `<span onclick=domap(event)>${legend(group)}</span><br>`)
+    .join("\n")
+
+  window.dopreview = event => {
+    const title = 'Maps for All Photos'
+    const text = `All challenge photos as of ${today} appear on one of these maps. See [[All Photos Located]]`
+    const story = [{type:'paragraph',text}, ...groupmaps()]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.domap = event => {
+    const label = event.target.innerText
+    const group = groups.find(group => label.endsWith(group.label))
+    const title = titlecase(`Photos ${group.label}`)
+    const text = `${legend(group)} as of ${today}.`
+    const markers = group.images.map(image => 
+      `${image.latlon.join(",")} ${image.r} [[${image.title}]]`).join("\n")
+
+    const story = [
+      {type:'paragraph',text},
+      {type:'map',text:`${markers}\n[[Find Photos in Region]]`}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  function legend(group) {
+    return `${group.images.length} photos ${group.label}`
+  }
+
+  function titlecase(label) {
+    return label.replace(/\w{4,}/g, txt =>
+      txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())
+  }
+
+  function groupmaps() {
+    const story = []
+    for (const group of groups) {
+      const markers = group.images.map(image => 
+        `${image.latlon.join(",")} ${image.r}  [[${image.title}]]`).join("\n")
+      story.push({type:'paragraph',text:legend(group)})
+      story.push({type:'map',text:markers})
+    }
+    return story
+  }
+
+  function distance(here,there) {
+    // http://js.ward.asia.wiki.org/great-circle-distance.html
+    const rad = (deg) => 2 * Math.PI * deg / 360
+    const sin = Math.sin
+    const cos = Math.cos
+    const acos = Math.acos
+    const [lat1,lon1] = here.map(deg => rad(deg))
+    const [lat2,lon2] = there.map(deg => rad(deg))
+    const earth = 3958.8
+    return (earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))) || 0
+  }
+
+</script>
