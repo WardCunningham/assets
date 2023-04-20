@@ -4,7 +4,7 @@
   body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
   div.box {padding:8px; margin-bottom:8px; background-color: #ddd;}
   img {width:115; height:86;}
-  span {font-size:x-large; color:gray;}
+  span.link {font-size:x-large; color:gray;}
 </style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
@@ -60,7 +60,7 @@
     for (const tuple of tuples) {
       const pix = tuple.refs.map(ref =>
         `<span onclick=dolink(event)><img width=100% data-title="${ref.title}" data-text="${ref.text}" src="http://${domain}${ref.url}"></span>`)
-      html.push(`<div class=box ${pix.join(" ")}<br><span>${tuple.tag}</span></div><br>`)
+      html.push(`<div class=box ${pix.join(" ")}<br><span class=link>${tuple.tag}</span></div><br>`)
     }
     return html.join("\n")
   }
@@ -69,14 +69,16 @@
     return tuples
       .map(tuple => tuple.tag)
       .sort()
+      .map(word => `<span>${word}</span>`)
       .join(" ")
   }
 
   window.result.innerHTML =
     `${html(tuples.filter(tuple => tuple.refs.length >= 3))}
-    <button onclick=dodownload(event)>download</button>
-    <p>${list(tuples.filter(tuple => tuple.refs.length == 2))}</p>
-    <p>${list(tuples.filter(tuple => tuple.refs.length == 1))}</p>
+    <div id=word></div>
+    <p onclick=doword(event)>2 ×<br>${list(tuples.filter(tuple => tuple.refs.length == 2))}</p>
+    <p onclick=doword(event)>1 ×<br>${list(tuples.filter(tuple => tuple.refs.length == 1))}</p>
+    <button onclick=dodownload(event)>download graph</button>
     `
 
   window.dolink = event => {
@@ -106,6 +108,11 @@
       {type:'map',text:`PAGE\n[[Find Photos in Region]]`}
     ]
     frame.open({title, story},event.shiftKey)
+  }
+
+  window.doword = event => {
+    const word = event.target.innerText
+    window.word.innerHTML = html(tuples.filter(tuple => tuple.tag == word))
   }
 
   window.dodownload = event => {
