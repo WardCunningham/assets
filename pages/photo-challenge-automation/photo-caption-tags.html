@@ -115,25 +115,64 @@
     window.word.innerHTML = html(tuples.filter(tuple => tuple.tag == word))
   }
 
+  // curl -s 'http://photos.ward.dojo.fed.wiki/image-caption-survey.json' | jq '.story[3]|.survey[]|select(.title|endswith("Photos"))|.images[].text'|sort|uniq -c|sort -n
+
   window.dodownload = event => {
-    const beam = []
-    for (const tuple of tuples) {
-      if(tuple.refs.length < 3) continue
-      const graph = new Graph()
-      const nid = graph.addNode('Tag',{name:tuple.tag})
-      const nids = {}
-      beam.push({name:tuple.tag,graph})
-      for (const ref of tuple.refs) {
-        const url = ref.url
-        if(!(url in nids)) {
-          nids[url] = graph.addNode('Photo',{
-            name:ref.text.replace(/ /g,'\n'),
-            url:`http://photos.ward.dojo.fed.wiki${url}`
-          })
+    const any = array => array[Math.floor(Math.random()*array.length)]
+    const tags = image => image.text.trim().split(/ +/)
+    const date = image => {
+      const title = image.title
+      const info = survey.find(info => info.title == title)
+      const week = new Date(title.replace(/.. Photos/,', 2023'))
+      const days = info.images.findIndex(each => each.url == image.url)
+      week.setDate(week.getDate() + days)
+      return week
+    }
+    const when = image => date(image).toString().split(/ /).slice(0,3).join(' ')
+
+    const many = (need,have) => {
+      const choices = []
+      for (const from of have) {
+        for (const move of tags(from)) {
+          for (const to of tuples.find(tuple => tuple.tag == move).refs) {
+            if (need.includes(to)) {
+              choices.push({move,from,to})
+            }
+          }
         }
-        const from = nids[url]
-        graph.addRel('',nid,nids[url],{})
       }
+      // console.log({choices})
+      return choices
+    }
+    const beam = []
+    const todo = photos.slice()
+    // todo.sort((a,b) => date(a) - date(b))
+    while(todo.length) {
+      const start = any(todo)
+      // const start = todo[0]
+      const graph = new Graph()
+      const nids = {}
+      nids[when(start)] = graph.addNode('Photo',{name:when(start)})
+      beam.push({name:when(start),graph})
+      console.log({start,when:when(start)})
+      todo.splice(todo.indexOf(start),1)
+      const doing = [start]
+      let choices = many(todo,doing)
+      while(choices.length) {
+        const choice = any(choices)
+        // choices.sort((a,b) => date(a.to) - date(b.to))
+        // const choice = choices[0]
+        nids[when(choice.to)] = graph.addNode('Photo',{name:when(choice.to)})
+        // if(date(choice.to)>date(choice.from))
+          graph.addRel(choice.move,nids[when(choice.from)],nids[when(choice.to)])
+        // else
+        //   graph.addRel(choice.move,nids[when(choice.to)],nids[when(choice.from)])
+        console.log(choice.move, when(choice.from), when(choice.to))
+        todo.splice(todo.indexOf(choice.to),1)
+        doing.push(choice.to)
+        choices = many(todo,doing)
+      }
+      // console.log('doing',doing.slice())
     }
     console.log({beam})
     const jsons = beam.map(poem => JSON.stringify(poem))
