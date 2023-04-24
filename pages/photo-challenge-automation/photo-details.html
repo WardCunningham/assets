@@ -1,0 +1,53 @@
+<div id=result>working</div>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+  span {cursor:pointer;color:blue;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+
+  // const uniq = (value, index, self) => self.indexOf(value) === index
+  // const delay = time => new Promise(res => setTimeout(res,time))
+  // const latlon = image => {
+  //   const [latitude, longitude] = image.latlon
+  //   return {latitude, longitude}
+  // }
+
+  const today = new Date().toLocaleDateString()
+  console.log({today})
+
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const module = params['probe'] || `ImageCaptionSurvey`
+  const title = module.replaceAll(/([a-z])([A-Z])/g,'$1 $2')
+  const home = `http://code.fed.wiki/assets/pages/site-survey-factory`
+  const probes = `${home}/probes`
+  const {probe,format} = await import(`${probes}/${module}.js`)
+  const neighbors = await frame.neighbors()
+  const domain = neighbors[0]
+  const site = await index.site(domain)
+  const page = await site.page(title)
+  const survey = page.story.find(item => item.survey).survey
+
+  await index.update(site,survey,probe)
+  const wants = survey.filter(info => info.title.endsWith(' Photos'))
+  const photos = wants
+    .map(info => info.images.map(image => {image.title = info.title; return image}))
+    .flat()
+  const date = title => new Date(title.replace(/.. Photos$/,' 2023'))
+  const more = survey.filter(info => !info.title.endsWith(' Photos'))
+    .filter(info => info.images.length)
+    .filter(info => info.more = photos.find(photo => info.images.find(more => more.url == photo.url)))
+    .sort((a,b) => date(a.more.title) - date(b.more.title))
+  console.log({site,wants,photos,more})
+  console.log(more.map(info => [info.more.title,date(info.more.title)]))
+  const rows = more.map(info => `<tr>
+    <td width=30%><img width=100% src="http://photos.ward.dojo.fed.wiki${info.more.url}">
+    <td><span onclick=dolink(event)>${info.title}</span>
+    <br>${site.info(info.title).synopsis.slice(0,30)}...</tr>`)
+  window.result.innerHTML = `<table>${rows.join("\n")}</table>`
+
+  window.dolink = event => {
+    frame.link(event.target.innerText, event.shiftKey)
+  }
+</script>
