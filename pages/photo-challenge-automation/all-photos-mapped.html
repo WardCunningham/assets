@@ -58,7 +58,7 @@
     .join("\n")
 
   window.dopreview = event => {
-    const title = 'Maps for All Photos'
+    const title = 'Photos from Everywhere'
     const text = `All challenge photos as of ${today} appear on one of these maps. See [[All Photos Located]]`
     const story = [{type:'paragraph',text}, ...groupmaps()]
     frame.open({title,story},event.shiftKey)
