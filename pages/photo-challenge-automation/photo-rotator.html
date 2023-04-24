@@ -1,4 +1,4 @@
-<table>
+<table id=result onclick=dolink(event)>
   <tr><td><td>
   <tr><td><td>
   <tr><td><td>
@@ -15,33 +15,43 @@
   import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 
   const any = a => a[Math.floor(Math.random() * a.length)]
+  const delay = time => new Promise(res => setTimeout(res,time))
 
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const size = (params['size']||'2x3').split(/x/)
+  window.result.innerHTML = `<tr>${'<td>'.repeat(size[0])}\n`.repeat(size[1])
   const domain = `photos.ward.dojo.fed.wiki`
+  let tds = [...document.querySelectorAll('td')]
+  let url = `http://${domain}/assets/plugins/image/ecfbe4f902536a77e722f78fae462cd1.jpg`
+  tds.forEach(td => td.innerHTML = `<img src=http://photos.ward.dojo.fed.wiki/assets/scripts/4x3.png>`)
+
+  window.dolink = event => {
+    const title = event.target.getAttribute('title')
+    frame.link(title,event.shiftKey)
+  }
+
   const site = await index.site(domain)
   const page = await site.page('image-caption-survey')
   const survey = page.story.find(item => item.survey).survey
   const images = survey
     .filter(info => info.slug.endsWith('-photos'))
-    .map(info => info.images)
+    .map(info => {
+      info.images.forEach(image => image.title=info.title)
+      return info.images})
     .flat()
-    .map(image => image.url)
 
-  let tds = [...document.querySelectorAll('td')]
   let i=0
-  while(i<6) show()
+  show()
   setInterval(show,2000)
 
-  function show() {
+  async function show() {
     const have = tds.map(td => td.querySelector('img')?.getAttribute('src'))
-    const want = images.filter(image => !have.includes(image))
-    let src = any(want)
-    tds[i++%6].innerHTML = `<img src="${src}" title="tbd">`
+    const want = images.filter(image => !have.includes(image.url))
+    const choice = any(want.length ? want : images)
     let img = new Image()
-    img.addEventListener('load', (e) => {
-      console.log('load',e)
-      // tds[i++%6].innerHTML = `<img src="${src}" title="tbd">`
-    })
-    img.src = src
+    img.src = choice.url
+    await delay(1800)
+    tds[(i++)%(tds.length)].innerHTML = `<img src="${choice.url}" title="${choice.title}">`
   }
 
 </script>
