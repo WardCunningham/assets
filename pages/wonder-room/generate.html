@@ -9,18 +9,24 @@
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const context = await frame.context()
   const codes = context.page.story.filter(item => item.type == 'code')
-  const cards = codes.map(item => eval(`({${item.text}})`))
+  const cards = codes.map(item => {
+    try {return eval(`({${item.text}})`)}
+    catch (error) {return {type:'error', path:error.message, text:item.text}}
+  })
   console.log({context,codes,cards})
-  window.result.innerText = `${codes.length} of 9 places`
+  window.result.innerText = `${codes.length} of 9/10 places`
+  const errors = cards.filter(card => card.type == 'error')
+  if(errors.length) window.result.innerText += `, ${errors.length} errors`
 
   window.dopreview = event => {
     const title = `${context.title} Preview`
+    const viewer = `http://ward.dojo.fed.wiki/assets/pages/wonder-room/view-pdf.html`
     const story = cards.map((card,i) => [
       { type: 'paragraph',
         text: `Place ${i+1}: [${card.path} ${card.type}]  ${card.urlLink ? `[${card.urlLink} link]` : ''}`},
       (card.type == 'pdf' ?
       { type:'frame',
-        text:`https://docs.google.com/gview?url=${card.path}`} :
+        text:`${viewer}?url=${card.path}\nHEIGHT 300`} :
       { type:'html',
         text:`<p><img width=100% src="${card.path}"></p>`})
     ]).flat()
@@ -30,7 +36,9 @@
   window.dodownload = async event => {
     const js = card => Object.entries(card).map(e => `${e[0]}:"${e[1]}"`).join(",")
     const file = `${context.slug}.html`
-    const defn = cards.map((card,i) => `{place: ${i+1}, ${js(card)}}`).join(",\n")
+    const defn = cards
+      .filter((card,i) => card.type != 'error')
+      .map((card,i) => `{place: ${i+1}, ${js(card)}}`).join(",\n")
     const key = "1EluL1AJur4C9uCarlklHIdDKCGO0AExnEHKJCuEe"
     const html = (await fetch('./template.txt').then(res => res.text()))
       .replace(/\$title/,context.title)
