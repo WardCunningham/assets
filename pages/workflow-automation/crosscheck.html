@@ -123,7 +123,7 @@
       'Incremental', 'Jeffries Creek', 'Kalama', 'King\'s North', 'Leaflet', 'Marshall Proposed',
       'Movable', 'Navigate', 'Near', 'Pandemic', 'Places', 'Portland Urban', 'Red Electric Trail System', 'Round',
       'Sisters', 'Sleeping', 'Southwest', 'Spark',
-      'Terminal', 'Things', 'Topo', 'Trail', 'Trees', 'Tryon Creek Trail System', 'Tuning',
+      'Terminal', 'Things', 'Topo', 'Trail', 'Trees', 'Tryon Creek Trail System', 'Tuning', 'Track for',
       'Wandering', 'Ward', 'Wider', 'Workflow', 'Welcome', 'West Multnomah',
       'Spring 20', 'Summer 20', 'Fall 20', 'Winter 20'
     ]
@@ -131,6 +131,7 @@
       if (title.startsWith(stop)) return false
     }
     if (blocklist.includes(title)) return false
+    if (title.endsWith(' Survey')) return false
     if (title.includes('Nina')) return false
 
     if (title == 'Iron Mountain Park') return false
