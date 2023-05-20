@@ -7,6 +7,7 @@
 <style>
   table {width: 100%; table-layout: fixed;}
   img {width: 100%}
+  img.outline {outline: 3px solid white; outline-offset: -6px;}
 </style>
 
 <script type=module>
@@ -24,6 +25,8 @@
   let tds = [...document.querySelectorAll('td')]
   let url = `http://${domain}/assets/plugins/image/ecfbe4f902536a77e722f78fae462cd1.jpg`
   tds.forEach(td => td.innerHTML = `<img src=http://photos.ward.dojo.fed.wiki/assets/scripts/4x3.png>`)
+  tds.forEach(td => td.addEventListener('mouseenter',outline))
+  tds.forEach(td => td.addEventListener('mouseleave',outline))
 
   window.dolink = event => {
     const title = event.target.getAttribute('title')
@@ -42,17 +45,32 @@
   console.log({survey,images})
 
   let i=0
+  let want = 'none'
   show()
   setInterval(show,2000)
 
   async function show() {
     const have = tds.map(td => td.querySelector('img')?.getAttribute('src'))
-    const want = images.filter(image => !have.includes(image.url))
-    const choice = any(want.length ? want : images)
+    const need = images.filter(image => !have.includes(image.url))
+    const choice = any(need.length ? need : images)
     let img = new Image()
     img.src = choice.url
     await delay(1800)
-    tds[(i++)%(tds.length)].innerHTML = `<img src="${choice.url}" title="${choice.title}">`
+    const outline = choice.title == want ? 'class=outline' : ''
+    tds[(i++)%(tds.length)].innerHTML = `<img ${outline} src="${choice.url}" title="${choice.title}">`
+  }
+
+  function outline(event) {
+    const hit = event.target.querySelector('img')
+    want = event.type == 'mouseenter' && hit ? hit.title : 'none'
+    tds.forEach(td => {
+      const image = td.querySelector('img')
+      if(image.title == want)
+        image.classList.add('outline')
+      else
+        image.classList.remove('outline')
+    })
+
   }
 
 </script>
