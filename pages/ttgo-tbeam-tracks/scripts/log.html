@@ -11,6 +11,7 @@
   const dups = new Set()
   const data = raw.trim().split(/\r?\n/)
     .map(text => JSON.parse(text.trim()))
+    .map((r,n) => {r.n = n; return r})
     .filter(r => r.decoded?.payload?.latitude && r.decoded?.payload?.longitude)
     .filter(r => r.hotspots && r.hotspots[0].lat && r.hotspots[0].long)
     .filter(r => r.hotspots[0].hold_time < 10000)
@@ -21,7 +22,7 @@
     const when = r.hotspots[0].reported_at - r.hotspots[0].hold_time
     const where = [m.latitude,m.longitude]
     const who = r.hotspots[0].name
-    return {when, where, who}
+    return {n:r.n, when, where, who}
   })
   log.sort((a,b) => a.when - b.when)
 
@@ -35,9 +36,10 @@
         return {there:[+lat,+lon],city}
       }))
     .flat()
-  const segs = [`<tr><th>time<th>sec<th>mph<th>near`]
+  const segs = [`<tr><th>n<th>time<th>sec<th>mph<th>near`]
   for (let i=1; i<log.length; i++) {
     const low = v => v < 10 ? `<font color=gray>${v}</font>` : v
+    const n = log[i].n
     const t = new Date(log[i].when).toLocaleTimeString()
     const dt = (log[i].when - log[i-1].when)/1000
     const mi = distance(log[i].where, log[i-1].where)
@@ -46,7 +48,7 @@
     const mph = (60*60*mi/dt).toFixed(3)
     const city = nearby(log[i].where)
     // segs.push(`<tr><td>${t}<td>${low(dt)}<td>${low(mph)}<td>${city}<td>${log[i].where}<td>${log[i].who}`)
-    segs.push(`<tr><td>${t}<td>${low(dt)}<td>${low(mph)}<td>${city}`)
+    segs.push(`<tr><td>${n}<td>${t}<td>${low(dt)}<td>${low(mph)}<td>${city}`)
   }
   window.log.innerHTML = segs.join("\n")
 

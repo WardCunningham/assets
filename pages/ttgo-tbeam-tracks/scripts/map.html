@@ -123,6 +123,7 @@
 
     function addSpot(spot) {
       L.circle(spot.where,4,{color:'blue'}).addTo(map)
+        .on('click',e => console.log(new Date(spot.when).toLocaleTimeString()))
       L.circle(spot.there,32,{color:'red'}).addTo(map)
         .bindPopup(`<center>${helium(spot)}<br>${maxdist(spot.name)} miles<br>${google(spot.there)}</center>`)
         .on('mouseover',e => pause(spot.name))
