@@ -23,26 +23,28 @@ let when = {}
 
 function tally(spots) {
   let type = 'scatter'
+  let phase = Math.floor((new Date(spots[0].time).getSeconds()+7)/15)%2 ? 'odd' : 'even'
   let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
+  let name = `${band} ${phase}`
   let time = new Date()
   let count = spots.length
   let avg = count
-  let trace = data.find(trace => trace.name == band)
+  let trace = data.find(trace => trace.name == name)
   if (trace == null) {
-    trace = {name:band, type, x:[time], y:[count]}
+    trace = {name, type, x:[time], y:[count]}
     data.push(trace)
   } else {
-    if (Date.now() > when[band]+65000) {
+    if (Date.now() > when[name]+65000) {
       trace.x.push(null)
       trace.y.push(null)
     } else {
-      avg = count + (prev[band]||0) / 2
+      avg = count + (prev[name]||0) / 2
     }
-    prev[band] = count
+    prev[name] = count
     trace.x.push(time)
     trace.y.push(avg)
   }
-  when[band] = Date.now()
+  when[name] = Date.now()
   result.innerHTML = `Updated ${time}`
   Plotly.newPlot('graph', data)
 }
