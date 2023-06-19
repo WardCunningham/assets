@@ -1,17 +1,34 @@
+<meta charset="UTF-8">
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+</style>
 <div id=result></div>
 <script type=module>
   const lineup = `http://ward.dojo.fed.wiki/assets/pages/new-css-test-case/lineup.html`
   const html = await fetch(lineup).then(res => res.text())
   const elem = document.createElement( 'html' )
+  const seen = []
   elem.innerHTML = html
-  tally(0, elem.firstElementChild.nextElementSibling.firstElementChild)
+  let count = 0
+  let deepest = 0
+  await tally(0, elem.firstElementChild.nextElementSibling.firstElementChild)
+  window.result.innerHTML += `<br>count: ${count}<br>deepest: ${deepest}`
 
-  function tally(depth, elem) {
-    while(elem) {
+  async function tally(depth, elem) {
+    while(elem && ++count<10000) {
       const tag = elem.tagName
       const classes = elem.getAttribute('class') || ''
-      window.result.innerHTML += `${'| &nbsp; &nbsp; '.repeat(depth)} ${tag} ${classes}<br>`
-      if(depth<=3) tally(depth+1,elem.firstElementChild)
+      const show = `${':&nbsp; '.repeat(depth)} ${tag} ${classes}<br>`
+      if (!seen.includes(show)) {
+        const prefix = ' '.repeat(3 - Math.min(count.toString().length,3))
+        window.result.innerHTML += `${prefix}${count} &nbsp; ${show}`
+        seen.push(show)
+        await new Promise(requestAnimationFrame)
+        deepest = Math.max(deepest, depth)
+      }
+      if (depth<10) {
+        await tally(depth+1,elem.firstElementChild)
+      }
       elem = elem.nextElementSibling
     }
   }
