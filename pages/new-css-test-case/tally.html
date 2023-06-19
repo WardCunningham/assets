@@ -1,24 +1,34 @@
 <meta charset="UTF-8">
 <style>
-  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+  body { font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans; }
+  td { border: 1px solid gray; padding: 4px; text-align:left; vertical-align:top; }
+  table { border-collapse: collapse; }
 </style>
+<div id=summary></div>
 <div id=result></div>
 <script type=module>
   const lineup = `http://ward.dojo.fed.wiki/assets/pages/new-css-test-case/lineup.html`
   const html = await fetch(lineup).then(res => res.text())
   const elem = document.createElement( 'html' )
   const seen = []
+  const counted = {}
   elem.innerHTML = html
   let count = 0
   let deepest = 0
   await tally(0, elem.firstElementChild.nextElementSibling.firstElementChild)
-  window.result.innerHTML += `<br>count: ${count}<br>deepest: ${deepest}`
+  window.summary.innerHTML = table({count,deepest}) + table(counted)
 
   async function tally(depth, elem) {
     while(elem && ++count<10000) {
       const tag = elem.tagName
-      const classes = elem.getAttribute('class') || ''
-      const show = `${':&nbsp; '.repeat(depth)} ${tag} ${classes}<br>`
+      const classes = elem.getAttribute('class')
+      if(classes) {
+        classes.split(/ /).forEach(each => {
+          const selector = `${tag}.${each}`
+          counted[selector] = (counted[selector]||0) + 1
+        })
+      }
+      const show = `${':&nbsp; '.repeat(depth)} ${tag} ${classes||''}<br>`
       if (!seen.includes(show)) {
         const prefix = ' '.repeat(3 - Math.min(count.toString().length,3))
         window.result.innerHTML += `${prefix}${count} &nbsp; ${show}`
@@ -32,4 +42,15 @@
       elem = elem.nextElementSibling
     }
   }
+
+  function table(hash) {
+    return [
+      '<table>',
+      ...Object.entries(hash)
+        .sort((a,b) => a[0]<b[0] ? -1 : 1)
+        .map(([key,value]) => `<tr><td>${key}<td>${value}`),
+      '</table><br>'
+    ].join("\n")
+  }
+
 </script>
