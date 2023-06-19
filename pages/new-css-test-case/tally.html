@@ -1,0 +1,18 @@
+<div id=result></div>
+<script type=module>
+  const lineup = `http://ward.dojo.fed.wiki/assets/pages/new-css-test-case/lineup.html`
+  const html = await fetch(lineup).then(res => res.text())
+  const elem = document.createElement( 'html' )
+  elem.innerHTML = html
+  tally(0, elem.firstElementChild.nextElementSibling.firstElementChild)
+
+  function tally(depth, elem) {
+    while(elem) {
+      const tag = elem.tagName
+      const classes = elem.getAttribute('class') || ''
+      window.result.innerHTML += `${'| &nbsp; &nbsp; '.repeat(depth)} ${tag} ${classes}<br>`
+      if(depth<=3) tally(depth+1,elem.firstElementChild)
+      elem = elem.nextElementSibling
+    }
+  }
+</script>
