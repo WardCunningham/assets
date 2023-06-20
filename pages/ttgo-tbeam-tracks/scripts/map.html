@@ -122,8 +122,7 @@
     }
 
     function addSpot(spot) {
-      L.circle(spot.where,4,{color:'blue'}).addTo(map)
-        .on('click',e => console.log(new Date(spot.when).toLocaleTimeString()))
+      let dot = L.circle(spot.where,4,{color:'blue'}).addTo(map)
       L.circle(spot.there,32,{color:'red'}).addTo(map)
         .bindPopup(`<center>${helium(spot)}<br>${maxdist(spot.name)} miles<br>${google(spot.there)}</center>`)
         .on('mouseover',e => pause(spot.name))
@@ -132,8 +131,12 @@
       if(spot.prev) {
         const dt = (spot.when-spot.prev.when)/1000
         const mi = distance(spot.where,spot.prev.where)
+        const elapsed = new Date(spot.when).toLocaleTimeString()
+        const speed = `${(mi / (dt/3600)).toFixed(2)} mph`
+        dot.bindTooltip(`${elapsed}<br>${speed}`);
+
         L.polyline([spot.prev.where, spot.where],{color:'blue',opacity:0.3}).addTo(map)
-        if (dt>30 && dt<300 && mi>0.05) {
+        if (dt>30 && dt<300 && mi>0.02) {
           const n = Math.round(dt/20)
           console.log('missing', n-1, dt, (5280*mi).toFixed(2))
           const p = spot.prev.where
