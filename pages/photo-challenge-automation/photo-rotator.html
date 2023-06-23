@@ -25,8 +25,8 @@
   let tds = [...document.querySelectorAll('td')]
   let url = `http://${domain}/assets/plugins/image/ecfbe4f902536a77e722f78fae462cd1.jpg`
   tds.forEach(td => td.innerHTML = `<img src=http://photos.ward.dojo.fed.wiki/assets/scripts/4x3.png>`)
-  tds.forEach(td => td.addEventListener('mouseenter',outline))
-  tds.forEach(td => td.addEventListener('mouseleave',outline))
+  tds.forEach(td => td.addEventListener('mouseenter',hover))
+  tds.forEach(td => td.addEventListener('mouseleave',hover))
 
   window.dolink = event => {
     const title = event.target.getAttribute('title')
@@ -56,13 +56,20 @@
     let img = new Image()
     img.src = choice.url
     await delay(1800)
-    const outline = choice.title == want ? 'class=outline' : ''
-    tds[(i++)%(tds.length)].innerHTML = `<img ${outline} src="${choice.url}" title="${choice.title}">`
+    outline('none')
+    tds[(i++)%(tds.length)].innerHTML = `<img src="${choice.url}" title="${choice.title}">`
+    await delay(100)
+    outline(want)
+
   }
 
-  function outline(event) {
+  function hover(event) {
     const hit = event.target.querySelector('img')
     want = event.type == 'mouseenter' && hit ? hit.title : 'none'
+    outline(want)
+  }
+
+  function outline(want) {
     tds.forEach(td => {
       const image = td.querySelector('img')
       if(image.title == want)
