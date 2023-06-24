@@ -123,11 +123,13 @@
 
     function addSpot(spot) {
       let dot = L.circle(spot.where,4,{color:'blue'}).addTo(map)
-      L.circle(spot.there,32,{color:'red'}).addTo(map)
-        .bindPopup(`<center>${helium(spot)}<br>${maxdist(spot.name)} miles<br>${google(spot.there)}</center>`)
-        .on('mouseover',e => pause(spot.name))
-        .on('mouseout',e => resume())
-      spot.line = L.polyline([spot.where,spot.there],{color:'red',opacity:0.3})
+      if (params.spots || params.dwell) {
+        L.circle(spot.there,32,{color:'red'}).addTo(map)
+          .bindPopup(`<center>${helium(spot)}<br>${maxdist(spot.name)} miles<br>${google(spot.there)}</center>`)
+          .on('mouseover',e => pause(spot.name))
+          .on('mouseout',e => resume())
+        spot.line = L.polyline([spot.where,spot.there],{color:'red',opacity:0.3})
+      }
       if(spot.prev) {
         const dt = (spot.when-spot.prev.when)/1000
         const mi = distance(spot.where,spot.prev.where)
@@ -173,6 +175,7 @@
     }
 
     function addMarks(log) {
+      if(!params.marks) return
       for (const mark in markers) {
         const near = nearby(markers[mark])
         if (near) L.marker(near).addTo(map).bindPopup(trail(mark))
@@ -193,7 +196,8 @@
     }
 
     async function animate() {
-      const dwell = params['dwell']
+      if(!(params.dwell || params.spots)) return
+      const dwell = params.dwell
       while (dwell) {
         for (const l of log) {
           if(run) {
