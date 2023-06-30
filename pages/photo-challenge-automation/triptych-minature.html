@@ -26,7 +26,7 @@
         console.log({slug,info})
         title.push(info.title.split(/ /)[0])
         info.images.forEach(image => {
-          cells.push(`<div><img width=100% src="${image.url}"></div>`)
+          cells.push(`<img width=100% src="${image.url}">`)
         })  
       }
       const text = `<div style="
