@@ -2,7 +2,7 @@
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const context = await frame.context()
-  
+
   const howtos = context.page.story
     .filter(item => item.text.startsWith("To "))
     .map(doing)
@@ -14,8 +14,27 @@
     const words = item.text.split(/[\s\.\,]+/)
     const what = words[1]
     const how = words.slice(2).join(" ")
-    return {what, how}    
+    const idioms = [
+      /find the (\w+) with link word (\w+)/i,
+      /then do (\w+) for each/i,
+      /split (\w+) into (\w+) and (\w+) link/i,
+      /then split (\w+) as a (\w+) (\w+)/i,
+      /for each (\w+) do (\w+)/i,
+      /then (\w+) each in (\w+)/i,
+      /use (\w+) (\w+) of each (\w+) as (\w+)/i,
+      /use (\w+) as (\w+)/i,
+      /in (\w+)/i,
+      /(w+) and check it/i,
+      /(w+) when (\w+) button pressed/i
+    ]
+    const props = idioms
+      .map(idiom => how.match(idiom))
+      .filter(prop => prop !== null)
+      .map(prop => prop.slice(1).join(", "))
+    return {what, how, props}
   }
+
+
 
   window.result.innerHTML = `<pre>${JSON.stringify({howtos,steps},null,2)}</pre>`
 </script>
