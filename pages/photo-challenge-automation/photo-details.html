@@ -38,12 +38,12 @@
   const more = survey.filter(info => !info.title.endsWith(' Photos'))
     .filter(info => info.images.length)
     .filter(info => info.more = photos.find(photo => info.images.find(more => more.url == photo.url)))
-    .sort((a,b) => date(a.more.title) - date(b.more.title))
+    .sort((a,b) => date(b.more.title) - date(a.more.title))
   console.log({site,wants,photos,more})
   console.log(more.map(info => [info.more.title,date(info.more.title)]))
   const rows = more.map(info => `<tr>
     <td width=30%><img width=100% src="http://photos.ward.dojo.fed.wiki${info.more.url}">
-    <td><span onclick=dolink(event)>${info.title}</span>
+    <td style="padding-left:1em;"><span onclick=dolink(event)>${info.title}</span>
     <br>${site.info(info.title).synopsis.slice(0,30)}...</tr>`)
   window.result.innerHTML = `<table>${rows.join("\n")}</table>`
 
