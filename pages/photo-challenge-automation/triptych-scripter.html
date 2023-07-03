@@ -1,0 +1,21 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  
+  const howtos = context.page.story
+    .filter(item => item.text.startsWith("To "))
+    .map(doing)
+  const steps = context.page.story
+    .filter(item => item.text.startsWith("Do "))
+    .map(doing)
+
+  function doing (item) {
+    const words = item.text.split(/[\s\.\,]+/)
+    const what = words[1]
+    const how = words.slice(2).join(" ")
+    return {what, how}    
+  }
+
+  window.result.innerHTML = `<pre>${JSON.stringify({howtos,steps},null,2)}</pre>`
+</script>
