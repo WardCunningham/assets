@@ -1,0 +1,16 @@
+<html id=result>working</html>
+<script type=module>
+  const model = await fetch('./Ferndale.min.json')
+    .then(res => res.json())
+  window.result.innerHTML = tree(null,'root')
+
+  function tree(id,title) {
+    const more = model.map_data.nodes
+      .filter(node => (node.parentId||null) == id)
+    return `
+    <details style="padding-left:1em;"><summary>${title} (${more.length})</summary>
+      ${more.map(node => tree(node.id,node.title)).join("\n")}
+    </details>`
+  }
+
+</script>
