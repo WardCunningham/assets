@@ -7,6 +7,7 @@
   function tree(id,title) {
     const more = model.map_data.nodes
       .filter(node => (node.parentId||null) == id)
+      .sort((a,b) => a.orderIndex - b.orderIndex)
     const links = [
       ...model.map_data.links.filter(link => link.fromNodeId==id).map(link => ' f'),
       ...model.map_data.links.filter(link => link.toNodeId==id).map(link => ' t'),
