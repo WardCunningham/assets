@@ -30,8 +30,10 @@
   const page = await site.page(title)
   const survey = page.story.find(item => item.survey).survey
   await index.update(site,survey,probe)
+  const date = title => new Date(title.replace(/.. Photos$/,' 2023'))
 
   const hits = survey
+    .filter(info => info.slug.endsWith('-photos'))
     .map(info => {
       const images = (info.images || [])
         .filter(image => within(...image.latlon))
@@ -39,7 +41,7 @@
       return info
     })
     .filter(info => info.images.length)
-    .sort((a,b) => a.date - b.date)
+    .sort((a,b) => date(a.title) - date(b.title))
 
   window.result.innerHTML = ''
   for (const info of hits) {
