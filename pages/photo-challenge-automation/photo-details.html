@@ -14,36 +14,56 @@
   const home = `http://code.fed.wiki/assets/pages/site-survey-factory`
   const probes = `${home}/probes`
   const {probe,format} = await import(`${probes}/${module}.js`)
-  const neighbors = await frame.neighbors()
-  const domain = neighbors[0]
-  const site = await index.site(domain)
-  const page = await site.page(title)
-  const survey = page.story.find(item => item.survey).survey
 
-  await index.update(site,survey,probe)
-  const wants = survey.filter(info => info.title.endsWith(' Photos'))
+  const roster = (await frame.context()).page.story
+    .find(item => item.type == 'roster').text.split(/\n/)
+    .filter(line => line.match(/^[a-z\.]+$/))
+  const surveys = await Promise.all(roster.map(async domain => {
+    const site = await index.site(domain)
+    const page = await site.page(title)
+    let survey = page.story.find(item => item.survey).survey
+    await index.update(site,survey,probe)
+    survey = survey.filter(info => info.images.length)
+    for(const info of survey) {
+      info.site = domain
+      info.synopsis = site.info(info.title).synopsis
+    }
+    return survey
+  }))
+  console.log({roster,surveys})
+
+  // const neighbors = await frame.neighbors()
+  // const domain = neighbors[0]
+  // const site = await index.site(domain)
+  // const page = await site.page(title)
+  // const survey = page.story.find(item => item.survey).survey
+  // await index.update(site,survey,probe)
+
+  const wants = surveys[0].filter(info => info.title.endsWith(' Photos'))
   const photos = wants
     .map(info => info.images.map(image => {image.title = info.title; return image}))
     .flat()
   const date = title => new Date(title.replace(/.. Photos$/,' 2023'))
-  const more = survey.filter(info => !info.title.endsWith(' Photos'))
+  const more = surveys.flat()
+    .filter(info => !info.title.endsWith(' Photos'))
     .filter(info => info.images.length)
     .filter(info => info.more = photos.find(photo => info.images.find(more => more.url == photo.url)))
     .sort((a,b) => date(b.more.title) - date(a.more.title))
-  console.log({site,wants,photos,more})
+  console.log({wants,photos,more})
 
   window.result.innerHTML = `<table></table>`
   for (const info of more) {
     const row = document.createElement('tr')
     row.innerHTML = `
       <td width=30%><img width=100% src="http://photos.ward.dojo.fed.wiki${info.more.url}">
-      <td style="padding-left:1em;"><span onclick=dolink(event)>${info.title}</span>
-      <br>${site.info(info.title).synopsis.slice(0,28)}...`
+      <td style="padding-left:1em;"><span data-site=${info.site} onclick=dolink(event)>${info.title}</span>
+      <br>${info.synopsis.slice(0,28)}...`
     window.result.querySelector('table').appendChild(row)
     await delay(300)
   }
 
   window.dolink = event => {
+    console.log(event.target.dataset.site)
     frame.link(event.target.innerText, event.shiftKey)
   }
 </script>
