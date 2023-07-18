@@ -1,6 +1,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟫</text></svg>">
 
 <div id=gallery></div>
+<div id=download></div>
 
 <style>
   body {
@@ -10,10 +11,14 @@
   a {
     text-decoration: none;
   }
+  img.outline {
+    outline: 3px solid white;
+    outline-offset: -6px;
+  }
 </style>
-
+<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.min.js"></script>
 <script type=module>
-
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 
   let year = 2020
@@ -56,6 +61,24 @@
     window.gallery.innerHTML += html.join("\n")
   }
 
+  window.images = []
+  window.doimage = async event => {
+    const target = event.target
+    const title = target.closest("tr").previousElementSibling.innerText
+    const url = target.getAttribute('src')
+    const gps = await exifr.gps(event.target)
+    const latlon = [+gps.latitude.toFixed(7),+gps.longitude.toFixed(7)]
+    const time = (await exifr.parse(event.target)).DateTimeOriginal.getTime()
+    const payload = {title,url,latlon,time}
+    window.images.push(payload)
+    console.log(payload)
+    window.download.innerHTML = `<p><button>download</button> ${window.images.length} image details</p>`
+    window.download.querySelector('button').addEventListener('click',event => {
+      frame.download(JSON.stringify(window.images,null,2),'image-details.json','text/json')
+    })
+    target.classList.add('outline')
+  }
+
   function link (item) {
     let m = item.text.match(/^\[\[(.+?)\]\](.*)$/)
     return m && m[1]
@@ -81,7 +104,7 @@
     for (let [image,season] of Object.entries(uploads).sort())
       html.push(`<td>
         <div style="width:320px; margin:8px;" title="${season}\n${image}">
-        <img width=320 height=240 src=${site}/assets/pages/${season}/${image}> </div>`)
+        <img onclick=doimage(event) width=320 height=240 src=${site}/assets/pages/${season}/${image}> </div>`)
     return html.join("\n")
   }
 
