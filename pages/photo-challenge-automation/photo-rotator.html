@@ -21,7 +21,7 @@
   const params = Object.fromEntries(new URLSearchParams(location.search).entries())
   const size = (params['size']||'2x3').split(/x/)
   window.result.innerHTML = `<tr>${'<td>'.repeat(size[0])}\n`.repeat(size[1])
-  const domain = `photos.ward.dojo.fed.wiki`
+  const domain = params['site'] || `photos.ward.dojo.fed.wiki`
   let tds = [...document.querySelectorAll('td')]
   let url = `http://${domain}/assets/plugins/image/ecfbe4f902536a77e722f78fae462cd1.jpg`
   tds.forEach(td => td.innerHTML = `<img src=http://photos.ward.dojo.fed.wiki/assets/scripts/4x3.png>`)
@@ -36,13 +36,14 @@
   const site = await index.site(domain)
   const page = await site.page('image-caption-survey')
   const survey = page.story.find(item => item.survey).survey
+  const sufix = params['sufix']||''
   const images = survey
-    .filter(info => info.slug.endsWith('-photos'))
+    .filter(info => info.slug.endsWith(sufix))
     .map(info => {
       info.images.forEach(image => image.title=info.title)
       return info.images})
     .flat()
-  console.log({survey,images})
+  console.log({survey,sufix,images})
 
   let i=0
   let want = 'none'
@@ -51,13 +52,13 @@
 
   async function show() {
     const have = tds.map(td => td.querySelector('img')?.getAttribute('src'))
-    const need = images.filter(image => !have.includes(image.url))
+    const need = images.filter(image => !have.find(src => src.endsWith(image.url)))
     const choice = any(need.length ? need : images)
     let img = new Image()
-    img.src = choice.url
+    img.src = `//${domain}${choice.url}`
     await delay(1800)
     outline('none')
-    tds[(i++)%(tds.length)].innerHTML = `<img src="${choice.url}" title="${choice.title}">`
+    tds[(i++)%(tds.length)].innerHTML = `<img src="//${domain}${choice.url}" title="${choice.title}">`
     await delay(100)
     outline(want)
 
