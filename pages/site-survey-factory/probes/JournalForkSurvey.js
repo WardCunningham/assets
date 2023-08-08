@@ -1,7 +1,7 @@
 // Find the fork history looking back from the current site
 // See http://code.fed.wiki/journal-fork-survey-probe.html
 
-export const version = '0.0.1'
+export const version = '0.1.1'
 import * as index from 'http://code.fed.wiki/assets/v1/index.js'
 
 const uniq = (value, index, self) => self.indexOf(value) === index
