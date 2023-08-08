@@ -15,7 +15,7 @@
   window.site.innerText = `${domain} survey`
 
   const probes = `${home}/probes`
-  const {version,probe,format} = await import(`${probes}/${module}.js`)
+  const {version,probe,format,summary} = await import(`${probes}/${module}.js`)
 
   const update = {
     text:`${home}/update.html?probe=${module}&version=${version}&domain=${domain}\nHEIGHT 0`
@@ -43,6 +43,7 @@
       {type:'reference', ...factory},
       {type:'frame', ...update, survey}
     ]
+    if(summary) story.splice(1,0,summary(survey))
     frame.open({title,story}, event.shiftKey)
   }
 

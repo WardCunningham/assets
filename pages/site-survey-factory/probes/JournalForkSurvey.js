@@ -21,3 +21,13 @@ export function format(survey) {
     .map(info => `[[${info.title}]] ${info.forks.join(", ")}`)
     .join("<br>")
 }
+
+export function summary(survey) {
+  const sites = survey
+    .map(info => info.forks)
+    .flat()
+    .filter(uniq)
+    .sort()
+    .join("\n")
+  return {type:'roster',text:sites}
+}
