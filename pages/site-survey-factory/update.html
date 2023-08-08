@@ -35,8 +35,10 @@
   window.site.innerText = `${domain} ${status}`
 
   window.doupdate = async event => {
+    window.site.innerText = 'working'
     const asof = new Date().toLocaleString()
-    await index.update(site,survey,probe)
+    const indexed = await index.update(site,survey,probe)
+    window.site.innerText = `${indexed.length} more pages indexed.`
     const story = [
       {type:'paragraph', text:`Survey results from ${asof}.`},
       {type:'html', text:format(survey)},

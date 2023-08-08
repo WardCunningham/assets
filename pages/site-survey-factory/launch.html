@@ -29,10 +29,12 @@
 
 
   window.dolaunch = async event => {
+    window.site.innerText = 'working'
     const site = await index.site(domain)
     const survey = []
     const asof = new Date().toLocaleString()
-    await index.update(site,survey,probe)
+    const indexed = await index.update(site,survey,probe)
+    window.site.innerText = `${indexed.length} of ${site.sitemap.length} pages indexed.`
     const story = [
       {type:'paragraph', text:`Survey results from ${asof}.`},
       {type:'html', text:format(survey)},
