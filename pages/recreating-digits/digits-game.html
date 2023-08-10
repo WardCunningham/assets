@@ -1,0 +1,39 @@
+<div id=result>working</div>
+<style>
+  td, span {
+    width:50px;
+    text-align:center;
+    padding:4px;
+    background-color:#ddd
+  }
+</style>
+<script type=module>
+  const ops =['+','-','×','÷']
+  const starts = Array.from({length:6},
+    () => Math.ceil(Math.random()*100))
+  const target = Math.ceil(Math.random()*1000)
+
+  window.doexpr = event => {
+    const target = event.target
+    console.log(target.innerText)
+  }
+
+  window.dosave = event => {
+    const target = event.target
+    console.log(target.innerText)
+  }
+
+
+  const html = [`<p>Your target is ${target}</p>`]
+  html.push('<table onclick=doexpr(event)>')
+  for (let row=0; row<Math.max(ops.length,starts.length);row++){
+    html.push('<tr>')
+    html.push(`<td>${starts[row]||''}`)
+    html.push(`<td>${ops[row]||''}`)
+    html.push(`<td>${starts[row]||''}`)
+  }
+  html.push('</table>')
+  html.push(`<p>Click to keep <span onclick=dosave(event)>143</span></p>`)
+  window.result.innerHTML = html.join("\n")
+
+</script>
