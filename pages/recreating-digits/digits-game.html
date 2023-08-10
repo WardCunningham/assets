@@ -4,7 +4,10 @@
     width:50px;
     text-align:center;
     padding:4px;
-    background-color:#ddd
+    background-color:#ddd;
+  }
+  .choice {
+    background-color:#fff;
   }
 </style>
 <script type=module>
@@ -19,6 +22,9 @@
     const value = target.innerText
     const col = target.dataset.col
     const row = target.parentElement.dataset.row
+    document.querySelectorAll(`[data-col="${col}"]`)
+      .forEach(elem => {console.log(elem);elem.classList.remove('choice')})
+    target.classList.add('choice')
     values[col] = value
     choice[col] = row
     const expr = values.join(" ")
