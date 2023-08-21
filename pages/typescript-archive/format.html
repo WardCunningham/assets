@@ -19,8 +19,8 @@
     let when = 0
     let item = null
     let m
-    for (let line of text.split(/\n/)) {
-      if (m = line.match(/^(\d\d:\d\d:\d\d) From (.*?) To (.*)/)) {
+    for (let line of text.split(/\r?\n/)) {
+      if (m = line.match(/^(\d\d:\d\d:\d\d) +From +(.*?) +To +(.*)/i)) {
         const now = Date.parse(`${day} ${m[1]}`)
         if (m[2] != who || now > when+60000) {
           if (now > when+150000) story.push({type:'pagefold',text:m[1]})
@@ -30,7 +30,7 @@
           story.push(item)
         }
       } else {
-        item.text += `${line}\n`
+        item.text += `${line.trim()}\n`
       }
     }
     frame.open({title,story},event.shiftKey)
