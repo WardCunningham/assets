@@ -39,7 +39,7 @@
         }
       }
     }
-    index.sort((a,b) => a.suffix > b.suffix ? 1 : -1)
+    index.sort((a,b) => a.suffix > b.suffix ? 1 : a.suffix < b.suffix ? -1 : b.when - a.when)
     let group = 'zz'
     let item = null
     for(let row of index) {
@@ -49,7 +49,7 @@
         item = {type:'markdown',text:''}
         story.push(item)
       }
-      item.text += `${row.prefix} ● ${row.suffix}\n`
+      item.text += `${row.prefix} ${row.suffix.replace(/\w+/,`[$&](/view/${row.when})`)}\n`
     }
     frame.open({title,story},event.shiftKey)
   }
