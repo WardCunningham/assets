@@ -1,8 +1,8 @@
 <pre id=result>working</pre>
 <script type=module>
-  const url = 'http://ward.dojo.fed.wiki/assets/pages/criss-cross-streets/nick.dojo.fed.wiki.json'
-  const pages = await fetch(url).then(res => res.json())
-  const survey = pages['map-marker-survey'].story[4].survey
+  const url = 'http://nick.dojo.fed.wiki/map-marker-survey.json'
+  const page = await fetch(url).then(res => res.json())
+  const survey = page.story[4].survey
   const segments = survey.filter(info => info.markers.length == 2)
   console.log({segments})
   window.result.innerText = segments
