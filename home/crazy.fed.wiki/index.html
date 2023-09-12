@@ -7,10 +7,11 @@
   <script type=module>
     window.doit = async event => {
       window.result.innerText = 'working'
+      const email = window.email.value || 'missing'
       const result = await fetch('/plugin/register/custom', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({context:'hello', data:'world'})
+        body: JSON.stringify({context:'hello', data:{email}})
       }).then(res => res.text());
       console.log(result)
       window.result.innerText = result
