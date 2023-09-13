@@ -4,8 +4,7 @@
   <article>
     <h1>The Crazy Wiki Place</h1>
     <p>We're not taking new members yet. Stay tuned.</p>
-    <p><input id=email type=email placeholder="let us email you when we are open" size=40 required>
-    <button onclick=doit(event)>ok</button></p>
+    <p><input id=email type=email placeholder="let us email you when we are open" size=40 required> <button onclick=doit(event)>ok</button></p>
     <p id=result><a href=/welcome-visitors.html>Welcome Visitors</a></p>
   </article>
 </center>
@@ -24,17 +23,15 @@
   // https://developer.mozilla.org/en-US/docs/Learn/Forms/Form_validation#validating_forms_using_javascript 
   window.doit = async event => {
     window.result.innerText = 'working'
-    if (!window.email.validity.valid) {
-      window.result.innerText = window.email.validationMessage
-      return
-    }
-    const email = window.email.value.trim()
+    if (!window.email.validity.valid)
+      return window.result.innerText = window.email.validationMessage
+    const context = {site:location.host}
+    const data = {email:window.email.value.trim()}
     const result = await fetch('/plugin/register/custom', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({context:{site:location.host}, data:{email}})
+      body: JSON.stringify({context,data})
     }).then(res => res.text());
-    console.log(result)
     window.result.innerText = result
   }
 </script>
