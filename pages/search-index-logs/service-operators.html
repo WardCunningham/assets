@@ -15,6 +15,7 @@
       {type:'activity',text:`ROSTER Pages`}]
     frame.open({title,story},event.shiftKey)
   }
+  const rev = domain => domain.split('.').reverse().join('.')
   const search = 'http://search.fed.wiki.org:3030'
   const fetches = (await fetch(`${search}/logs`).then(res => res.text()))
     .split("<br>\n")
@@ -28,10 +29,15 @@
     .filter(line => line.includes('pages'))
     .reduce((s,e) => {const [d,p] = e.split(','); s[d]=p; return s}, {})
   const sites = Object.entries(lines)
-    .map(([domain,info]) => ({domain,info,rev:domain.split('.').reverse().join('.')}))
+    .map(([domain,info]) => ({domain,info,rev:rev(domain)}))
     .sort((a,b) => a.rev>b.rev ? 1 : -1)
+  const org = site => {
+    const sig = site.rev.startsWith('org.wiki.') ? 3 : 2
+    return site.rev.split('.').slice(0,sig).join('.')}
   window.result.innerHTML = sites
-    .map(site => `
+    .map((site,i,a) => `
+      ${org(site) != org(a[i-1]||({rev:'...'})) ?
+        `</details><details><summary>${rev(org(site))}</summary>` : ''}
       <span onclick=dolink(event)>${site.domain}</span>
       ${site.info.replace(/</g,'&lt;')}`)
     .join("<br>")
