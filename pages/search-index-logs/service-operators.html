@@ -1,21 +1,38 @@
 <div id=result>working </div>
+<style>
+  body {font-family:sans-serif;}
+  span {color:blue; cursor:pointer;}
+</style>
 <script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  window.dolink = event => {
+    const site = event.target.innerText
+    const title = `${site} Activity`
+    const text = `Recent changes for ${site}. [http://${site}/system/sitemap.json json]`
+    const story = [
+      {type:'paragraph',text},
+      {type:'roster',text:`Pages\n${site}`},
+      {type:'activity',text:`ROSTER Pages`}]
+    frame.open({title,story},event.shiftKey)
+  }
   const search = 'http://search.fed.wiki.org:3030'
   const fetches = (await fetch(`${search}/logs`).then(res => res.text()))
     .split("<br>\n")
     .slice(0,4)
     .filter(a => a.length)
     .map(a => fetch(`${search}/${a.split('"')[1]}`).then(res => res.text()))
-  const logs = (await Promise.all(fetches))
+  const lines = (await Promise.all(fetches))
     .map(log => log.split(/\n/))
     .flat()
     .filter(line => !line.startsWith("\t"))
     .filter(line => line.includes('pages'))
     .reduce((s,e) => {const [d,p] = e.split(','); s[d]=p; return s}, {})
-  console.log({logs})
-  window.result.innerHTML = Object.entries(logs)
-    .map(([k,v]) => `${k} => ${v}`)
-    .sort()
-    .map(line => line.replace(/</g,'&lt;'))
+  const sites = Object.entries(lines)
+    .map(([domain,info]) => ({domain,info,rev:domain.split('.').reverse().join('.')}))
+    .sort((a,b) => a.rev>b.rev ? 1 : -1)
+  window.result.innerHTML = sites
+    .map(site => `
+      <span onclick=dolink(event)>${site.domain}</span>
+      ${site.info.replace(/</g,'&lt;')}`)
     .join("<br>")
 </script>
