@@ -1,0 +1,21 @@
+<div id=result>working </div>
+<script type=module>
+  const search = 'http://search.fed.wiki.org:3030'
+  const fetches = (await fetch(`${search}/logs`).then(res => res.text()))
+    .split("<br>\n")
+    .slice(0,4)
+    .filter(a => a.length)
+    .map(a => fetch(`${search}/${a.split('"')[1]}`).then(res => res.text()))
+  const logs = (await Promise.all(fetches))
+    .map(log => log.split(/\n/))
+    .flat()
+    .filter(line => !line.startsWith("\t"))
+    .filter(line => line.includes('pages'))
+    .reduce((s,e) => {const [d,p] = e.split(','); s[d]=p; return s}, {})
+  console.log({logs})
+  window.result.innerHTML = Object.entries(logs)
+    .map(([k,v]) => `${k} => ${v}`)
+    .sort()
+    .map(line => line.replace(/</g,'&lt;'))
+    .join("<br>")
+</script>
