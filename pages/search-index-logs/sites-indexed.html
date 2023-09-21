@@ -1,0 +1,46 @@
+<div id=summary>working</div>
+<div id=result></div>
+<style>
+  body {font-family:sans-serif;}
+  span {color:blue; cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  window.dolink = event => {
+    const site = event.target.innerText
+    const title = `${site} Activity`
+    const text = `Recent changes for ${site}. [http://${site}/system/sitemap.json json]`
+    const story = [
+      {type:'paragraph',text},
+      {type:'roster',text:`Pages\n${site}`},
+      {type:'activity',text:`ROSTER Pages`}]
+    frame.open({title,story},event.shiftKey)
+  }
+  const rev = domain => domain.split('.').reverse().join('.')
+  const search = 'http://search.fed.wiki.org:3030'
+  const fetches = (await fetch(`${search}/logs`).then(res => res.text()))
+    .split("<br>\n")
+    .slice(0,4)
+    .filter(a => a.length)
+    .map(a => fetch(`${search}/${a.split('"')[1]}`).then(res => res.text()))
+  const lines = (await Promise.all(fetches))
+    .map(log => log.split(/\n/))
+    .flat()
+    .filter(line => !line.startsWith("\t"))
+    .filter(line => line.includes('pages'))
+    .reduce((s,e) => {const [d,p] = e.split(','); s[d]=p; return s}, {})
+  const sites = Object.entries(lines)
+    .map(([domain,info]) => ({domain,info,rev:rev(domain)}))
+    .sort((a,b) => a.rev>b.rev ? 1 : -1)
+  window.summary.innerHTML = `<h3>${sites.length} Indexed Sites</h3>`
+  const org = site => {
+    const sig = site.rev.startsWith('org.wiki.') ? 3 : 2
+    return site.rev.split('.').slice(0,sig).join('.')}
+  window.result.innerHTML = sites
+    .map((site,i,a) => `
+      ${org(site) != org(a[i-1]||({rev:'...'})) ?
+        `</details><details><summary>${rev(org(site))}</summary>` : ''}
+      <span onclick=dolink(event)>${site.domain}</span>
+      ${site.info.replace(/</g,'&lt;')}`)
+    .join("<br>")
+</script>

@@ -1,4 +1,5 @@
-<div id=result>working </div>
+<div id=summary>working</div>
+<div id=result></div>
 <style>
   body {font-family:sans-serif;}
   span {color:blue; cursor:pointer;}
@@ -25,12 +26,14 @@
   const lines = (await Promise.all(fetches))
     .map(log => log.split(/\n/))
     .flat()
+    .filter(line => line.match(/\w/))
     .filter(line => !line.startsWith("\t"))
-    .filter(line => line.includes('pages'))
+    .filter(line => !line.includes('pages'))
     .reduce((s,e) => {const [d,p] = e.split(','); s[d]=p; return s}, {})
   const sites = Object.entries(lines)
     .map(([domain,info]) => ({domain,info,rev:rev(domain)}))
     .sort((a,b) => a.rev>b.rev ? 1 : -1)
+  window.summary.innerHTML = `<h3>${sites.length} Missing Sites</h3>`
   const org = site => {
     const sig = site.rev.startsWith('org.wiki.') ? 3 : 2
     return site.rev.split('.').slice(0,sig).join('.')}

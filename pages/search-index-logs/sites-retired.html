@@ -1,0 +1,37 @@
+<div id=summary>working</div>
+<div id=result></div>
+<style>
+  body {font-family:sans-serif;}
+  span {color:blue; cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  window.dolink = event => {
+    const site = event.target.innerText
+    const title = `${site} Activity`
+    const text = `Recent changes for ${site}. [http://${site}/system/sitemap.json json]`
+    const story = [
+      {type:'paragraph',text},
+      {type:'roster',text:`Pages\n${site}`},
+      {type:'activity',text:`ROSTER Pages`}]
+    frame.open({title,story},event.shiftKey)
+  }
+  const rev = domain => domain.split('.').reverse().join('.')
+  const search = 'http://search.fed.wiki.org:3030'
+  const lines = (await fetch(`${search}/logs/retired`).then(res => res.text()))
+    .split(/\n/)
+    .filter(line => line.includes('.'))
+  window.summary.innerHTML = `<h3>${lines.length} Retired Sites</h3>`
+  const sites = lines
+    .map(domain => ({domain,rev:rev(domain)}))
+    .sort((a,b) => a.rev>b.rev ? 1 : -1)
+  const org = site => {
+    const sig = site.rev.startsWith('org.wiki.') ? 3 : 2
+    return site.rev.split('.').slice(0,sig).join('.')}
+  window.result.innerHTML = sites
+    .map((site,i,a) => `
+      ${org(site) != org(a[i-1]||({rev:'...'})) ?
+        `</details><details><summary>${rev(org(site))}</summary>` : ''}
+      <span onclick=dolink(event)>${site.domain}</span>`)
+    .join("<br>")
+</script>
