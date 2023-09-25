@@ -41,18 +41,21 @@
     const dot = `digraph { node [shape=box style=filled fillcolor=bisque]\n${digraph(g)}\n}`
     const text = `From [[${context.page.title}]]`
     const story = [{type:'paragraph',text},{type:'graphviz',text:dot}]
-    frame.open({title:'Freeform Preview',story},event.shiftKey)
+    const title = `${context.title} Graph`
+    frame.open({title,story},event.shiftKey)
   }
 
   window.dodownload = function(event) {
     const text = g.stringify(null,2)
-    frame.download(text,'parse.graph.json','application/json')
+    const name = `${context.slug}.graph.json`
+    frame.download(text,name,'application/json')
   }
 
   window.dojavascript = function(event) {
-    const text = `From [[${context.page.title}]]`
+    const text = `From [[${context.title}]]`
     const story = [{type:'paragraph',text},{type:'code',text:javascript(g)}]
-    frame.open({title:'Freeform Javascript',story},event.shiftKey)
+    const title = `${context.title} Code`
+    frame.open({title,story},event.shiftKey)
   }
 
 </script>
