@@ -6,18 +6,24 @@
 </style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  window.dolink = event => {
+  const search = 'http://search.fed.wiki.org:3030'
+
+  window.dolink = async event => {
     const site = event.target.innerText
+    const owner = (await fetch(`${search}/owner/${site}`).then(res => res.text())).trim()||'unknown'
     const title = `${site} Activity`
-    const text = `Recent changes for ${site}. [http://${site}/system/sitemap.json json]`
+    const text = `${owner}'s ${site}.
+      [http://${site} site]
+      [http://${site}/system/sitemap.json sitemap]`
     const story = [
       {type:'paragraph',text},
       {type:'roster',text:`Pages\n${site}`},
+      {type:'paragraph',text: 'Find pages referencing this site.'},
+      {type:'search',text: `SEARCH SITES ${site}`},
       {type:'activity',text:`ROSTER Pages`}]
     frame.open({title,story},event.shiftKey)
   }
   const rev = domain => domain.split('.').reverse().join('.')
-  const search = 'http://search.fed.wiki.org:3030'
   const fetches = (await fetch(`${search}/logs`).then(res => res.text()))
     .split("<br>\n")
     .slice(0,4)
@@ -34,13 +40,19 @@
     .sort((a,b) => a.rev>b.rev ? 1 : -1)
   window.summary.innerHTML = `<h3>${sites.length} Indexed Sites</h3>`
   const org = site => {
-    const sig = site.rev.startsWith('org.wiki.') ? 3 : 2
+    const farms = /\b(wiki.org|(dig|dojo|tries).fed.wiki)$/
+    const sig = farms.test(site.domain) ? 3 : 2
     return site.rev.split('.').slice(0,sig).join('.')}
-  window.result.innerHTML = sites
-    .map((site,i,a) => `
-      ${org(site) != org(a[i-1]||({rev:'...'})) ?
-        `</details><details><summary>${rev(org(site))}</summary>` : ''}
-      <span onclick=dolink(event)>${site.domain}</span>
-      ${site.info.replace(/</g,'&lt;')}`)
-    .join("<br>")
+  const groups = sites
+    .reduce((s,e) => {const k=org(e);s[k]=s[k]||[];s[k].push(e);return s},{})
+  window.result.innerHTML = Object.entries(groups)
+    .map(([org,group]) => `
+      <details><summary>${rev(org)}</summary>
+      ${group
+        .map(site => `
+          <span onclick=dolink(event)>${site.domain}</span>
+          ${site.info.replace(/</g,'&lt;')}`)
+        .join("<br>")}
+      </details>`)
+    .join("")
 </script>

@@ -22,6 +22,7 @@
     .split("<br>\n")
     .slice(0,4)
     .filter(a => a.length)
+    .reverse()
     .map(a => fetch(`${search}/${a.split('"')[1]}`).then(res => res.text()))
   const lines = (await Promise.all(fetches))
     .map(log => log.split(/\n/))
@@ -41,7 +42,7 @@
     .map((site,i,a) => `
       ${org(site) != org(a[i-1]||({rev:'...'})) ?
         `</details><details><summary>${rev(org(site))}</summary>` : ''}
-      <span onclick=dolink(event)>${site.domain}</span>
-      ${site.info.replace(/</g,'&lt;')}`)
+      <span onclick=dolink(event)>${site.domain}</span><br>
+      &nbsp; ${site.info.replace(/</g,'&lt;')}`)
     .join("<br>")
 </script>
