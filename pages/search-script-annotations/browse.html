@@ -33,13 +33,16 @@
       ${lines.map(tr).join("")}
     </table>`
 
-  const graph = new Graph()
+  const graphs = {}
+  new Graph()
   for (const line of lines) {
+    if (!(line.sys in graphs))
+      graphs[line.sys] = new Graph()
     console.log(line)
     const code = line.rest.join(" ").replace(/ ► /g,"\n")
-    add(graph,code)
+    add(graphs[line.sys],code)
   }
-  console.log(graph.tally())
+  console.log(graphs)
 
   function add(g,code) {
     let here // nid
@@ -63,14 +66,20 @@
   }
 
   window.dopreview = event => {
-    const text = `digraph {
-      node [shape=box style=filled fillcolor=bisque]
-      ${dot(graph)}
-    }`
-    const story = [
-      {type:'paragraph',text:`From [[${context.page.title}]]`},
-      {type:'graphviz',text}]
+    const graphviz = graph => {     
+      return {
+        type:'graphviz',
+        text:`digraph {
+          node [shape=box style=filled fillcolor=bisque]
+          ${dot(graph)}}`
+      }
+    }
+    const story = [{type:'paragraph',text:`From [[${context.page.title}]]`}]
+    for (const sys in graphs) {
+      story.push({type:'pagefold',text:sys})
+      story.push(graphviz(graphs[sys]))}
     const title = `${context.title} Graph`
+    console.log(story)
     frame.open({title,story},event.shiftKey)
   }
 
