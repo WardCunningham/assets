@@ -6,6 +6,7 @@
 </style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
   window.dolink = event => {
     const site = event.target.innerText
     const title = `${site} Activity`
@@ -24,14 +25,21 @@
     .filter(a => a.length)
     .reverse()
     .map(a => fetch(`${search}/${a.split('"')[1]}`).then(res => res.text()))
-  const lines = (await Promise.all(fetches))
-    .map(log => log.split(/\n/))
-    .flat()
-    .filter(line => line.match(/\w/))
-    .filter(line => !line.startsWith("\t"))
-    .filter(line => !line.includes('pages'))
-    .reduce((s,e) => {const [d,p] = e.split(','); s[d]=p; return s}, {})
-  const sites = Object.entries(lines)
+  const missing = {}
+  const logs = await Promise.all(fetches)
+  const troubles = {}
+  for (const log of logs) {
+    log.split(/\n/)
+      .filter(line => line.match(/\w/))
+      .filter(line => !line.startsWith("\t"))
+      .filter(line => !line.includes('pages'))
+      .map(line => {
+        const [domain,error] = line.split(',')
+        if(!(domain in troubles)) troubles[domain] = []
+        troubles[domain].push(error)
+      })
+  }
+  const sites = Object.entries(troubles)
     .map(([domain,info]) => ({domain,info,rev:rev(domain)}))
     .sort((a,b) => a.rev>b.rev ? 1 : -1)
   window.summary.innerHTML = `<h3>${sites.length} Missing Sites</h3>`
@@ -42,7 +50,10 @@
     .map((site,i,a) => `
       ${org(site) != org(a[i-1]||({rev:'...'})) ?
         `</details><details><summary>${rev(org(site))}</summary>` : ''}
-      <span onclick=dolink(event)>${site.domain}</span><br>
-      &nbsp; ${site.info.replace(/</g,'&lt;')}`)
+      &nbsp; ${site.info.length} × <span onclick=dolink(event)>${site.domain}</span><br>
+      &nbsp; &nbsp; ${
+        site.info.filter(uniq)
+        .map(error => error.replace(/</g,'&lt;'))
+        .join("<br> &nbsp; &nbsp; ")}`)
     .join("<br>")
 </script>
