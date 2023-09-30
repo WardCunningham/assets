@@ -39,7 +39,7 @@
     .sort((a,b) => a.rev>b.rev ? 1 : -1)
   window.summary.innerHTML = `<h3>${sites.length} Indexed Sites</h3>`
   const org = site => {
-    const farms = /\b(wiki.org|(dig|dojo|tries).fed.wiki)$/
+    const farms = /\b(wiki.org|sfw.c2.com|(dig|dojo|tries).fed.wiki)$/
     const sig = farms.test(site.domain) ? 3 : 2
     return site.rev.split('.').slice(0,sig).join('.')}
   const groups = sites
