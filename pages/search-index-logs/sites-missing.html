@@ -6,28 +6,32 @@
 </style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const search = 'http://search.fed.wiki.org:3030'
   const uniq = (value, index, self) => self.indexOf(value) === index
-  window.dolink = event => {
+  window.dolink = async event => {
     const site = event.target.innerText
+    const owner = (await fetch(`${search}/owner/${site}`).then(res => res.text())).trim()||'unknown'
     const title = `${site} Activity`
-    const text = `Recent changes for ${site}. [http://${site}/system/sitemap.json json]`
+    const text = `${owner}'s ${site}.
+      [http://${site} site]
+      [http://${site}/system/sitemap.json sitemap]`
     const story = [
       {type:'paragraph',text},
+      {type:'search',text:`SEARCH SITES ${site}`},
+      {type:'frame',text:`${search}/logs/detail/${site}\nHEIGHT 300`},
       {type:'roster',text:`Pages\n${site}`},
       {type:'activity',text:`ROSTER Pages`}]
     frame.open({title,story},event.shiftKey)
   }
   const rev = domain => domain.split('.').reverse().join('.')
-  const search = 'http://search.fed.wiki.org:3030'
   const fetches = (await fetch(`${search}/logs`).then(res => res.text()))
     .split("<br>\n")
     .slice(0,4)
     .filter(a => a.length)
     .reverse()
     .map(a => fetch(`${search}/${a.split('"')[1]}`).then(res => res.text()))
-  const missing = {}
   const logs = await Promise.all(fetches)
-  const troubles = {}
+  const missing = {}
   for (const log of logs) {
     log.split(/\n/)
       .filter(line => line.match(/\w/))
@@ -35,11 +39,11 @@
       .filter(line => !line.includes('pages'))
       .map(line => {
         const [domain,error] = line.split(',')
-        if(!(domain in troubles)) troubles[domain] = []
-        troubles[domain].push(error)
+        if(!(domain in missing)) missing[domain] = []
+        missing[domain].push(error)
       })
   }
-  const sites = Object.entries(troubles)
+  const sites = Object.entries(missing)
     .map(([domain,info]) => ({domain,info,rev:rev(domain)}))
     .sort((a,b) => a.rev>b.rev ? 1 : -1)
   window.summary.innerHTML = `<h3>${sites.length} Missing Sites</h3>`
