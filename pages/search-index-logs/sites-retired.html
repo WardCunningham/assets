@@ -6,16 +6,17 @@
 </style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  window.dolink = event => {
+  window.dolink = async event => {
     const site = event.target.innerText
     const title = `${site} Activity`
     const text = `Retired ${site}.
       [http://${site} site]
       [http://${site}/system/sitemap.json sitemap]`
+    const detail = await fetch(`${search}/logs/detail-retired/${site}`).then(res => res.text())
     const story = [
       {type:'paragraph',text},
       {type:'search',text: `SEARCH SITES ${site}`},
-      {type:'frame',text:`${search}/logs/detail/${site}\nHEIGHT 100`},
+      {type:'html',text:detail},
       {type:'roster',text:`Pages\n${site}`},
       {type:'activity',text:`ROSTER Pages`}]
     frame.open({title,story},event.shiftKey)
