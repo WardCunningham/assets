@@ -1,0 +1,63 @@
+<div id=result>waiting</div>
+<style>
+  /*  https://stackoverflow.com/questions/47848326/indent-all-children */
+  body { font-family:sans-serif; font-size:smaller}
+  details > *:not(summary) { margin-left:1em; }
+  span { color:gray; }
+</style>
+
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const leaves = obj => 0 in obj
+  const index = await fetch(`${context.origin}/plugin/assets/index`).then(res => res.json())
+
+  const tree = {"":[]}
+  structure(index)
+  totalize(tree)
+  window.result.innerHTML = outline(tree)
+
+  function structure(index) {
+    for (const item of index) {
+      const full = item.file.split('/')
+      const path = full.slice(0,-1)
+      const name = full.slice(-1)[0]
+      let here = tree
+      for (const dir of path) {
+        if(!(dir in here)) here[dir] = []
+        here = here[dir]
+      }
+      item.name = name
+      here.push(item)
+    }
+  }
+
+  function totalize(here) {
+    return Object.entries(here)
+      .reduce((total, [dir,items]) =>
+        total + (items.sum = leaves(items)
+          ? items.reduce((sum, item) => sum + item.size, 0)
+          : totalize(items)), 0)
+  }
+
+  function outline(here) {
+    return Object.entries(here)
+      .filter(([dir,items]) => dir !== 'sum')
+      .map(([dir,items]) => `
+        <details>
+          <summary>${dir}/
+            <span>${(items.sum)?.toLocaleString()}</span>
+          </summary>
+        ${leaves(items)
+          ? items
+              .map(item => `
+                <li>${item.name}
+                <span>${item.size.toLocaleString()}</span>`)
+              .join("")
+          : `${outline(items)}</div>`}
+        </details>
+      `)
+      .join("\n")
+  }
+
+</script>
