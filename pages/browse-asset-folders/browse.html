@@ -9,35 +9,35 @@
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const context = await frame.context()
-  const leaves = obj => 0 in obj
+  const leaf = obj => 0 in obj
+  const mb = n => `${n.toLocaleString()}${n>10**9 ? ' &#128308;' : n>10**6 ? ' &#128993;' : ''}`
   const index = await fetch(`${context.origin}/plugin/assets/index`).then(res => res.json())
 
   const tree = {"":[]}
-  structure(index)
-  totalize(tree)
+  fill(tree,index)
+  total(tree)
   window.result.innerHTML = outline(tree)
 
-  function structure(index) {
+  function fill(root,index) {
     for (const item of index) {
       const full = item.file.split('/')
       const path = full.slice(0,-1)
-      const name = full.slice(-1)[0]
-      let here = tree
+      item.name = full.slice(-1)[0]
+      let here = root
       for (const dir of path) {
         if(!(dir in here)) here[dir] = []
         here = here[dir]
       }
-      item.name = name
       here.push(item)
     }
   }
 
-  function totalize(here) {
+  function total(here) {
     return Object.entries(here)
-      .reduce((total, [dir,items]) =>
-        total + (items.sum = leaves(items)
+      .reduce((sum, [dir,items]) =>
+        sum + (items.sum = leaf(items)
           ? items.reduce((sum, item) => sum + item.size, 0)
-          : totalize(items)), 0)
+          : total(items)), 0)
   }
 
   function outline(here) {
@@ -46,13 +46,13 @@
       .map(([dir,items]) => `
         <details>
           <summary>${dir}/
-            <span>${(items.sum)?.toLocaleString()}</span>
+            <span>${mb(items.sum)}</span>
           </summary>
-        ${leaves(items)
+        ${leaf(items)
           ? items
               .map(item => `
                 <li>${item.name}
-                <span>${item.size.toLocaleString()}</span>`)
+                <span>${mb(item.size)}</span>`)
               .join("")
           : `${outline(items)}</div>`}
         </details>
