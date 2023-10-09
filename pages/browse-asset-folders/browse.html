@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <div id=result>waiting</div>
 <style>
   /*  https://stackoverflow.com/questions/47848326/indent-all-children */
@@ -9,14 +10,21 @@
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const context = await frame.context()
-  const leaf = obj => 0 in obj
-  const mb = n => `${n.toLocaleString()}${n>10**9 ? ' &#128308;' : n>10**6 ? ' &#128993;' : ''}`
   const index = await fetch(`${context.origin}/plugin/assets/index`).then(res => res.json())
+
+  // We represent the file hierarchy as strings mapped to arrays of index items or,
+  // in the case of subdirectories, arrays which remain empty but use their object
+  // properties to enumerate branches. We further overload empty arrays with subtotals
+  // distinguished from the usual keys by wrapping the word sum as a Symbol.
+
+  const subtotal = Symbol('sum')
+  const megabytes = size => `${size.toLocaleString()} ${size>10**9 ? '🔴' : size>10**6 ? '🟡' : ''}`
 
   const tree = {"":[]}
   fill(tree,index)
   total(tree)
   window.result.innerHTML = outline(tree)
+  console.log(tree)
 
   function fill(root,index) {
     for (const item of index) {
@@ -35,24 +43,23 @@
   function total(here) {
     return Object.entries(here)
       .reduce((sum, [dir,items]) =>
-        sum + (items.sum = leaf(items)
+        sum + (items[subtotal] = items.length
           ? items.reduce((sum, item) => sum + item.size, 0)
           : total(items)), 0)
   }
 
   function outline(here) {
     return Object.entries(here)
-      .filter(([dir,items]) => dir !== 'sum')
       .map(([dir,items]) => `
         <details>
           <summary>${dir}/
-            <span>${mb(items.sum)}</span>
+            <span>${megabytes(items[subtotal])}</span>
           </summary>
-        ${leaf(items)
+        ${items.length
           ? items
               .map(item => `
                 <li>${item.name}
-                <span>${mb(item.size)}</span>`)
+                <span>${megabytes(item.size)}</span>`)
               .join("")
           : `${outline(items)}</div>`}
         </details>
