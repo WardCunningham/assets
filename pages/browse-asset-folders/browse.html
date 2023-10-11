@@ -19,6 +19,7 @@
 
   const subtotal = Symbol('sum')
   const megabytes = size => `${size.toLocaleString()} ${size>10**9 ? '🔴' : size>10**6 ? '🟡' : ''}`
+  window.dopreview = preview
 
   const tree = {"":[]}
   fill(tree,index)
@@ -53,18 +54,50 @@
       .map(([dir,items]) => `
         <details>
           <summary>${dir}/
-            <span>${megabytes(items[subtotal])}</span>
+            <span>${megabytes
+            (items[subtotal])}</span>
           </summary>
         ${items.length
           ? items
               .map(item => `
-                <li>${item.name}
-                <span>${megabytes(item.size)}</span>`)
+                <li onclick=dopreview(event) data-file="${item.file}">${item.name}
+                <span>${megabytes
+                (item.size)}</span>`)
               .join("")
           : `${outline(items)}</div>`}
         </details>
       `)
       .join("\n")
   }
+
+  async function preview(event) {
+    const target = event.target
+    const file = target.dataset.file
+    const bytes = target.querySelector('span').innerText
+    const name = target.childNodes[0].nodeValue.trim()
+    const url = encodeURI(`${context.origin}/assets/${file}`)
+    const title = `Preview ${bytes} Bytes`
+    const text = `Asset retrived ${new Date().toLocaleDateString()}. [${url} file]`
+    const story = [{type:'paragraph',text}]
+    const suffix = name.split('.').reverse()[0].toLowerCase()
+    switch (suffix) {
+      case 'svg':
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        story.push({type:'html',text:`<img width=100% src="${url}">`}); break
+      case 'mov':
+      case 'mp4':
+        story.push({type:'html',text:`<video width=100% autoplay src="${url}">`}); break
+      case 'pdf':
+        story.push({type:'paragraph',text:`Can't display ${suffix} inline. Try the file.`}); break
+      default:
+        const text = await fetch(url).then(res => res.text())
+        story.push({type:'code', text})
+    }
+    frame.open({title,story},event.shiftKey)
+  }
+
+
 
 </script>
