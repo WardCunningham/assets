@@ -1,0 +1,65 @@
+<center>
+<p><input id=root type=text>
+<button onclick=doexp(event)>exp</button>
+<button onclick=dosum(event)>sum</button>
+</p>
+<pre id=result>ready</pre>
+</center>
+
+<script type=module>
+  window.doexp = event => {
+    const root = +window.root.value
+    let expr = `${root**5}^(1/5)\n`; window.result.innerText = expr
+    expr = expr.replace(/\(1\/5\)/, `(1/${5**4}^(1/4))`); window.result.innerText += expr
+    expr = expr.replace(/\(1\/4\)/, `(1/${4**3}^(1/3))`); window.result.innerText += expr
+  }
+
+  window.dosum = event => {
+    window.result.innerText=''
+    const root = +window.root.value
+    const digits = ([1,2,3,4,5,6,7,8,9])
+      .map(digit => [digit,Math.random()])
+      .sort((a,b) => a[1]-b[1])
+      .map(tuple => tuple[0])
+    let tries = 0
+    let hits = 0
+    search(digits,[],[])
+
+    function search(digits,stack,expr) {
+      // console.log(`${expr} => ${stack}`)
+      if(tries++ > 1000000 || hits > 17) return
+      if(stack.length==1 && stack[0]==root) {
+        window.result.innerText += `${infix(expr)}\n`
+        hits++
+      }
+      if(stack.length>=2) {
+        const [a,b,...rest] = stack
+        search (digits,[a+b,...rest],[...expr,'+'])
+        search (digits,[a-b,...rest],[...expr,'-'])
+        search (digits,[a*b,...rest],[...expr,'*'])
+        search (digits,[a/b,...rest],[...expr,'/'])
+      }
+      if(stack.length<6) {
+        for (const digit of digits) {
+          const remain = digits.filter(d => d != digit)
+          search (remain, [digit,...stack],[...expr,digit])
+        }
+      }
+    }
+
+    function infix(expr) {
+      const stack = []
+      for (const op of expr) {
+        if(['+','-','*','/'].includes(op))
+          stack.push(`(${stack.pop()}${op}${stack.pop()})`)
+        else
+          stack.push(`${op}`)
+      }
+      return stack[0]
+    }
+  }
+
+
+
+</script>
+  
