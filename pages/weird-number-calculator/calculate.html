@@ -4,10 +4,16 @@
 <button onclick=dosum(event)>sum</button>
 <button onclick=dosum(event)>mul</button>
 </p>
-<pre id=result>ready</pre>
+<pre id=result onclick=dopreview(event)>ready</pre>
 </center>
 
+<style>
+  span {cursor:pointer;}
+</style>
+
 <script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
   window.doexp = event => {
     const root = +window.root.value
     let expr = `${root**5}^(1/5)\n`; window.result.innerText = expr
@@ -27,10 +33,23 @@
     let tries = 0
     let hits = []
     search(digits,[],[])
-    window.result.innerText = hits.length ? hits.join("\n") : `try again`
+    window.result.innerHTML = hits.length
+      ? hits.map(hit => `<span>${hit}</span>`).join("\n")
+      : `try again`
+
+    window.dopreview = event => {
+      const target = event.target
+      if(target.tagName != 'SPAN') return
+      const expr = event.target.innerText
+      const dot = trace(expr)
+      const title = 'Formula Diagramed'
+      const story = [
+        {type:'paragraph',text:`${root} = ${expr}`},
+        {type:'graphviz',text:dot}]
+      frame.open({title,story},event.shiftKey)
+    }
 
     function search(digits,stack,rpn) {
-      // console.log(`${rpn} => ${stack}`)
       if(tries++ > 1000000 || hits.length > 17) return hits
       if(stack.length==1 && stack[0]==root) {
         const expr = infix(rpn)
@@ -43,7 +62,7 @@
           search (digits,[a-b,...rest],[...rpn,'-'])
           search (digits,[a*b,...rest],[...rpn,'*'])
           search (digits,[a/b,...rest],[...rpn,'/'])
-       } else {
+        } else {
           search (digits,[a*b,...rest],[...rpn,'*'])
           search (digits,[a/b,...rest],[...rpn,'/'])
           search (digits,[a+b,...rest],[...rpn,'+'])
@@ -81,5 +100,45 @@
       }
     }
   }
+
+  function trace(expr) {
+    const dot = []
+    const val = {}
+    dot.push(...expr
+      .match(/\d/g)
+      .map(d => {val[d]=+d; return `${d}`}))
+    dot.push('node [shape=box style="rounded,filled" fillcolor=palegreen]')
+    const subexp = /\((-?[\d\.]+)([*\/+-])(-?[\d\.]+)\)/g
+    const reduce = (term,left,op,right) => {
+      const key = term.match(/\d/g).join('')
+      val[key] =
+        op=='+' ? val[left] + val[right] :
+        op=='-' ? val[left] - val[right] :
+        op=='*' ? val[left] * val[right] :
+        op=='/' ? val[left] / val[right] : '??'
+      dot.push(`${key} [label="${val[key]}\\n${op}"]`)
+      dot.push(`${left} -> ${key}`)
+      dot.push(`${right} -> ${key}`)
+      return key
+    }
+    const newr = expr
+      .replaceAll(subexp,reduce)
+      .replaceAll(subexp,reduce)
+      .replaceAll(subexp,reduce)
+      .replaceAll(subexp,reduce)
+      .replaceAll(subexp,reduce)
+      .replaceAll(subexp,reduce)
+      .replaceAll(subexp,reduce)
+      .replaceAll(subexp,reduce)
+    const markup = [
+      `digraph {`,
+      `rankdir=BT`,
+      `node [style=filled fillcolor=gold]`,
+      ...dot,
+      `}`
+    ]
+    return markup.join("\n")
+  }
+
 
 </script>
