@@ -6,7 +6,7 @@
     .filter(item => item.type == 'map')
     .map(item => item.text.split(/\n/))
     .flat()
-    .map(line => line.match(/^(-?\d+.\d+), (-?\d+.\d+) *(.*)/))
+    .map(line => line.match(/^(-?\d+.\d+), *(-?\d+.\d+) *(.*)/))
     .filter(match => match)
     .map((match,i) => [match[1],match[2],match[3]||`mark ${i+1}`])
   const miles = markers
@@ -39,13 +39,13 @@
 
   function distance(here,there) {
     // http://js.ward.asia.wiki.org/great-circle-distance.html
-    let rad = (deg) => 2 * Math.PI * deg / 360
-    let sin = Math.sin
-    let cos = Math.cos
-    let acos = Math.acos
-    let [lat1,lon1] = here.map(deg => rad(deg))
-    let [lat2,lon2] = there.map(deg => rad(deg))
-    let earth = 3958.8
+    const sin = Math.sin
+    const cos = Math.cos
+    const acos = Math.acos
+    const rad = deg => Math.PI * deg / 180
+    const [lat1,lon1] = here.map(rad)
+    const [lat2,lon2] = there.map(rad)
+    const earth = 3958.8
     return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
   }
 </script>
