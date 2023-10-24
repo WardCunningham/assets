@@ -1,0 +1,27 @@
+<doc id=result>working</doc>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const site = `http://ward.dojo.fed.wiki`
+  const sitemap = await fetch(`${site}/system/sitemap.json`).then(res => res.json())
+
+  window.doscan = async event => {
+    const story = []
+    for (const info of sitemap) {
+      const page = await fetch(`${site}/${info.slug}.json`).then(res => res.json())
+      const items = page.story
+        .filter(item => item.type=='paragraph')
+        .filter(item => item.text.match(/ \d\d\d /))
+      if(items.length)
+        story.push({type:'paragraph',text:`[[${page.title}]]`},...items)
+      window.result.innerText = `${sitemap.indexOf(info)+1}/${sitemap.length} => ${story.length}`
+    }
+    const text = `http://blog.ward.dojo.fed.wiki/assets/pages/compose-and-publish/copyedit/mockdoc/draft.html\nHEIGHT 0`
+    story.push({type:'frame',text})
+    const title = "Mock Doc I"
+    frame.open({title,story})
+  }
+
+  window.result.innerHTML = `
+    ${sitemap.length} pages
+    <button onclick=doscan(event)>scan</button>`
+</script>

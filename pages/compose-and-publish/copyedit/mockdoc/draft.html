@@ -1,0 +1,49 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const last = array => array[array.length-1]
+  const site = `blog.ward.dojo.fed.wiki`
+  const vers = `mock-doc-i`
+  // const page = await fetch(`http://${site}/${vers}.json`).then(res => res.json())
+  const context = await frame.context()
+  const page = context.page
+  const draft = {site,vers,date:Date.now(),body:[]}
+  const fuzz = item => {
+    item.text = item.text.replaceAll(/ (\d\d\d) /g,(_,num) => {
+      const a = Math.floor(Math.random()*num)
+      const b = num - a
+      return ` (${a}+${b})  `
+    })
+    return item
+  }
+  for (const item of page.story) {
+    if(item.type != 'paragraph') continue
+    const text = item.text
+    if(text.match(/^\[\[.*\]\]$/))
+      draft.body.push({title:text.replace(/[\[\]]/g,''),story:[]})
+    else
+      last(draft.body).story.push(fuzz(item))
+  }
+
+  window.dopreview = event => {
+    const title = `${context.page.title} Preview`
+    const story = draft.body
+      .map(each => each.story)
+      .flat()
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.dodownload = event => {
+    const json = JSON.stringify(draft,null,2)
+    const date = new Date()
+    const zero = num => ('0'+num).slice(-2)
+    const mmdd = `${zero(date.getMonth()+1)}-${zero(date.getDate())}`
+    const file = `${date.getFullYear()}-${mmdd}-${vers}.json`
+    frame.download(json,file,'application/json')
+  }
+
+  window.result.innerHTML = `
+    ${page.story.length} items
+    <button onclick=dopreview(event)>preview</button>
+    <button onclick=dodownload(event)>download</button>`
+</script>
