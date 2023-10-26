@@ -1,0 +1,65 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/moments-in-nature/2023-09-25.csv'
+  const cells = await fetch(url).then(res => res.text()).then(text => parse(text))
+  const heads = cells.shift()
+  const rows = cells
+    .filter(row => row[0].match(/\d+\/\d+\/\d+/))
+    .filter(row => row[5])
+  window.result.innerHTML = `
+    <p><button>table</button></p>
+    ${heads
+        .map((head,i) => `
+          <input type=checkbox data-col=${i}>
+          <span title=${i}>${head}</span>`)
+        .join("<br>")}`
+  window.result.querySelectorAll('span')
+    .forEach(span => span.addEventListener('click',view))
+  window.result.querySelectorAll('button')
+    .forEach(span => span.addEventListener('click',table))
+
+  function view(event) {
+    const head = event.target.innerText
+    const index = heads.indexOf(head)
+    const column = rows.map(row => row[index])
+    const page = {
+      title:head,
+      story:[
+        {type:'code',text:column.join("\n")}
+      ]
+    }
+    frame.open(page,event.shiftKey)
+  }
+
+  function table(event) {
+    const chosen = ([...window.result.querySelectorAll("input:checked")])
+      .map(elem => +elem.dataset.col)
+    const html = ([heads,...rows])
+      .map(row => `
+        <style>
+          table, th, td {
+            padding: 4px;
+            border: 1px solid gray;
+            border-collapse: collapse;}
+        </style>
+        <tr><td>
+        ${chosen
+          .map(col => row[col])
+          .join("<td>")}
+        </td>`)
+      .join("")
+    const story = [
+      {type:'html', text:`<table>${html}</table>`}
+    ]
+    frame.open({title:`Moments in Nature Details`,story},event.shiftKey)
+  }
+
+  // https://stackoverflow.com/questions/17529347/csv-data-and-js-html
+  function parse(text) {
+    return text
+      .split(/\n/)
+      .map(line => line
+        .split(/,/))
+  }
+</script>
