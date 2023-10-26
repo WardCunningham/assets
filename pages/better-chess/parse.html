@@ -8,5 +8,12 @@
     .split(/\n/)
     .join(" ")
     .split(/(\d+\.)/)
+    .flat()
+    .map(x => x.trim())
+    .filter(x => x.match(/\S/))
+    .filter(x => !x.endsWith('.'))
+    .map(x => x.match(/([KQRNB]?x?[a-h][1-8]) *([KQRNB]?x?[a-h][1-8])/)
+      ? `${x} <font color=green>✔︎</font>`
+      : `${x} <font color=red>✘</font>`)
   window.result.innerHTML = lines.join("<br>")
 </script>
