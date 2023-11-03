@@ -1,0 +1,20 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const url = 'https://raw.githubusercontent.com/WardCunningham/wiki-plugin-morseteacher/master/ReadMe.md'
+  const text = await fetch(url).then(res => res.text())
+
+  window.dopreview = event => {
+    const title = "New Page from File"
+    const story = [
+      {type:'paragraph',text}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.result.innerHTML = `
+    ${text.length} bytes
+    <button onclick=dopreview(event)>preview</button>
+  `
+</script>
