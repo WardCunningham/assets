@@ -1,6 +1,6 @@
 <center>
 <p><input id=root type=text placeholder="desired answer">
-<button onclick=doexp(event)>exp</button>
+<!-- <button onclick=doexp(event)>exp</button> -->
 <button onclick=dosum(event)>sum</button>
 <button onclick=dosum(event)>mul</button>
 </p>
@@ -24,6 +24,9 @@
   window.dosum = async event => {
     window.result.innerText='running'
     await new Promise(res => setTimeout(res,100))
+    const limit = event.shiftKey
+      ? {run:100000000,print:1}
+      : {run:1000000,print:16}
     const type = event.target.innerText
     const root = +window.root.value
     const digits = ([1,2,3,4,5,6,7,8,9])
@@ -32,25 +35,30 @@
       .map(tuple => tuple[0])
     let tries = 0
     let hits = []
+    const t0 = Date.now()
     search(digits,[],[])
-    window.result.innerHTML = hits.length
-      ? hits.map(hit => `<span>${hit}</span>`).join("\n")
-      : `try again`
+    const stats = `${tries.toLocaleString()} tries in ${(Date.now()-t0)/1000} seconds`
+    window.result.innerHTML = [
+      stats,'',
+      ...hits.length
+          ? hits.map(hit => `<span>${hit}</span>`)
+          : [`try again`]
+      ].join("\n")
 
     window.dopreview = event => {
       const target = event.target
       if(target.tagName != 'SPAN') return
       const expr = event.target.innerText
       const dot = trace(expr)
-      const title = 'Formula Diagramed'
+      const title = `Formula for ${root.toLocaleString()}`
       const story = [
-        {type:'paragraph',text:`${root} = ${expr}`},
+        {type:'paragraph',text:`${expr} = ${root} found among ${stats}.`},
         {type:'graphviz',text:dot}]
       frame.open({title,story},event.shiftKey)
     }
 
     function search(digits,stack,rpn) {
-      if(tries++ > 1000000 || hits.length > 17) return hits
+      if(tries++ >= limit.run || hits.length >= limit.print) return
       if(stack.length==1 && stack[0]==root) {
         const expr = infix(rpn)
         if(!hits.includes(expr)) hits.push(expr)
@@ -109,6 +117,7 @@
       .map(d => {val[d]=+d; return `${d}`}))
     dot.push('node [shape=box style="rounded,filled" fillcolor=palegreen]')
     const subexp = /\((-?[\d\.]+)([*\/+-])(-?[\d\.]+)\)/g
+    const round = number => `${number}`.replace(/(\......).*/,"$1")
     const reduce = (term,left,op,right) => {
       const key = term.match(/\d/g).join('')
       val[key] =
@@ -116,7 +125,7 @@
         op=='-' ? val[left] - val[right] :
         op=='*' ? val[left] * val[right] :
         op=='/' ? val[left] / val[right] : '??'
-      dot.push(`${key} [label="${val[key]}\\n${op}"]`)
+      dot.push(`${key} [label="${round(val[key])}\\n${op}"]`)
       dot.push(`${left} -> ${key}`)
       dot.push(`${right} -> ${key}`)
       return key
