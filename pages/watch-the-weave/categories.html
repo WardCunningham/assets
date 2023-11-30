@@ -12,15 +12,12 @@
     fetch(`https://${site}/system/sitemap.json`)
       .then(res => res.json()
       .then(json => {json[domain] = site; return json}))))
+  for (const map of sitemaps)
+    for (const info of map)
+      info.site = map[domain]
   const count = sitemaps.reduce((count,map) => count+map.length,0)
   window.result.innerHTML += `<br>${count} pages`
 
-  for (const map of sitemaps) {
-    const site = map[domain]
-    for (const info of map) {
-      info.site = site
-    }
-  }
   const haves = sitemaps
     .map(sitemap => sitemap.filter(info => info.synopsis.includes(' Category: ')))
     .flat()
