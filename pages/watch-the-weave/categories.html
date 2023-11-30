@@ -1,0 +1,49 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const context = await frame.context()
+  const roster = context.page.story.find(item => item.type == 'roster')
+  const sites = roster.text.split(/\n/).filter(line => line.match(/^[a-z0-9\.-]+$/))
+  window.result.innerHTML = `${sites.length} sites`
+
+  const domain = Symbol('domain')
+  const sitemaps = await Promise.all(sites.map(site =>
+    fetch(`https://${site}/system/sitemap.json`)
+      .then(res => res.json()
+      .then(json => {json[domain] = site; return json}))))
+  const count = sitemaps.reduce((count,map) => count+map.length,0)
+  window.result.innerHTML += `<br>${count} pages`
+
+  for (const map of sitemaps) {
+    const site = map[domain]
+    for (const info of map) {
+      info.site = site
+    }
+  }
+  const haves = sitemaps
+    .map(sitemap => sitemap.filter(info => info.synopsis.includes(' Category: ')))
+    .flat()
+  window.result.innerHTML += `
+    <br>${haves.length} categorized
+    <p><button onclick=dopreview(event)>preview</button></p>`
+
+  window.dopreview = event => {
+    const title = "Project Weave Diagram"
+    const text = haves
+      .map(info => {
+        const category = info.synopsis.match(/ Category: (\w+)/)[1]
+        const link = `https://${info.site}/${info.slug}.html`
+        return `
+          <br><img width=16 src=https://${info.site}/favicon.png>
+          ${category}:
+          <a href=${link}>${info.title}</a>`
+      })
+      .join("\n")
+    const story = [
+      {type:'html',text}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+</script>
