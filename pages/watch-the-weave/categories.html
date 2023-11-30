@@ -38,6 +38,7 @@
       })
       .join("\n")
     const story = [
+      {type:'paragraph',text:`Update with [[${context.title}]]`},
       {type:'html',text}
     ]
     frame.open({title,story},event.shiftKey)
