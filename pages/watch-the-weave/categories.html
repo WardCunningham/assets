@@ -24,10 +24,13 @@
     .flat()
   window.result.innerHTML += `
     <br>${haves.length} annotated
-    <p><button onclick=dopreview(event)>preview</button></p>`
+    <p>
+      <button onclick=dopreview(event)>preview</button>
+      <button onclick=dodiagram(event)>diagram</button>
+    </p>`
 
   window.dopreview = event => {
-    const title = "Project Weave Diagram"
+    const title = "Project Weave Preview"
     const text = haves
       .map(info => {
         const synopsis = info.synopsis
@@ -46,6 +49,54 @@
           ${props}`
       })
       .join("<hr>")
+    const story = [
+      {type:'paragraph',text:`Update with [[${context.title}]]`},
+      {type:'html',text}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.dodiagram = event => {
+    const title = "Project Weave Diagram"
+    const table = [
+      [[],[],[]],
+      [[],[],[]],
+      [[],[],[]],
+      [[],[],[]],
+    ]
+    haves.forEach(info => {
+      const synopsis = info.synopsis
+      const props = {}
+      const have = [...synopsis.matchAll(property)]
+      have.forEach(m => {
+        const key = m[1]
+        const value = m[2]
+        props[key]=value
+      })
+      if (('Zone' in props) && ('Landscape' in props)) {
+        const zone = +props['Zone'][0]
+        const landscape = +props['Landscape'][0]
+        const row = table[zone-1]
+        const cell = row[landscape-1]
+        cell.push(`
+          <a href=https://${info.site}/${info.slug}.html title="${info.title}">
+            <img width=16 src=https://${info.site}/favicon.png>
+          </a>
+        `)
+      }
+    })
+    const text = `
+      <table border=1 padding=3>
+      ${table
+        .map(row => `<tr>
+          ${row.map(cell => `
+            <td width=30%> ${cell.join(" ")}
+          `
+        ).join("")}
+        `
+      ).join("")}
+      </table>
+    `
     const story = [
       {type:'paragraph',text:`Update with [[${context.title}]]`},
       {type:'html',text}
