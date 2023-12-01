@@ -18,25 +18,34 @@
   const count = sitemaps.reduce((count,map) => count+map.length,0)
   window.result.innerHTML += `<br>${count} pages`
 
+  const property = / (Category|Zone|Landscape|Family): ([\w\d]+)/g
   const haves = sitemaps
-    .map(sitemap => sitemap.filter(info => info.synopsis.includes(' Category: ')))
+    .map(sitemap => sitemap.filter(info => info.synopsis.match(property)))
     .flat()
   window.result.innerHTML += `
-    <br>${haves.length} categorized
+    <br>${haves.length} annotated
     <p><button onclick=dopreview(event)>preview</button></p>`
 
   window.dopreview = event => {
     const title = "Project Weave Diagram"
     const text = haves
       .map(info => {
-        const category = info.synopsis.match(/ Category: (\w+)/)[1]
-        const link = `https://${info.site}/${info.slug}.html`
+        const synopsis = info.synopsis
+        const have = [...synopsis.matchAll(property)]
+        const props = have
+          .map(m => {
+            const key = m[1]
+            const value = m[2]
+            return `&nbsp ${key}: ${value}`
+          })
+          .join("<br>")
         return `
-          <br><img width=16 src=https://${info.site}/favicon.png>
-          ${category}:
-          [${link} ${info.title}]`
+          <img width=16 src=https://${info.site}/favicon.png>
+          [https://${info.site}/${info.slug}.html ${info.title}]
+          <br>
+          ${props}`
       })
-      .join("\n")
+      .join("<hr>")
     const story = [
       {type:'paragraph',text:`Update with [[${context.title}]]`},
       {type:'html',text}
