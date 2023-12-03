@@ -14,8 +14,17 @@
 
   window.dodownload = event =>
     frame.download(jsonl(),'file.graph.jsonl','application/json')
+  window.dopreview = event => {
+    const url = `http://search.dojo.fed.wiki/assets/pages/solo-super-collaborator/README.html?add=${btoa(jsonl())}`
+    // window.open(url, '_blank')
+    const title = 'Graph Inspector'
+    const text = `[${url} inspect]`
+    const story = [{type:'paragraph',text}]
+    frame.open({title,story},event.shiftKey)
+  }
   window.result.innerHTML = `
     ${files.length} files
+    <button onclick=dopreview(event)>preview</button>
     <button onclick=dodownload(event)>download</button>`
 
   function jsonl () {
