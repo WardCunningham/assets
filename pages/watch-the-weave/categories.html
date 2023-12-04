@@ -7,9 +7,11 @@
   const sites = roster.text.split(/\n/).filter(line => line.match(/^[a-z0-9\.-]+$/))
   window.result.innerHTML = `${sites.length} sites`
 
+  const protocol = domain =>
+    domain.includes('ward') ? 'http' : 'https'
   const domain = Symbol('domain')
   const sitemaps = await Promise.all(sites.map(site =>
-    fetch(`https://${site}/system/sitemap.json`)
+    fetch(`${protocol(site)}://${site}/system/sitemap.json`)
       .then(res => res.json()
       .then(json => {json[domain] = site; return json}))))
   for (const map of sitemaps)
@@ -22,6 +24,12 @@
   const haves = sitemaps
     .map(sitemap => sitemap.filter(info => info.synopsis.match(property)))
     .flat()
+  const weavable = slug => haves
+    .find(info => info.slug == slug)
+  const flag = (http,info) => `
+      <a href=${http}://${info.site}/${info.slug}.html title="${info.title}" data-title="${info.title}" class=internal>
+        <img width=16 src=${http}://${info.site}/favicon.png>
+      </a>`
   window.result.innerHTML += `
     <br>${haves.length} annotated
     <p>
@@ -33,6 +41,8 @@
     const title = "Project Weave Preview"
     const text = haves
       .map(info => {
+        console.log(info)
+        const http = protocol(info.site)
         const synopsis = info.synopsis
         const have = [...synopsis.matchAll(property)]
         const props = have
@@ -42,11 +52,21 @@
             return `&nbsp ${key}: ${value}`
           })
           .join("<br>")
+        const slugs = Object.keys(info.links||{}).filter(weavable)
+        const links = !slugs.length ? '' :
+          `<br>&nbsp Links: ${
+            slugs
+              .map(slug => {
+                const info = weavable(slug)
+                return flag(http,info)
+              })
+              .join(" ")}`
         return `
-          <img width=16 src=https://${info.site}/favicon.png>
-          [https://${info.site}/${info.slug}.html ${info.title}]
+          ${flag(http,info)}
+          [${http}://${info.site}/${info.slug}.html ${info.title}]
           <br>
-          ${props}`
+          ${props}
+          ${links}`
       })
       .join("<hr>")
     const story = [
@@ -65,6 +85,7 @@
     ]
     haves.forEach(info => {
       const synopsis = info.synopsis
+      const http = protocol(info.site)
       const props = {}
       const have = [...synopsis.matchAll(property)]
       have.forEach(m => {
@@ -77,11 +98,7 @@
         const landscape = +props['Landscape'][0]
         const row = table[landscape-1]
         const cell = row[zone-1]
-        cell.push(`
-          <a href=https://${info.site}/${info.slug}.html title="${info.title}">
-            <img width=16 src=https://${info.site}/favicon.png>
-          </a>
-        `)
+        cell.push(flag(http,info))
       }
     })
     const text = `
