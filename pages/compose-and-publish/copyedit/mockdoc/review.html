@@ -1,0 +1,54 @@
+<center>
+  <pre id=result>working</pre>
+  <div id=content></div>
+</center>
+
+<style>
+  body {
+    background-color:#eee;}
+  #content p {
+    text-align:left;
+    max-width:600px;
+    padding: 16px;
+    background-color: #fff;}
+  .edit::after {
+    font-weight: bold;
+    color: gold;
+    content: " ??";}
+  .pass::after {
+    font-weight: bold;
+    color: green;
+    content: " \2713";}
+  .fail::after {
+    font-weight: bold;
+    color: red;
+    content: " \2715";}
+</style>
+
+<script type=module>
+  // import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const source = 'ward.dojo.fed.wiki'
+  const drafts = 'http://blog.ward.dojo.fed.wiki/assets/pages/compose-and-publish/copyedit/mockdoc/drafts'
+  // const sitemap = await fetch(`//${source}/system/sitemap.json`).then(res => res.json())
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const draft = await fetch (`${drafts}/${params.draft}`).then(res => res.json())
+  window.result.innerText = Object.entries(params)
+    .map(([k,v]) => `${k}: "${v}"`)
+    .join("\n")
+  window.content.innerHTML = draft.body
+    .map(page => page.story
+      .map(item => `<p data-title="${page.title}" data-id="${item.id}">${html(item)}</p>`))
+    .flat()
+    .join("\n")
+  window.content.querySelectorAll('p')
+    .forEach(p => {
+      const r = Math.random()*100
+      if(r<40)
+        p.classList.add(r<10 ? 'pass' : r<20 ? 'fail' : 'edit')
+    })
+
+  function html(item) {
+    return item.text
+  }
+
+</script>

@@ -1,0 +1,26 @@
+<div id=result>working</div>
+<style>
+  body {font-family:sans-serif;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const context = await frame.context()
+  console.log(context)
+  const page = context.page
+  window.result.innerHTML = `
+    <h3>Story</h3>${outline(page.story)}
+    <h3>Journal</h3>${outline(page.journal)}
+  `
+
+  function outline(list) {
+    return list
+      .map(item => `
+        <details><summary>${item.type}</summary>
+        <pre>${JSON.stringify(item,null,2)}</pre>
+        </details>
+      `)
+      .join("")
+  }
+
+</script>

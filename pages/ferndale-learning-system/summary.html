@@ -1,0 +1,23 @@
+<pre id=result></pre>
+<script type=module>
+  const model = await fetch('./Ferndale.min.json')
+    .then(res => res.json())
+  const tally = {}
+  count('',model)
+  window.result.innerText = Object.entries(tally)
+    .map(entry => entry.join(' => '))
+    .join('\n')
+    
+  function count(path,model) {
+    if(Array.isArray(model))
+      for(let value of model)
+        count(path+'[]',value)
+    else if(typeof model === 'object')
+      for(let key in model)
+        count(path+'.'+key,model[key])
+    else {
+      if (!(path in tally)) tally[path]=0
+      tally[path]++
+    }
+  }
+</script>

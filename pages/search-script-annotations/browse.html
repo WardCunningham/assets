@@ -1,0 +1,95 @@
+<div id=result>working</div>
+<style>
+  body { font-family: verdana, helvetica, sans; font-size: smaller; }
+  td { border: 1px solid gray; padding: 4px; text-align:left; }
+  table { border-collapse: collapse; }
+</style>
+
+<script type=module>
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const github = 'https://github.com/WardCunningham/search/blob/master'
+  const search = 'http://search.fed.wiki.org:3030'
+  const xref = await fetch(`${search}/xref`).then(res => res.text())
+  const lines = xref.trim().split(/\n/)
+    .filter(line => line.includes('►'))
+    .map(line => {
+      const [file,num,_x,sys,_y,...rest] = line.split(/\s+/)
+      return {file,num,sys,rest}
+    })
+  const link = line => `
+    <a href=${github}/${line.file}#L${+line.num+1}>
+      ${line.file}
+    </a>`
+  const tr = line => `<tr>
+    <td>${line.sys}
+    <td>${link(line)}
+    <td>${line.rest.join(" ").replace(/ ► /g,"<br>")}`
+  window.result.innerHTML = `
+    <p><button onclick=dopreview(event)>preview</button></p>
+    <table>
+      <tr><th>system<th>file<th>markup
+      ${lines.map(tr).join("")}
+    </table>`
+
+  const graphs = {}
+  new Graph()
+  for (const line of lines) {
+    if (!(line.sys in graphs))
+      graphs[line.sys] = new Graph()
+    console.log(line)
+    const code = line.rest.join(" ").replace(/ ► /g,"\n")
+    add(graphs[line.sys],code)
+  }
+  console.log(graphs)
+
+  function add(g,code) {
+    let here // nid
+    for (const line of code.split(/\n+/)) {
+      const words = line.split(/ +/)
+      if (words[0].includes(':')) {
+        const [type,name] = words[0].split(/:/)
+        const match = node => node.type==type && node.props.name==name
+        here = g.nodes.findIndex(match)
+        if(here<0) here = g.addNode(type,{name})
+      } else {
+        const [type,name] = words[1].split(/:/)
+        const match = node => node.type==type && node.props.name==name
+        let to = g.nodes.findIndex(match)
+        if(to<0) to = g.addNode(type,{name})
+        const cap = word => word[0].toUpperCase() + word.slice(1)
+        g.addRel(cap(words[0]),here,to,{})
+        if(words[2] == 'which') here = to
+      }
+    }
+  }
+
+  window.dopreview = event => {
+    const graphviz = graph => {     
+      return {
+        type:'graphviz',
+        text:`digraph {
+          node [shape=box style=filled fillcolor=bisque]
+          ${dot(graph)}}`
+      }
+    }
+    const story = [{type:'paragraph',text:`From [[${context.page.title}]]`}]
+    for (const sys in graphs) {
+      story.push({type:'pagefold',text:sys})
+      story.push(graphviz(graphs[sys]))}
+    const title = `${context.title} Graph`
+    console.log(story)
+    frame.open({title,story},event.shiftKey)
+  }
+
+  function dot(graph) {
+    const n = graph.nodes.map((n,i) => {
+      return `${i} [label="${n.type}\\n${n.props.name}"]`})
+    const r = graph.rels.map(r => {
+      return `${r.from} -> ${r.to} [label="${r.type}"]`})
+    return [...n, ...r].join("\n")
+  }
+
+
+</script>

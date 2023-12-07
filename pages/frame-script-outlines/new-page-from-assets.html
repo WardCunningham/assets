@@ -1,0 +1,32 @@
+<div id=result>working</div>
+<style>
+  body {font-family:sans-serif;}
+  span {cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const assets = await frame.assets()
+  console.log(assets)
+  const scripts = assets
+    .filter(asset => asset.slug == 'frame-script-outlines')
+    .filter(asset => asset.file.endsWith('.html'))
+
+  window.result.innerHTML = scripts
+    .map(asset => `<span>${asset.file}</span>`)
+    .join("<br>")
+
+  window.result.querySelectorAll('span').forEach(span =>
+    span.addEventListener('click', event => {
+      const file = event.target.innerText
+      const script = scripts.find(script => script.file == file)
+      const title = `Try ${file.replace(/\.html/,'')}`
+      const story = [
+        {type:'paragraph',text:`From [[Frame Script Outlines]]`},
+        {type:'frame',text:`${script.url}\nHEIGHT 400`}
+      ]
+      frame.open({title,story},event.shiftKey)
+    })
+  )
+
+</script>

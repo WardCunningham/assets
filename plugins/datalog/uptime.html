@@ -1,0 +1,149 @@
+<body>
+  <style>
+    td {padding:4px;text-align:right}
+    td.fails {font-weight:bold;}
+  </style>
+
+  <table id="bad"></table>
+  <table id="stats"><tr><td>working</table>
+
+  <script>
+
+  function hashed(hash, assign) {
+    op=assign.split(/=/)
+    if (op[1]) hash[op[0]]=op[1]
+    return hash
+  }
+
+  let query = window.location.href.split(/\?/)[1]||''
+  let args = query.split(/&/)
+  let params = args.reduce(hashed,{})
+  let protocol = params.protocol || location.protocol
+  let site = params.site || location.host
+  let slug = params.slug || 'testing-datalog'
+  let chunk = params.chunk || 'hour'
+  let keep = params.keep || 24
+  let report = params.report || 'hour'
+  let show = params.show || 24
+  let worst = {}
+
+  console.log({protocol,site,slug,chunk,keep,report,show})
+
+  function offset(n) {
+    return fetch(`${protocol}://${site}/plugin/datalog/${slug}/${chunk}/${n}`)
+      .then(response => response.ok ? response.text() : '')
+      .then(text => text.split(/\r?\n/).filter(line => line.length > 0).map(line => JSON.parse(line)))
+      .catch(error => console.log(error)||[])
+  }
+
+  function sample() {
+    let pages = []
+    for (let n = keep*1-1; n >= 0; n--) {
+      pages.push(offset(n))
+    }
+    Promise.all(pages)
+      .then(json => {
+        // result.innerHTML = JSON.stringify(json.flat(),null,2)
+        plot(json.flat())
+      })
+  }
+
+  function columns (begin, logs) {
+    let cols = {}
+    for (var row of logs) {
+      if (row.clock < begin) continue
+      for (var res of row.result) {
+        if (res.name) {
+          cols[res.name] = true          
+        }
+      }
+    }
+    return cols
+  }
+  
+  function zero (cols) {
+    for (col in cols) {
+      cols[col] = {look:0, up:0}
+    }
+  }
+
+  function interval (clock) {
+    let choose = {
+      hour: [5, 13],    // 05-26T15
+      day: [5, 10],     // 05-26
+      month: [2, 7]     // 19-05
+    }
+    return (new Date(clock)).toISOString().substring(...choose[report])
+  }
+
+  function first () {
+    let choose = {
+      hour: 60,
+      day: 24*60,
+      month: 30*24*60
+    }
+    return Date.now() - show*choose[report]*60*1000
+  }
+
+  function head (when, cols) {
+    row = `<tr><td>${when}`
+    for (var col in cols) {
+     row = row + `<td>${col}`
+    }
+    return row
+  }
+
+  function line (when, cols) {
+    row = `<tr><td>${when}`
+    for (var col in cols) {
+      let count = cols[col]
+      if (count.look != 0) {
+        if (count.up == count.look) {
+          row = row + `<td>100.0`
+        } else {
+          let pcnt = (count.up * 100.0 / count.look).toFixed(1)
+          row = row + `<td class="fails">${pcnt}`
+          // if (!(col in worst) worst[col] = pcnt
+          if (pcnt < (worst[col]||101)) worst[col] = (count.up * 100.0 / count.look).toFixed(2)*1
+        }
+      } else {
+        row = row + `<td>`
+      }
+    }
+    return row
+  }
+
+  function plot (logs) {
+    let begin = first()
+    let cols = columns(begin, logs)
+    let now = interval(Math.max(logs[0].clock, begin))
+    let table = [head(report,cols)]
+    zero(cols)
+    for (var row of logs) {
+      if (row.clock < begin) continue
+      let next = interval(row.clock)
+      if (next != now) {
+        table.push(line(now, cols))
+        now = next
+        zero(cols)
+      }
+      for (var res of row.result) {
+        if (!res.name) continue
+        let count = cols[res.name]
+        count.look++
+        if (res.data && res.data.exit == 0) count.up++
+      }
+    }
+    table.push(line(now, cols))
+    stats.innerHTML = table.join("\n")
+    console.log({worst})
+    bad.innerHTML = Object.entries(worst)
+      .sort((a,b) => a[1] - b[1])
+      .map(([k,v]) => `<tr><td>${k}<td>${v.toFixed(2)}`)
+      .join("\n")
+  }
+
+  sample()
+
+  </script>
+</body>

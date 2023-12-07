@@ -1,0 +1,19 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/better-chess.json'
+  const page = await fetch(url).then(res => res.json())
+  const code = page.story
+    .find(item => item.type == 'code')
+  const lines = code.text
+    .split(/\n/)
+    .join(" ")
+    .split(/(\d+\.)/)
+    .flat()
+    .map(x => x.trim())
+    .filter(x => x.match(/\S/))
+    .filter(x => !x.endsWith('.'))
+    .map(x => x.match(/([KQRNB]?x?[a-h][1-8]) *([KQRNB]?x?[a-h][1-8])/)
+      ? `${x} <font color=green>✔︎</font>`
+      : `${x} <font color=red>✘</font>`)
+  window.result.innerHTML = lines.join("<br>")
+</script>

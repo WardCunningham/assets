@@ -1,0 +1,78 @@
+<div id=result>working</div>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+  img {padding:4px;}
+  h3{ cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+
+  const lineup = await frame.sources('region')
+  if(!lineup.length) window.result.innerText = 'need map region'
+  const region = lineup[0].regionData
+
+  const within = (lat, lon) =>
+    lat > region.south &&
+    lat < region.north &&
+    lon > region.west &&
+    lon < region.east
+
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const module = params['probe'] || `ImageCaptionSurvey`
+  const title = module.replaceAll(/([a-z])([A-Z])/g,'$1 $2')
+  const home = `http://code.fed.wiki/assets/pages/site-survey-factory`
+  const probes = `${home}/probes`
+  const {probe,format} = await import(`${probes}/${module}.js`)
+  const neighbors = await frame.neighbors()
+  const domain = neighbors[0]
+  const site = await index.site(domain)
+  const page = await site.page(title)
+  const survey = page.story.find(item => item.survey).survey
+  await index.update(site,survey,probe)
+  const date = title => new Date(title.replace(/.. Photos$/,' 2023'))
+
+  const hits = survey
+    .filter(info => info.slug.endsWith('-photos'))
+    .map(info => {
+      const images = (info.images || [])
+        .filter(image => within(...image.latlon))
+      info.images = images
+      return info
+    })
+    .filter(info => info.images.length)
+    .sort((a,b) => date(a.title) - date(b.title))
+
+  window.result.innerHTML = ''
+  for (const info of hits) {
+    window.result.innerHTML += `<h3 onclick=dopage(event)>${info.title}</h3>`
+    for (const image of info.images) {
+      const here = `http://photos.ward.dojo.fed.wiki`
+      const url = `${image.url.match(/^http/i) ? '' : here}${image.url}`
+      window.result.innerHTML += `<span onclick=dophoto(event)><img width=45% src="${url}"></span>`
+    }
+  }
+
+  window.dopage = event => {
+    const title = event.target.innerText
+    frame.link(title,event.shiftKey)
+  }
+
+  window.dophoto = event => {
+    const target = event.target
+    const url = target.getAttribute('src')
+    const want = info => info.images.find(image => url.endsWith(image.url))
+    const hit = hits.find(info => want(info))
+    const image = want(hit)
+    const title = `From ${hit.title}`
+    const [latitude,longitude] = image.latlon
+    const location = {latitude,longitude}
+    const story = [
+      {type:'paragraph',text:`See [[${hit.title}]]`},
+      Object.assign({type:'image',location,size:'wide'},image),
+      {type:'map',text:`PAGE\n[[Find Photos in Region]]`}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+</script>

@@ -1,0 +1,62 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+
+  const steps = context.page.story
+    .filter(item => item.text.startsWith("To "))
+    .map(doing)
+  const howtos = context.page.story
+    .filter(item => item.text.startsWith("Do "))
+    .map(doing)
+
+  function doing (item) {
+    const words = item.text.split(/[\s\.\,]+/)
+    const what = words[1]
+    const how = words.slice(2).join(" ")
+    const idioms = [
+      /find the (\w+) with link word (\w+)/i,
+      /then do (\w+) for each/i,
+      /split (\w+) into (\w+) and (\w+) link/i,
+      /then split (\w+) as a (\w+) (\w+)/i,
+      /for each (\w+) do (\w+)/i,
+      /then (\w+) each in (\w+)/i,
+      /then (\w+) layout/i,
+      /use (\w+) (\w+) of each (\w+) as (\w+)/i,
+      /use (\w+) as (\w+)/i,
+      /in (\w+)/i,
+      /fetch ([\w-]+)/i,
+      /with (\w+) ending (\w+)/i,
+      /(\w+) and check it/i,
+      /(\w+) when (\w+) button pressed/i
+    ]
+    const props = idioms
+      .map(idiom => how.match(idiom))
+      .filter(prop => prop !== null)
+      .map(prop => prop.slice(1))
+    return {what, how, props}
+  }
+
+  window.dopreview = event => {
+    const dot = [`digraph { rankdir=LR; node [shape=box style=filled fillcolor=gold];`]
+    dot.push(...howtos.map(step => `"${step.what}"`))
+    dot.push(`node [fillcolor=lightblue]`)
+    dot.push(...steps.map(step => `"${step.what}"`))
+    dot.push(`node [fillcolor=palegreen]`)
+    dot.push(...[steps,howtos].flat().map(step => `"${step.what}" -> {${
+      step.props.flat().map(prop => `"${prop}"`).join(", ")
+    }}`))
+    dot.push(`}`)
+    const title = `Scripter Call Graph`
+    const story = [{type:'graphviz',text:dot.join("\n")}]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.result.innerHTML = `
+    <details><summary>What to do</summary>
+      <pre>${JSON.stringify(howtos,null,2)}</pre></details>
+    <details><summary>How to do it</summary>
+      <pre>${JSON.stringify(steps,null,2)}</pre></details>
+    <p><button onclick=dopreview(event)>preview</button> call graph</p>
+  `
+</script>

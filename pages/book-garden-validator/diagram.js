@@ -12,13 +12,13 @@ const backlinks = title => sitemap
     .map(info => info.title)
 const quote = title => `"${title.replace(/ /g,'\\n')}"`
 
-emit(`digraph {rankdir=LR`)
+emit(`digraph {rankdir=TB`)
 const here = Deno.args[0]
 
-emit(`node [style=filled fillcolor=lightyellow penwidth=3 color=black fontname="Helvetica"]`)
+emit(`node [style=filled fillcolor=white penwidth=5 color=black fontname="Helvetica-bold"]`)
 emitnode(here)
 
-emit(`node [style=filled fillcolor=white penwidth=3 color=black]`)
+emit(`node [style=filled fillcolor=white penwidth=3 color=black fontname="Helvetica"]`)
 links(here).forEach(node => emitrel(here,node))
 
 emit(`node [style=filled fillcolor=white penwidth=1 color=black]`)
@@ -26,9 +26,9 @@ links(here).forEach(here =>
   links(here).forEach(node => emitrel(here,node))
 )
 
-emit(`node [style="filled,rounded,dotted" fillcolor=white]`)
-emit(`edge [style=dotted]`)
-backlinks(here).forEach(node => emitrel(node,here))
+// emit(`node [style="filled,rounded,dotted" fillcolor=white]`)
+// emit(`edge [style=dotted]`)
+// backlinks(here).forEach(node => emitrel(node,here))
 
 emit(`}`)
 

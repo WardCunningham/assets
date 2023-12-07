@@ -1,0 +1,84 @@
+<div id=game>working</div>
+<style>
+  td, #result {
+    width:50px;
+    text-align:center;
+    padding:4px;
+    background-color:#ddd;
+  }
+  .choice {
+    background-color:#fff;
+  }
+</style>
+<script type=module>
+  const ops =['+','-','×','÷']
+  let starts,target
+  challenge()
+  let choice = [null,null,null]
+  let values = [null,null,null]
+
+  window.doexpr = event => {
+    const target = event.target
+    const value = target.innerText
+    const col = target.dataset.col
+    const row = target.parentElement.dataset.row
+    document.querySelectorAll(`[data-col="${col}"]`)
+      .forEach(elem => {console.log(elem);elem.classList.remove('choice')})
+    target.classList.add('choice')
+    values[col] = value
+    choice[col] = row
+    const expr = values.join(" ")
+    let result = '?'
+    if(values[0] && values[1] && values[2] && choice[0] != choice[2]) {
+      const [l,op,r] = values
+      switch (op) {
+        case '+': result = +l + +r; break
+        case '-': result = +l - +r; break
+        case '×': result = +l * +r; break
+        case '÷': result = +l / +r; break
+      }
+      if(!Number.isInteger(result)) result = '!'
+    }
+    console.log({row,col,value,expr,result})
+    window.expr.innerText = `${values.join(" ")} = `
+    window.result.innerText = result
+  }
+
+  window.dosave = event => {
+    const value = event.target.innerText
+    if(Number.isInteger(+value)){
+      const del = [choice[0],choice[2]].sort()
+      starts.splice(del[1],1)
+      starts.splice(del[0],1)
+      starts.push(value)
+      console.log({value,del,choice})
+      choice = [null,null,null]
+      values = [null,null,null]
+      refresh() 
+    }
+  }
+
+  function challenge() {
+    starts = Array.from({length:6},
+      () => Math.ceil(Math.random()*Math.random()*100))
+    if(new Set(starts).size != starts.length) challenge()
+    target = Math.ceil(Math.random()*1000)
+  }
+
+  function refresh() {
+    const html = [`<p>Your target is ${target}</p>`]
+    html.push('<table onclick=doexpr(event)>')
+    for (let row=0; row<Math.max(ops.length,starts.length);row++){
+      html.push(`<tr data-row=${row}>`)
+      html.push(`<td data-col=0>${starts[row]||''}`)
+      html.push(`<td data-col=1>${ops[row]||''}`)
+      html.push(`<td data-col=2>${starts[row]||''}`)
+    }
+    html.push('</table>')
+    html.push(`<p>Click to keep <span id=expr></span><span id=result onclick=dosave(event)>?</span></p>`)
+    window.game.innerHTML = html.join("\n")
+  }
+
+  refresh()
+
+</script>

@@ -1,0 +1,18 @@
+<div onclick=dosize(event)>
+  <button>full</button>
+  <button>half</button>
+</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const page = (await frame.context()).page
+
+  window.dosize = event => {
+    const size = event.target.innerText == 'full' ? 'wide' : 'thumbnail'
+    for (const item of page.story) {
+      if (item.type == 'image') {
+        item.size = size
+      }
+    }
+    frame.open(page, event.shiftKey)
+  }
+</script>

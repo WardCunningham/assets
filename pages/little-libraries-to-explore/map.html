@@ -3,9 +3,11 @@
 </p>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  const assets = (await frame.assets())
-    .filter(asset => asset.file.endsWith('.json'))
-  const pins = await fetch(assets[0].url).then(res => res.json())
+  // const assets = (await frame.assets())
+  //   .filter(asset => asset.file.endsWith('.json'))
+  // const url = assets[0].url
+  const url = 'http://photos.ward.dojo.fed.wiki/assets/pages/little-libraries-to-explore/pin.json'
+  const pins = await fetch(url).then(res => res.json())
 
   window.dopreview = async event => {
     const lineup = await frame.sources('region')

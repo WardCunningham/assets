@@ -20,7 +20,7 @@
               // 'path' specifies the location of the asset, either as full URL or as path relative to this html file
               $cards
           ],
-          voiceChat: true,
+          voiceChat: false,
           appId: "com.me.ralf.barkow.webshowcase",
           apiKey: "$key",
       });

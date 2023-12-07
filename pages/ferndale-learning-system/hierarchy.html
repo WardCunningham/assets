@@ -1,0 +1,23 @@
+<html id=result>working</html>
+<script type=module>
+  const model = await fetch('./Ferndale.min.json')
+    .then(res => res.json())
+  window.result.innerHTML = tree(null,'root')
+
+  function tree(id,title) {
+    const more = model.map_data.nodes
+      .filter(node => (node.parentId||null) == id)
+      .sort((a,b) => a.orderIndex - b.orderIndex)
+    const links = [
+      ...model.map_data.links.filter(link => link.fromNodeId==id).map(link => ' f'),
+      ...model.map_data.links.filter(link => link.toNodeId==id).map(link => ' t'),
+      ...model.map_data.perspectives.filter(tive => tive.id==id).map(tive => ' p')
+    ].join('')
+    return `
+    <details style="padding-left:1em;color:${more.length?'black':'darkgray'}">
+      <summary>${title} ${links}</summary>
+      ${more.map(node => tree(node.id,node.title)).join("\n")}
+    </details>`
+  }
+
+</script>

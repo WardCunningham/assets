@@ -1,0 +1,123 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const context = await frame.context()
+  const roster = context.page.story.find(item => item.type == 'roster')
+  const sites = roster.text.split(/\n/).filter(line => line.match(/^[a-z0-9\.-]+$/))
+  window.result.innerHTML = `${sites.length} sites`
+
+  const protocol = domain =>
+    domain.includes('ward') ? 'http' : 'https'
+  const domain = Symbol('domain')
+  const sitemaps = await Promise.all(sites.map(site =>
+    fetch(`${protocol(site)}://${site}/system/sitemap.json`)
+      .then(res => res.json()
+      .then(json => {json[domain] = site; return json}))))
+  for (const map of sitemaps)
+    for (const info of map)
+      info.site = map[domain]
+  const count = sitemaps.reduce((count,map) => count+map.length,0)
+  window.result.innerHTML += `<br>${count} pages`
+
+  const property = / (Category|Zone|Landscape|Family): ([\w\d]+)/g
+  const haves = sitemaps
+    .map(sitemap => sitemap.filter(info => info.synopsis.match(property)))
+    .flat()
+  const weavable = slug => haves
+    .find(info => info.slug == slug)
+  const flag = (http,info) => `
+      <a href=${http}://${info.site}/${info.slug}.html title="${info.title}" data-title="${info.title}" class=internal>
+        <img width=16 src=${http}://${info.site}/favicon.png>
+      </a>`
+  window.result.innerHTML += `
+    <br>${haves.length} annotated
+    <p>
+      <button onclick=dopreview(event)>preview</button>
+      <button onclick=dodiagram(event)>diagram</button>
+    </p>`
+
+  window.dopreview = event => {
+    const title = "Project Weave Preview"
+    const text = haves
+      .map(info => {
+        console.log(info)
+        const http = protocol(info.site)
+        const synopsis = info.synopsis
+        const have = [...synopsis.matchAll(property)]
+        const props = have
+          .map(m => {
+            const key = m[1]
+            const value = m[2]
+            return `&nbsp ${key}: ${value}`
+          })
+          .join("<br>")
+        const slugs = Object.keys(info.links||{}).filter(weavable)
+        const links = !slugs.length ? '' :
+          `<br>&nbsp Links: ${
+            slugs
+              .map(slug => {
+                const info = weavable(slug)
+                return flag(http,info)
+              })
+              .join(" ")}`
+        return `
+          ${flag(http,info)}
+          [${http}://${info.site}/${info.slug}.html ${info.title}]
+          <br>
+          ${props}
+          ${links}`
+      })
+      .join("<hr>")
+    const story = [
+      {type:'paragraph',text:`Update with [[${context.title}]]`},
+      {type:'html',text}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.dodiagram = event => {
+    const title = "Project Weave Diagram"
+    const table = [
+      [[],[],[],[]],
+      [[],[],[],[]],
+      [[],[],[],[]],
+    ]
+    haves.forEach(info => {
+      const synopsis = info.synopsis
+      const http = protocol(info.site)
+      const props = {}
+      const have = [...synopsis.matchAll(property)]
+      have.forEach(m => {
+        const key = m[1]
+        const value = m[2]
+        props[key]=value
+      })
+      if (('Zone' in props) && ('Landscape' in props)) {
+        const zone = +props['Zone'][0]
+        const landscape = +props['Landscape'][0]
+        const row = table[landscape-1]
+        const cell = row[zone-1]
+        cell.push(flag(http,info))
+      }
+    })
+    const text = `
+      <table>
+      ${table
+        .map(row => `<tr>
+          ${row.map(cell => `
+            <td width=25%> ${cell.join(" ")}
+          `
+        ).join("")}
+        `
+      ).join("")}
+      </table>
+    `
+    const story = [
+      {type:'paragraph',text:`Update with [[${context.title}]]`},
+      {type:'html',text}
+    ]
+    frame.open({title,story},event.shiftKey)
+  }
+
+</script>

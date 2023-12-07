@@ -1,0 +1,64 @@
+<div id=summary>working</div>
+<div id=result></div>
+<style>
+  body {font-family:sans-serif;}
+  span {color:blue; cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const search = 'http://search.fed.wiki.org:3030'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  window.dolink = async event => {
+    const site = event.target.innerText
+    const owner = (await fetch(`${search}/owner/${site}`).then(res => res.text())).trim()||'unknown'
+    const title = `${site} Activity`
+    const text = `${owner}'s ${site}.
+      [http://${site} site]
+      [http://${site}/system/sitemap.json sitemap]`
+    const detail = await fetch(`${search}/logs/detail-sites/${site}`).then(res => res.text())
+    const story = [
+      {type:'paragraph',text},
+      {type:'search',text:`SEARCH SITES ${site}`},
+      {type:'html',text:detail},
+      {type:'roster',text:`Pages\n${site}`},
+      {type:'activity',text:`ROSTER Pages`}]
+    frame.open({title,story},event.shiftKey)
+  }
+  const rev = domain => domain.split('.').reverse().join('.')
+  const fetches = (await fetch(`${search}/logs`).then(res => res.text()))
+    .split("<br>\n")
+    .slice(0,4)
+    .filter(a => a.length)
+    .reverse()
+    .map(a => fetch(`${search}/${a.split('"')[1]}`).then(res => res.text()))
+  const logs = await Promise.all(fetches)
+  const missing = {}
+  for (const log of logs) {
+    log.split(/\n/)
+      .filter(line => line.match(/\w/))
+      .filter(line => !line.startsWith("\t"))
+      .filter(line => !line.includes('pages'))
+      .map(line => {
+        const [domain,error] = line.split(',')
+        if(!(domain in missing)) missing[domain] = []
+        missing[domain].push(error)
+      })
+  }
+  const sites = Object.entries(missing)
+    .map(([domain,info]) => ({domain,info,rev:rev(domain)}))
+    .sort((a,b) => a.rev>b.rev ? 1 : -1)
+  window.summary.innerHTML = `<h3>${sites.length} Missing Sites</h3>`
+  const org = site => {
+    const sig = site.rev.startsWith('org.wiki.') ? 3 : 2
+    return site.rev.split('.').slice(0,sig).join('.')}
+  window.result.innerHTML = sites
+    .map((site,i,a) => `
+      ${org(site) != org(a[i-1]||({rev:'...'})) ?
+        `</details><details><summary>${rev(org(site))}</summary>` : ''}
+      &nbsp; ${site.info.length} × <span onclick=dolink(event)>${site.domain}</span><br>
+      &nbsp; &nbsp; ${
+        site.info.filter(uniq)
+        .map(error => error.replace(/</g,'&lt;'))
+        .join("<br> &nbsp; &nbsp; ")}`)
+    .join("<br>")
+</script>

@@ -1,0 +1,88 @@
+<div id=result>working</div>
+<style>
+  span {cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const assets = await frame.assets()
+
+  // {
+  //   "site": "code.fed.wiki",
+  //   "slug": "frame-integration-promises",
+  //   "item": "1957cfdd25432cc4",
+  //   "dir": "page/frame-integration-promises",
+  //   "path": "//code.fed.wiki/assets",
+  //   "file": "test.html",
+  //   "url": "//code.fed.wiki/assets/page/frame-integration-promises/test.html"
+  // },
+  const bins = {
+    drafts: {id:"b9ed3e7f5c18e64d",assets:[]},
+    changes: {id:"ebc23b31aa71c25b",assets:[]},
+    approved: {id:"d2ff7ace2cc162f8",assets:[]},
+  }
+  for (const asset of assets) {
+      // console.log(asset)
+      const bin = Object.values(bins).find(bin => bin.id == asset.item)
+      if(bin) bin.assets.push(asset)
+  }
+  console.log({assets,bins})
+
+  const choose = key => `
+    <b>${key}</b>
+    <p>
+      ${bins[key].assets
+        .map(asset => `
+          <input type=checkbox data-asset=${assets.indexOf(asset)}>
+          <span>${asset.file}</span>`)
+        .join("<br>")}
+    </p>`
+
+  window.doresolve = resolve
+  window.result.innerHTML = `
+    ${choose('drafts')}
+    ${choose('changes')}
+    ${choose('approved')}
+    <button onclick=doresolve(event)>resolve</button>`
+
+  async function resolve() {
+    const source = 'ward.dojo.fed.wiki'
+    const url = `http://${source}/system/sitemap.json`
+    const sitemap = await fetch(url).then(res => res.json())
+    const reference = title => {
+      const info = sitemap.find(info => info.title == title)
+      return {type:'reference',site:source,slug:info.slug,text:info.synopsis}
+    }
+    const checked = window.result.querySelectorAll('input[type="checkbox"]:checked')
+    const chosen = [...checked]
+      .map(check => check.dataset.asset)
+      .map(index => assets[index])
+    const files = await Promise.all(chosen
+      .map(asset => fetch(asset.url).then(res => res.json())))
+    console.log({chosen,files})
+    let line = 1
+    window.result.innerHTML = files
+      .filter(file => 'body' in file)
+      .map(file => file.body
+        .map(page => page.story
+          .map(item => `${line++} <span data-title="${page.title}" data-id="${item.id}">${item.text.slice(0,40)}</span>`)))
+      .flat(2)
+      .join("<br>")
+    window.result
+      .querySelectorAll('span')
+      .forEach(span => span.onclick = event => {
+        const target = event.target
+        const title = `From ${target.dataset.title}`
+        const id = target.dataset.id
+        const story = files
+          .filter(file => 'body' in file)
+          .map(file => file.body
+            .map(page => page.story
+              .filter(item => item.id == id)
+              .map(item => [{type:'html',text:`<b>source</b>`},item])))
+          .flat(3)
+        // story.splice(0,0,reference)
+        console.log({title,id,story})
+        frame.open({title,story},event.shiftKey)
+      })
+  }
+</script>

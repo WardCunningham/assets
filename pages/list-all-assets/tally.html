@@ -1,0 +1,35 @@
+<div id=result>working</div>
+<style>body {font-family:sans-serif}</style>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/list-all-assets/xz'
+  const xz = await fetch(url).then(res => res.text())
+  const paths = xz.split(/\n/).map(line => line.split(/\//))
+  const patterns = {}
+  for (let path of paths) {
+    const name = path[path.length-1]
+    const pattern = name
+      .replace(/\d*([a-f]+\d+){2,}[a-f]*/ig,'##')
+      .replace(/[a-z]+/g,'a')
+      .replace(/[A-Z]+/g,'A')
+      .replace(/[0-9]+/g,'0')
+    if (!(pattern in patterns)) patterns[pattern] = []
+    patterns[pattern].push(path)
+  }
+  const winners = Object.entries(patterns)
+    .sort((a,b) => b[1].length-a[1].length)
+    .slice(0,30)
+  window.result.innerHTML = winners
+    .map(winner => `
+      <details>
+        <summary><b>${winner[0]}</b> × ${winner[1].length}</summary>
+        <div>${winner[1]
+          .sort((a,b) => a[a.length-1]>b[b.length-1]?1:-1)
+          .map(path => `&nbsp;&nbsp;
+            <span title="${path[1]}/${path[path.length-2]}">
+              ${path[path.length-1]}
+            </span>`)
+          .join("<br>")}
+        </div>
+      </details>`)
+    .join("\n")
+</script>

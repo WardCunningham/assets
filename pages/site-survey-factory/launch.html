@@ -15,7 +15,7 @@
   window.site.innerHTML = `${title}: ${domain}`
 
   const probes = `${home}/probes`
-  const {version,probe,format} = await import(`${probes}/${module}.js`)
+  const {version,probe,format,summary} = await import(`${probes}/${module}.js`)
 
   const update = {
     text:`${home}/update.html?probe=${module}&version=${version}&domain=${domain}\nHEIGHT 0`
@@ -29,16 +29,19 @@
 
 
   window.dolaunch = async event => {
+    window.site.innerText = 'working'
     const site = await index.site(domain)
     const survey = []
     const asof = new Date().toLocaleString()
-    await index.update(site,survey,probe)
+    const indexed = await index.update(site,survey,probe)
+    window.site.innerText = `${indexed.length} of ${site.sitemap.length} pages indexed.`
     const story = [
       {type:'paragraph', text:`Survey results from ${asof}.`},
       {type:'html', text:format(survey)},
       {type:'reference', ...factory},
       {type:'frame', ...update, survey}
     ]
+    if(summary) story.splice(1,0,summary(survey))
     frame.open({title,story}, event.shiftKey)
   }
 

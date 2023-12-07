@@ -1,0 +1,26 @@
+<pre id=result>working</pre>
+<script type=module>
+  const url = 'http://nick.dojo.fed.wiki/map-marker-survey.json'
+  const page = await fetch(url).then(res => res.json())
+  const survey = page.story[4].survey
+  const segments = survey.filter(info => info.markers.length == 2)
+  console.log({segments})
+  window.result.innerText = segments
+    .sort((a,b) => a.date - b.date)
+    .map(info => `${new Date(info.date).toLocaleDateString()} ${info.title} (${distance(...info.markers).toFixed(2)} km)`)
+    .join("\n")
+
+  function distance(here,there) {
+    // http://js.ward.asia.wiki.org/great-circle-distance.html
+    const rad = (deg) => 2 * Math.PI * deg / 360
+    const sin = Math.sin
+    const cos = Math.cos
+    const acos = Math.acos
+    const [lat1,lon1] = here.map(deg => rad(deg))
+    const [lat2,lon2] = there.map(deg => rad(deg))
+    const earth = 6371
+    return (earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))) || 0
+  }
+
+
+</script>

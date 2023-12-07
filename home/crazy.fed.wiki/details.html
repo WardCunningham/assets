@@ -1,0 +1,25 @@
+<!-- list potential member's information -->
+
+<center>
+  <article>
+    <h1>The Crazy Wiki Place</h1>
+    <p>List of registrations recieved to date.</p>
+    <pre id=result>working</pre>
+  </article>
+</center>
+
+<style>
+  article {
+    width:30em;
+    border:1px solid gray;
+    background-color:#eee;
+    padding:16;
+    font-family:sans-serif;
+  }
+</style>
+
+<script type=module>
+  const url = 'http://crazy.fed.wiki/plugin/register/custom'
+  const details = await fetch(url).then(res => res.text())
+  window.result.innerText = details
+</script>

@@ -1,0 +1,51 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const markers = context.page.story
+    .filter(item => item.type == 'map')
+    .map(item => item.text.split(/\n/))
+    .flat()
+    .map(line => line.match(/^(-?\d+.\d+), *(-?\d+.\d+) *(.*)/))
+    .filter(match => match)
+    .map((match,i) => [match[1],match[2],match[3]||`mark ${i+1}`])
+  const miles = markers
+    .reduce((sum,here,i) => {
+      const there = markers[(i+1)%markers.length]
+      const dist = distance(here,there)
+      console.log({here,there,dist})
+      return sum+dist
+    },0)
+  const report = `${miles.toFixed(1)} Miles`
+
+  window.dofreeze = event => {
+    const copy = obj => JSON.parse(JSON.stringify(obj))
+    const page = {title:context.page.title}
+    const keep = item => ['map','paragraph'].includes(item.type)
+    const text = `<center>${report}</center>`
+    const more = [{type:'html',text,id:"71274168538023149568"}]
+    page.story = [...context.page.story.filter(keep),...more]
+    const create = {type:'create',item:copy(page),date:Date.now()}
+    page.journal = [...context.page.journal,create]
+    frame.open(page,event.shiftKey)
+  }
+
+  window.result.innerHTML = `
+    <center>
+    <p>${report}</p>
+    <button onclick=dofreeze(event)>freeze</button>
+    </center>`
+
+
+  function distance(here,there) {
+    // http://js.ward.asia.wiki.org/great-circle-distance.html
+    const sin = Math.sin
+    const cos = Math.cos
+    const acos = Math.acos
+    const rad = deg => Math.PI * deg / 180
+    const [lat1,lon1] = here.map(rad)
+    const [lat2,lon2] = there.map(rad)
+    const earth = 3958.8
+    return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
+  }
+</script>

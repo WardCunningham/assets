@@ -4,7 +4,7 @@
   body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
   div.box {padding:8px; margin-bottom:8px; background-color: #ddd;}
   img {width:115; height:86;}
-  span {font-size:x-large; color:gray;}
+  span.link {font-size:x-large; color:gray;}
 </style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
@@ -60,7 +60,7 @@
     for (const tuple of tuples) {
       const pix = tuple.refs.map(ref =>
         `<span onclick=dolink(event)><img width=100% data-title="${ref.title}" data-text="${ref.text}" src="http://${domain}${ref.url}"></span>`)
-      html.push(`<div class=box ${pix.join(" ")}<br><span>${tuple.tag}</span></div><br>`)
+      html.push(`<div class=box ${pix.join(" ")}<br><span class=link>${tuple.tag}</span></div><br>`)
     }
     return html.join("\n")
   }
@@ -69,14 +69,16 @@
     return tuples
       .map(tuple => tuple.tag)
       .sort()
+      .map(word => `<span>${word}</span>`)
       .join(" ")
   }
 
   window.result.innerHTML =
     `${html(tuples.filter(tuple => tuple.refs.length >= 3))}
-    <button onclick=dodownload(event)>download</button>
-    <p>${list(tuples.filter(tuple => tuple.refs.length == 2))}</p>
-    <p>${list(tuples.filter(tuple => tuple.refs.length == 1))}</p>
+    <div id=word></div>
+    <p onclick=doword(event)>2 ×<br>${list(tuples.filter(tuple => tuple.refs.length == 2))}</p>
+    <p onclick=doword(event)>1 ×<br>${list(tuples.filter(tuple => tuple.refs.length == 1))}</p>
+    <button onclick=dodownload(event)>download graph</button>
     `
 
   window.dolink = event => {
@@ -99,21 +101,80 @@
           text:image.text,
           size:'thumbnail',
           location:latlon(image),
-          url:image.url
+          url:image.url,
+          id:image.id
         }))
       ).flat(),
-      {type:'map',text:'PAGE'}
+      {type:'map',text:`PAGE\n[[Find Photos in Region]]`}
     ]
     frame.open({title, story},event.shiftKey)
   }
 
+  window.doword = event => {
+    const word = event.target.innerText
+    window.word.innerHTML = html(tuples.filter(tuple => tuple.tag == word))
+  }
+
+  // curl -s 'http://photos.ward.dojo.fed.wiki/image-caption-survey.json' | jq '.story[3]|.survey[]|select(.title|endswith("Photos"))|.images[].text'|sort|uniq -c|sort -n
+
   window.dodownload = event => {
-    const beam = []
-    for (const tuple of tuples) {
-      const graph = new Graph()
-      const nid = graph.addNode('Tag',{name:tuple.tag})
-      beam.push({name:tuple.tag,graph})
+    const any = array => array[Math.floor(Math.random()*array.length)]
+    const tags = image => image.text.trim().split(/ +/)
+    const date = image => {
+      const title = image.title
+      const info = survey.find(info => info.title == title)
+      const week = new Date(title.replace(/.. Photos/,', 2023'))
+      const days = info.images.findIndex(each => each.url == image.url)
+      week.setDate(week.getDate() + days)
+      return week
     }
+    const when = image => date(image).toString().split(/ /).slice(0,3).join(' ')
+
+    const many = (need,have) => {
+      const choices = []
+      for (const from of have) {
+        for (const move of tags(from)) {
+          for (const to of tuples.find(tuple => tuple.tag == move).refs) {
+            if (need.includes(to)) {
+              choices.push({move,from,to})
+            }
+          }
+        }
+      }
+      // console.log({choices})
+      return choices
+    }
+    const beam = []
+    const todo = photos.slice()
+    // todo.sort((a,b) => date(a) - date(b))
+    while(todo.length) {
+      const start = any(todo)
+      // const start = todo[0]
+      const graph = new Graph()
+      const nids = {}
+      nids[when(start)] = graph.addNode('Photo',{name:when(start)})
+      beam.push({name:when(start),graph})
+      console.log({start,when:when(start)})
+      todo.splice(todo.indexOf(start),1)
+      const doing = [start]
+      let choices = many(todo,doing)
+      while(choices.length) {
+        const choice = any(choices)
+        // choices.sort((a,b) => date(a.to) - date(b.to))
+        // const choice = choices[0]
+        nids[when(choice.to)] = graph.addNode('Photo',{name:when(choice.to)})
+        // if(date(choice.to)>date(choice.from))
+          graph.addRel(choice.move,nids[when(choice.from)],nids[when(choice.to)])
+        // else
+        //   graph.addRel(choice.move,nids[when(choice.to)],nids[when(choice.from)])
+        console.log(choice.move, when(choice.from), when(choice.to))
+        todo.splice(todo.indexOf(choice.to),1)
+        doing.push(choice.to)
+        choices = many(todo,doing)
+      }
+      // console.log('doing',doing.slice())
+    }
+    console.log({beam})
     const jsons = beam.map(poem => JSON.stringify(poem))
     frame.download(jsons.join("\n"),'Photo-Tags.jsonl','application/json')
   }

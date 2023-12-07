@@ -1,0 +1,42 @@
+<div id=result onclick=dofile(event)>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const assets = await frame.assets()
+  console.log(assets)
+  const typescripts = assets
+    .filter(asset => asset.dir == 'pages/typescript-archive')
+
+  window.dofile = async event => {
+    const file = event.target.innerText
+    const day = file.replace(/\.txt/,'')
+    const asset = assets.find(asset => asset.file == file)
+    const title = `Typescript ${day}`
+    const text = await fetch(asset.url).then(res => res.text())
+    const story = [
+      {type:'paragraph',text:`Text extraction. See [[Typescript Archive]]`}
+    ]
+    let who = ''
+    let when = 0
+    let item = null
+    let m
+    for (let line of text.split(/\r?\n/)) {
+      if (m = line.match(/^(\d\d:\d\d:\d\d) +From +(.*?) +To +(.*)/i)) {
+        const now = Date.parse(`${day} ${m[1]}`)
+        if (m[2] != who || now > when+60000) {
+          if (now > when+150000) story.push({type:'pagefold',text:m[1]})
+          when = now
+          who = m[2]
+          item = {type:'markdown',text:`${m[1]} From ${m[2]}\n`}
+          story.push(item)
+        }
+      } else {
+        item.text += `${line.trim()}\n`
+      }
+    }
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.result.innerHTML = typescripts
+    .map(typescript => `<span>${typescript.file}</span>`)
+    .join("<br>")
+</script>

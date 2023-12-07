@@ -1,0 +1,77 @@
+<meta charset="UTF-8">
+<style>
+  body { font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans; }
+  td { border: 1px solid gray; padding: 4px; text-align:left; vertical-align:top; }
+  table { border-collapse: collapse; }
+</style>
+<div id=summary></div>
+<div id=result></div>
+<script type=module>
+  const lineup = `http://ward.dojo.fed.wiki/assets/pages/new-css-test-case/lineup.html`
+  const html = await fetch(lineup).then(res => res.text())
+  const elem = document.createElement( 'html' )
+  elem.innerHTML = html
+
+// https://stackoverflow.com/questions/3326494/parsing-css-in-javascript-jquery
+  const css = await fetch(lineup.replace('html','css')).then(res => res.text())
+  const doc = document.implementation.createHTMLDocument("")
+  const styleElement = document.createElement("style")
+  styleElement.textContent = css
+    // the style will only be parsed once it is added to a document
+  doc.body.appendChild(styleElement);
+  const cssRules = styleElement.sheet.cssRules
+  console.log({cssRules})
+  let defines = 0
+  const regex = /(\.[A-Z0-9a-z-]+)/g
+  for (const rule of cssRules) {
+    const text = rule.selectorText || ''
+    while(regex.exec(text)) defines++
+  }
+
+  const seen = []
+  const counted = {}
+  let count = 0
+  let deepest = 0
+  await tally(0, elem.firstElementChild.nextElementSibling.firstElementChild)
+  window.summary.innerHTML =
+    table({
+      elements:count,"element nesting depth":deepest,"element classes used":Object.keys(seen).length,
+      "css rules":cssRules.length,"css classes":defines}) +
+    table(counted)
+
+  async function tally(depth, elem) {
+    while(elem && ++count<10000) {
+      const tag = elem.tagName
+      const classes = elem.getAttribute('class')
+      if(classes) {
+        classes.split(/ /).forEach(each => {
+          const selector = `${tag}.${each}`
+          counted[selector] = (counted[selector]||0) + 1
+        })
+      }
+      const show = `${':&nbsp; '.repeat(depth)} ${tag} ${classes||''}<br>`
+      if (!seen.includes(show)) {
+        const prefix = ' '.repeat(3 - Math.min(count.toString().length,3))
+        window.result.innerHTML += `${prefix}${count} &nbsp; ${show}`
+        seen.push(show)
+        await new Promise(requestAnimationFrame)
+        deepest = Math.max(deepest, depth)
+      }
+      if (depth<10) {
+        await tally(depth+1,elem.firstElementChild)
+      }
+      elem = elem.nextElementSibling
+    }
+  }
+
+  function table(hash) {
+    return [
+      '<table>',
+      ...Object.entries(hash)
+        .sort((a,b) => a[0]<b[0] ? -1 : 1)
+        .map(([key,value]) => `<tr><td>${key}<td>${value}`),
+      '</table><br>'
+    ].join("\n")
+  }
+
+</script>

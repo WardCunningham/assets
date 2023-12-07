@@ -1,0 +1,65 @@
+<html>
+<head>
+  <meta charset="UTF-8"><meta charset="UTF-8">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟧</text></svg>">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+  integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+  crossorigin=""/>
+  <!-- Make sure you put this AFTER Leaflet's CSS -->
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+  integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+  crossorigin=""></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+</head>
+<body>
+  <div id="map"></div>
+  <style>
+    body { padding: 0; margin: 0; }
+    html, body, #map { height: 100%; width: 100%; }
+  </style>
+
+  <script type=module>
+    const google = (latlon, title) => `<a href="https://www.google.com/search?q=${latlon}" target=_blank>${title}</a>`
+    const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+
+    // https://github.com/Leaflet/Leaflet/issues/7255#issuecomment-849638476
+    var map = L.map('map',{ "tap": false })
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map)
+
+    const url = 'http://nick.dojo.fed.wiki/map-marker-survey.json'
+    const page = await fetch(url).then(res => res.json())
+    const survey = page.story[4].survey
+    const segments = survey.filter(info => info.markers.length >= 2 && info.markers.length <= 5)
+    const markers = segments.map(segment => segment.markers).flat()
+    console.log({segments,markers})
+
+    const n = Math.max(...markers.map(marker => marker[0]))
+    const s = Math.min(...markers.map(marker => marker[0]))
+    const e = Math.max(...markers.map(marker => marker[1]))
+    const w = Math.min(...markers.map(marker => marker[1]))
+    map.fitBounds([[s, w],[n, e]])
+    
+    for (const segment of segments) {
+      const link = `
+        <a href=http://nick.dojo.fed.wiki/${segment.slug}.html target=_blank>
+        ${segment.title}
+        </a>`
+      const line = []
+      for (const latlon of segment.markers) {
+        line.push(latlon)
+        const dot = L.circle(latlon,8,{color:'red'})
+        dot.addTo(map).bindPopup(link)
+      }
+      L.polyline(line,{color:'red',opacity:0.7}).addTo(map).bindPopup(link)
+    }
+
+    map.on('click', e => console.log(
+      `${e.latlng.lat.toFixed(7)}, ${e.latlng.lng.toFixed(7)}\n`
+    ))
+
+  </script>
+</body>
+</html>

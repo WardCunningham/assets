@@ -1,0 +1,13 @@
+<button>map</button> region shown above
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  document.querySelector('button').addEventListener('click', async event => {
+    const region = (await frame.sources('region'))[0].regionData
+    const text =
+      `BOUNDARY ${region.south}, ${region.west}\n` +
+      `BOUNDARY ${region.north}, ${region.east}\n`
+    const story = [{type:'map',text}]
+    const title = 'Preview of Map Region'
+    frame.open({title,story},event.shiftKey)
+  })
+</script>

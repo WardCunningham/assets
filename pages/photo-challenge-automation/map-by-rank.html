@@ -1,0 +1,58 @@
+<div id=result onclick=doopen(event)>working</div>
+<style>
+  body {font-family: "Helvetica Neue", Verdana, helvetica, Arial, Sans;}
+  span {cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+  const url = `http://photos.ward.dojo.fed.wiki/image-caption-survey.json`
+  const survey = (await fetch(url).then(res => res.json())).story
+    .find(item => item.type == 'frame')
+    .survey.filter(info => info.slug.endsWith('-photos'))
+  const images = survey
+    .map(info => info.images
+      .map (image => {
+        image.title = info.title
+        return image}))
+    .flat()
+  const rank = (order,list) => list.map(each => {
+    each[order] = list.indexOf(each)
+    return each
+  })
+  rank('y',images.slice().sort((a,b) => b.latlon[0] - a.latlon[0]))
+  rank('x',images.slice().sort((a,b) => a.latlon[1] - b.latlon[1]))
+  console.log({survey,images})
+
+  result.innerHTML = images
+    .map(image =>`<span style="position:absolute; left:${image.x*2}px; top:${image.y*2}px;">x</span>`)
+    .join("\n")
+
+  window.doopen = event => {
+    const target = event.target
+    const left = Number.parseInt(target.style.left)
+    const click = images.find(image => image.x*2 == left)
+    const want = [
+      click,
+      ...images.filter(image => Math.abs(image.x-click.x)==1),
+      ...images.filter(image => Math.abs(image.y-click.y)==1)
+    ]
+    console.log({target,left,click,want})
+
+    result.innerHTML = images
+      .map(image =>`<span style="position:absolute; left:${image.x*2}px; top:${image.y*2}px; ${want.includes(image) ? 'color:red;' : ''}">x</span>`)
+      .join("\n")
+
+    const text = want
+      .filter(image => image != null)
+      .map(image => `${image.latlon[0]}, ${image.latlon[1]} [[${image.title}]] ${image.text}`)
+      .join("\n")
+    const title = `from ${click.text}`
+    const story = [
+      {type:'map',text},
+      {type:'markdown',text:want.map(image=>`- [[${image.title}]]`).join("\n")}
+    ]
+    frame.open({title, story},event.shiftKey)
+  }
+
+</script>
