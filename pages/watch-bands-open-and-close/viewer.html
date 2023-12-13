@@ -1,0 +1,141 @@
+<html>
+<head>
+  <meta charset="UTF-8"><meta charset="UTF-8">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌎</text></svg>">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+  integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+  crossorigin=""/>
+  <!-- Make sure you put this AFTER Leaflet's CSS -->
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+  integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+  crossorigin=""></script>
+</head>
+<style>
+  body {font-family:helvetica,Arial,Sans;}
+  #map { width: 100%; height: 100%; border:1px solid gray;}
+</style>
+<div id="map"><center><h1>working</h1></center></div>
+<script type=module>
+
+  const delay = time => new Promise(res => setTimeout(res,time))
+  const params = new URLSearchParams(location.search)
+  const speed = parseInt(params.get('speed') || '10')
+  const file = params.get('file') || '1702330095363.txt'
+  console.log({speed,file})
+  const wiki = `http://ft8.ward.asia.wiki.org/assets/pages/maidenhead-interpreted`
+
+  const script = await fetch(`./${file}`)
+    .then(res => res.text())
+    .then(text => text.split(/\n/))
+  const cities = await fetch(`${wiki}/squares-all.json`)
+    .then(res => res.json())
+    .then(json => {
+      return Object.fromEntries(Object.entries(json).map(row => {
+        const square = row[0]
+        const [city,state,lon,lat] = row[1].split(/, */)
+        return [square, {city, state, latlon:[lat,lon]}]
+      }))
+    })
+  const states = await fetch(`${wiki}/states_hash.json`)
+    .then(res => res.json())
+    .then(json => Object.fromEntries(Object.entries(json)
+      .map(tuple => {tuple[0]+=' USA'; return tuple})))
+  console.log({script,cities,states})
+
+  const map = L.map('map',{ "tap": false }).setView([39,-99], 4)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map)
+  const readout = L.DomUtil.create('div', 'tally')
+  const Tally = L.Control.extend({options: {position: 'topright'},onAdd: (map) => readout})
+  map.addControl(new Tally())
+
+  const cpin = {} // call => {latlon, square, marker}
+
+  const slot = epoch => Math.floor(parseInt(epoch)/15000)*15000
+  const start = slot(script[0])
+  const finish = slot(script.findLast(event => event.match(/^\d+$/)))
+  console.log({
+    start,finish,
+    clock:[new Date(start),new Date(finish)],
+    hours:((finish-start)/1000/3600).toFixed(3)})
+
+  let now = start
+  for (const event of script) {
+    if (event.match(/^\d+$/)) {
+      const then = slot(event)
+      if(then>now) {
+        const dt = Math.floor((then-now)/speed)
+        const pct = Math.round(100*(then-start)/(finish-start))
+        const clock = new Date(now).toLocaleTimeString()
+        readout.innerText = `${pct}% ${clock}`
+        await delay(dt)
+        now = then
+      }
+    } 
+    else if (event.match(/^\S+$/)) {
+      deletepin(event)
+    }
+    else {
+      const [call,square] = event.split(/ /)
+      const pin = cpin[call] = cpin[call] || {}
+      pin.locator = square
+      if(!pin.latlon) {
+        if(cities && cities[square]) {
+          pin.city = cities[square].city
+          pin.state = cities[square].state
+          pin.latlon = cities[square].latlon}
+        else
+          pin.latlon = maidenhead(square)
+      }
+      showpin(call)
+    }
+  }
+  await erase()
+
+
+  function maidenhead(grid) {
+    // https://en.wikipedia.org/wiki/Maidenhead_Locator_System
+    const d = (i,a) => grid.charCodeAt(i)-a.charCodeAt(0) || 0
+    let lat = d(1,'A')*10 + d(3,'0')*1 + d(5,'a')/24 + d(7,'0')/240 - 90
+    let lon = d(0,'A')*20 + d(2,'0')*2 + d(4,'a')/12 + d(6,'0')/120 - 180
+    return [1*lat.toFixed(5),1*lon.toFixed(5)]
+  }
+
+  function showpin(call) {
+    let pin = cpin[call]
+    if (pin) {
+      if (pin.latlon && !pin.marker) {
+        let cbll = `cbll=${pin.latlon.join(",")}`
+        let html = [`<center><a href="http://maps.google.com/maps?q=&layer=c&${cbll}" target=_blank>${call}</a> ${pin.locator}`]
+        if(pin.city) {
+          html.push(pin.city)
+          html.push(states[pin.state] || pin.state)}
+        pin.marker =L.marker(pin.latlon).addTo(map).bindPopup(html.join("<br>"))
+      }
+    }
+  }
+
+  function deletepin(call) {
+    let pin = cpin[call]
+    if (pin && pin.marker) {
+      pin.marker.remove()
+      pin.marker = undefined
+    }
+  }
+
+  async function erase() {
+    console.log('end of script')
+    const all = Object.keys(cpin)
+      .filter(call => cpin[call].marker)
+    while(all.length) {
+      const it = Math.floor(all.length*Math.random())
+      deletepin(all[it])
+      all.splice(it,1)
+      await delay(16)
+    }
+  }
+
+
+</script>
+</html>

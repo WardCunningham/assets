@@ -1,0 +1,78 @@
+<div id=result>working</div>
+<style>
+  body {font-family:sans-serif;}
+  span {cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const assets = await frame.assets()
+  console.log(assets)
+  const scripts = assets
+    .filter(asset => asset.file.endsWith('.txt'))
+
+  window.result.innerHTML = scripts
+    .map(asset => ({asset,date:parseInt(asset.file)}))
+    .map(tuple => `<span data-file="${tuple.asset.file}" data-date="${tuple.date}">${new Date(tuple.date).toLocaleString()}</span>`)
+    .join("<br>")
+
+  window.result.querySelectorAll('span').forEach(span =>
+    span.addEventListener('click', async event => {
+      const target = event.target
+      const file = target.dataset.file
+      const start = parseInt(target.dataset.date)
+      const script = scripts.find(script => script.file == file)
+      const events = await fetch(script.url).then(res => res.text())
+      console.log({file,start,script,events})
+      const html = render(pair(events,start))
+      const title = `Bands ${target.innerText}`
+      const story = [
+        {type:'paragraph',text:`From [[Watch Bands Open and Close]]`},
+        {type:'frame',text:`${script.url}`},
+        {type:'html',text:html}
+      ]
+      frame.open({title,story},event.shiftKey)
+    })
+  )
+
+  function pair(events,start) {
+    let now = 0
+    const mins = ms => Math.floor(ms/1000/60)
+    const when = {} // call => {square, active:[on,off,...]}
+    for (event of events.split(/\n/)) {
+      if (event.match(/^\d+$/))
+        now = parseInt(event)-start
+      else if (event.match(/^\S+$/))
+        when[event].active.push(mins(now))
+      else {
+        const [call,square] = event.split(/ /)
+        if(call in when) when[call].active.push(mins(now))
+        else when[call] = {square, active:[mins(now)]}}
+    }
+    return when
+  }
+
+  function render(when) {
+    const width = 120
+    const max = Math.max(...Object.values(when).map(detail => detail.active).flat())
+    const scale = width/max
+    const plot = active => {
+      let line = ''
+      const pairs = active.length%2 ? [...active,max] : active.slice()
+      for (let i = 0; i<pairs.length; i+=2) {
+        const from = Math.floor(pairs[i]*scale)
+        const to = Math.floor(pairs[i+1]*scale)
+        line += '.'.repeat(from-line.length)
+        line += ':'.repeat(to-line.length)
+      }
+      line += '.'.repeat(width-line.length)
+      return line
+    }
+    return `
+      <p>${max} Elapsed Minutes</p>
+      ${Object.entries(when)
+        .map(([call,detail]) => `${call} ${detail.square}<br>${plot(detail.active)}`)
+        .join("<br>")}`
+  }
+
+</script>
