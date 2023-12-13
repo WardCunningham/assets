@@ -13,12 +13,13 @@
 </head>
 <style>
   body {font-family:helvetica,Arial,Sans;}
-  th { width: 30px; }
+  th { width: 46px; }
   td { vertical-align:top; }
+  .clock td { text-align:center; }
   #map { width: 640px; height: 480px; border:1px solid gray;}
 </style>
 
-<table border="1" style="border-collapse:collapse; border-color:#ccc;" >
+<table class=clock border="1" style="border-collapse:collapse; border-color:#ccc;" >
   <thead><tr><th><th>00<th>05<th>10<th>15<th>20<th>25<th>30<th>35<th>40<th>45<th>50<th>55</thead>
   <tbody id=clock></tbody>
 </table>
@@ -65,7 +66,6 @@ if (!params.here) params.here = [45.470493,-122.7486358]
 params.color = 'color' in params
 params.clunk = 'clunk' in params
 params.clock = 'clock' in params
-console.table(params)
 
 
 // G E O G R A P H Y
@@ -73,6 +73,22 @@ console.table(params)
 let crow = {}   // call => dist
 let callook = window.callook = {}  // call => info
 let cpin = {} // call => {latlon, symbol, color, marker}
+let wiki = `http://ft8.ward.asia.wiki.org/assets/pages/maidenhead-interpreted`
+let cities = null
+let states = {}
+fetch(`${wiki}/squares-all.json`)
+  .then(res => res.json())
+  .then(json => {
+    cities = Object.fromEntries(Object.entries(json).map(row => {
+      const square = row[0]
+      const [city,state,lon,lat] = row[1].split(/, */)
+      return [square, {city, state, latlon:[lat,lon]}]
+    }))
+  })
+fetch(`${wiki}/states_hash.json`)
+  .then(res => res.json())
+  .then(json => {states = Object.fromEntries(Object.entries(json)
+    .map(tuple => {tuple[0]+=' USA'; return tuple}))})
 
 function maidenhead(grid) {
   // https://en.wikipedia.org/wiki/Maidenhead_Locator_System
@@ -122,15 +138,20 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // marker.setLatLng([lat,lon]);
 // marker.remove()
 
+let movie = []
+
 function showpin(call, symbol) {
   let pin = cpin[call]
   if (pin) {
     pin.symbol = symbol
-    console.log(call, pin)
     if (pin.latlon && !pin.marker) {
+      movie.push(`${call} ${pin.locator}`)
       let cbll = `cbll=${pin.latlon.join(",")}`
-      let google = `<a href="http://maps.google.com/maps?q=&layer=c&${cbll}" target=_blank>${call}</a>`
-      pin.marker =L.marker(pin.latlon).addTo(map).bindPopup(google)
+      let html = [`<center><a href="http://maps.google.com/maps?q=&layer=c&${cbll}" target=_blank>${call}</a> ${pin.locator}`]
+      if(pin.city) {
+        html.push(pin.city)
+        html.push(states[pin.state] || pin.state)}
+      pin.marker =L.marker(pin.latlon).addTo(map).bindPopup(html.join("<br>"))
     }
   }
 }
@@ -138,6 +159,7 @@ function showpin(call, symbol) {
 function deletepin(call) {
   let pin = cpin[call]
   if (pin && pin.marker) {
+    movie.push(call)
     pin.marker.remove()
     pin.marker = undefined
   }
@@ -195,6 +217,7 @@ reopen()
 function reopen() {
   if(socket) socket.close()
   socket = new WebSocket(`ws://${params.domain||'localhost'}:4649/Spark`)
+  window.movie = movie = []
 
   socket.addEventListener('open', (event) => {
     tick('open')
@@ -205,6 +228,7 @@ function reopen() {
       let msg = JSON.parse(event.data)
       if (!msg.spots) return
       lastupdate.innerText = new Date().toLocaleString()
+      movie.push(Date.now())
       tally(msg.spots)
       expire()
       render()
@@ -223,11 +247,12 @@ let dist = {}
 
 function tally(spots) {
   let now = Date.now()
-  let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
+  let f = spots[0].tunedfrequency/1000000
+  let band = f>144?2: f>50?6: f>28?10: f>21?15: f>18?17: f>14?20: f>7?40: f>3.5?80: 160
   let time = new Date(spots[0].time).valueOf()
   delay[band] = (now-time)/1000
   clunk(time,`<span style="font-size:10px;">${band} ⇒</span><br>`)
-  tick('<br>'+band)
+  tick(' '+band)
   let chan = log[band] = log[band] || {}
   for (let spot of spots) {
     let call = spot.call
@@ -251,8 +276,14 @@ function tally(spots) {
     } else {
       if (spot.locator) {
         cpin[spot.call] = cpin[spot.call] || {}
+        cpin[spot.call].locator = spot.locator
         if(!cpin[spot.call].latlon)
-          cpin[spot.call].latlon = maidenhead(spot.locator)
+          if(cities && cities[spot.locator]) {
+            cpin[spot.call].city = cities[spot.locator].city
+            cpin[spot.call].state = cities[spot.locator].state
+            cpin[spot.call].latlon = cities[spot.locator].latlon}
+          else
+            cpin[spot.call].latlon = maidenhead(spot.locator)
       }
     }
     showpin(spot.call, ch)
@@ -264,7 +295,6 @@ function expire() {
   for (let band in log) {
     let chan = log[band]
     let expired = Object.keys(chan).filter(call => chan[call].last < now-(10*60*1000))
-    // if(expired.length) console.log(new Date().toLocaleTimeString(), band, '⇒', ...expired)
     for (let call of expired) {
       delete chan[call]
       deletepin(call)
@@ -317,7 +347,6 @@ function local(spot) {
           time: new Date().toLocaleTimeString(),
         }
       }
-      console.table(callook)
       window.markup.innerHTML = Object.entries(callook)
         .filter(x => x[1].dist < 30)
         .map(x => `${x[1].lat.toFixed(7)},${x[1].lon.toFixed(7)} ${x[0]}`)
