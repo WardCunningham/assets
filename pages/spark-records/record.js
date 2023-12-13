@@ -1,15 +1,14 @@
 // record spark spots
 // usage: while true; do ~/.deno/bin/deno run --allow-net --allow-write=data record.js 10.0.1.113; done
 
-console.log(new Date())
 
 let domain = Deno.args[0]||'localhost'
-console.log({domain})
 let socket = new WebSocket(`ws://${domain}:4649/Spark`)
 socket.addEventListener('open', event => socket.send('{"cmd":"subscribeToSpots","Enable":true}'))
 // socket.addEventListener('message', event => record(JSON.parse(event.data).spots))
 socket.addEventListener('message',inspect)
 let active = Date.now()
+console.log(`start ${domain} at ${new Date().toLocaleString()}`)
 setInterval(watchdog, 15000)
 
 
@@ -18,8 +17,8 @@ function inspect(event) {
   active = Date.now()
   try {
     count++
-    console.log(count, new Date().toLocaleString())
-    if(count <= 2) console.log(new Date(),count,event)
+    // console.log(count, new Date().toLocaleString())
+    // if(count <= 2) console.log(new Date(),count,event)
     let data = event.data
     let message = JSON.parse(data)
     if (message.cmd != 'spotResponse') {
