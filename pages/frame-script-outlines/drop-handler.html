@@ -1,13 +1,14 @@
 <center>
   <p id=result>waiting</p>
   <p id=dropzone ondrop="dodrop(event)" ondragover="doover(event)" ondragenter="doover(event)">drop here</p>
-  <p><pre id=details></pre></p>
 </center>
+  <p id=details></p>
+
 
 <style>
   body {font-family:Sans;}
   #dropzone {
-    height:100px;
+    height:50px;
     width:400px;
     background-color:#ddd;
     display: table-cell;
@@ -17,8 +18,6 @@
 
 <script type=module>
 
-  // https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API
-  // https://github.com/fedwiki/wiki-plugin-transport/blob/master/client/transport.coffee
 
   window.doover = event => {
     event.preventDefault();
@@ -26,15 +25,57 @@
   }
 
   window.dodrop = event => {
+    const escape = value => {
+      const div = document.createElement('div')
+      div.innerText = value
+      return div.innerHTML
+    }
+    const itemprops = item => {
+      const kind = item.kind
+      const type = item.type
+      return {kind,type}
+    }
+    const fileprops = file => {
+      if(!file) return null
+      const name = escape(file.name)
+      const size = file.size
+      const type = file.type
+      const lastModified = file.lastModified
+      const lastModifiedDate = file.lastModifiedDate
+      return {name,size,type,lastModified,lastModifiedDate}
+    }
     event.preventDefault();
     let dt = event.dataTransfer
     window.result.innerHTML = dt.types.join(", ")
-    let text = dt.getData("text")
-    let html = dt.getData("text/html")
-    let url = dt.getData("URL")
-    const data = {text, html, url}
-    console.log(data)
-    window.details.innerText = JSON.stringify(data,null,2)
+    let datatypes = ['text','text/html','text/uri-list','URL']
+    let details = datatypes
+      .map(datatype => {
+        let value = dt.getData(datatype)
+        if(value) {
+        return `
+          <details><summary>${datatype}</summary>
+            <pre style="white-space: pre-wrap;">${escape(value)}</pre>
+          </details>`
+        } else {
+          return ''
+        }
+      })
+    if (dt.files.length) {
+      // how to relate these two lists when they are not in the same order?
+      const items = [...dt.items]
+      const files = [...dt.files]
+      details.push(`
+        <details><summary>Files</summary>
+        ${items
+          .map(item => `
+            <details><summary>${JSON.stringify(itemprops(item))}</summary>
+              <pre style="white-space: pre-wrap;">${JSON.stringify(fileprops(files.shift()),null,1)}</pre>
+            </details>`)
+          .join("")
+        }
+        </details>`)
+    }
+    window.details.innerHTML =details.join("\n")
   }
 
 </script>
