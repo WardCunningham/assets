@@ -6,12 +6,19 @@
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
 
+  const delay = time => new Promise(res => setTimeout(res,time))
+  const duration = (start,finish) => {
+    const minutes = (finish-start)/1000/60
+    return minutes < 120 ?
+      `${minutes.toFixed(0)} minutes` :
+      `${(minutes/60).toFixed(1)} hours`
+  }
   const assets = await frame.assets()
-  console.log(assets)
   const scripts = assets
     .filter(asset => asset.file.endsWith('.txt'))
 
   window.result.innerHTML = scripts
+    .filter(asset => asset.file.endsWith('.txt'))
     .map(asset => ({asset,date:parseInt(asset.file)}))
     .map(tuple => `<span data-file="${tuple.asset.file}" data-date="${tuple.date}">${new Date(tuple.date).toLocaleString()}</span>`)
     .join("<br>")
@@ -20,20 +27,44 @@
     span.addEventListener('click', async event => {
       const target = event.target
       const file = target.dataset.file
+      const asset = assets.find(asset => asset.file == file)
       const start = parseInt(target.dataset.date)
       const script = scripts.find(script => script.file == file)
       const events = await fetch(script.url).then(res => res.text())
-      console.log({file,start,script,events})
+      const finish = events
+        .slice(-2000)
+        .split(/\n/)
+        .findLast(event => +event)
+      console.log({file,start,script,events,finish,asset})
+      const viewer = location.href.replace(/catalog.html.*/,'viewer.html')
+      const text = `Record runs ${duration(start,finish)}.
+        [${viewer}?file=${file}&speed=100 playback]`
       const html = render(pair(events,start))
-      const title = `Bands ${target.innerText}`
+      const title = `Bands ${new Date(start).toLocaleString()}`
       const story = [
         {type:'paragraph',text:`From [[Watch Bands Open and Close]]`},
+        {type:'paragraph',text},
         {type:'frame',text:`${script.url}`},
         {type:'html',text:html}
       ]
       frame.open({title,story},event.shiftKey)
     })
   )
+
+  for (const span of window.result.querySelectorAll('span')) {
+    const file = span.dataset.file
+    const asset = assets.find(asset => asset.file == file)
+    const start = parseInt(span.dataset.date)
+    console.log({file,asset,start})
+    const finish = (await fetch(asset.url).then(res => res.text()))
+      .slice(-2000)
+      .split(/\n/)
+      .findLast(event => +event)
+    span.innerHTML += ` — ${duration(start,finish)}`
+
+    await delay(500)
+  }
+
 
   function pair(events,start) {
     let now = 0
@@ -53,7 +84,7 @@
   }
 
   function render(when) {
-    const width = 120
+    const width = 90
     const max = Math.max(...Object.values(when).map(detail => detail.active).flat())
     const scale = width/max
     const plot = active => {
@@ -69,10 +100,11 @@
       return line
     }
     return `
-      <p>${max} Elapsed Minutes</p>
+      <center><p>
       ${Object.entries(when)
-        .map(([call,detail]) => `${call} ${detail.square}<br>${plot(detail.active)}`)
-        .join("<br>")}`
+        .map(([call,detail]) => `<span title="${call} ${detail.square}">${plot(detail.active)}</span>`)
+        .join("<br>")}
+      </p></center>`
   }
 
 </script>
