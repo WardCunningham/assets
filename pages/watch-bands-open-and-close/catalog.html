@@ -98,11 +98,15 @@
       }
       line += '.'.repeat(width-line.length)
       return line
+        .replaceAll(/(\.|^)(?=\:)/g,'.<span style="background-color:#8ff;">')
+        .replaceAll(/\:(?=\.)/g,':</span>')
+
     }
     return `
       <center><p>
       ${Object.entries(when)
         .map(([call,detail]) => `<span title="${call} ${detail.square}">${plot(detail.active)}</span>`)
+        .filter(line => line.match(/:/))
         .join("<br>")}
       </p></center>`
   }
