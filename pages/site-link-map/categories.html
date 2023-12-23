@@ -1,0 +1,79 @@
+<div id=result>working</div>
+<p><button>download</button></p>
+<style>
+  details {padding-left:10px;}
+</style>
+<script type=module>
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const host='http://tree.tries.fed.wiki'
+  const sitemap = await fetch(`${host}/system/sitemap.json`).then(res => res.json())
+  const info = slug => sitemap.find(info => info.slug == slug)
+  const root = info('categories')
+  const blocked = ['categories',...Object.keys(root.links)]
+  const unblocked = key => !blocked.includes(key)
+  document.querySelector('button').addEventListener('click',download)
+  outline()
+
+  function outline() {
+    const details = (summary, detail) => `
+      <details><summary>${summary}</summary>
+      ${Object.keys(info(summary).links ||{}).filter(unblocked).map(detail).join("")}
+      </details>`
+    window.result.innerHTML = Object.keys(root.links)
+      .map(here =>
+        details(here,there =>
+          details(there,beyond =>
+            ` &nbsp; ● ${beyond}<br>`)))
+      .join("")
+  }
+
+  function download(event) {
+    const details = (summary, detail) => ({
+      summary:summary,
+      details:Object.keys(info(summary).links ||{}).filter(unblocked).map(detail)
+    })
+    const categories = Object.keys(root.links)
+      .map(here =>
+        details(here,there =>
+          details(there,beyond => beyond)))
+    console.log(categories)
+
+    const refs = {}
+    for (const category of categories) {
+      for (const pattern of category.details) {
+        const here = pattern.summary
+        for (const related of pattern.details) {
+          if(!(related in refs)) refs[related]=[]
+          refs[related].push(here)}}}
+    console.log(Object.entries(refs).sort((a,b) => a[1].length - b[1].length))
+
+    const graphs = []
+    for (const category of categories) {
+      const graph = new Graph()
+      graphs.push({name:category.summary, graph})
+      const nids = {}
+      const node = name =>
+        (name in nids) ? nids[name] :
+          graph.addNode('Pattern',{name})
+      for (const pattern of category.details) {
+        const nid = node(pattern.summary)
+        graph.nodes[nid].props['url'] = `${host}/${pattern.summary}.html`
+        for (const related of pattern.details) {
+          graph.addRel("",nid,node(related))
+          // console.log(
+          //   'category',category.summary,
+          //   'pattern', pattern.summary,
+          //   'related', related,graph.nodes.length)
+        }
+      }
+    }
+    console.log(graphs)
+    const json = graphs
+      .map(graph => JSON.stringify(graph))
+      .join("\n")
+    frame.download(json,'categories.jsonl','application/jsonl')
+  }
+
+</script>
