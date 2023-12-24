@@ -1,0 +1,92 @@
+<div id=result>working</div>
+<style>span {cursor:pointer;}</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const host = 'http://npl.wiki'
+  const files = await fetch(`${host}/plugin/assets/list?assets=image`)
+    .then(res => res.json())
+    .then(json => json.files)
+  const sitemap = await fetch(`${host}/system/sitemap.json`)
+    .then(res => res.json())
+  console.log({files,sitemap})
+  window.result.innerHTML = (['index','category','cluster','pattern'])
+    .map(want => sitemap
+      .filter(info => kind(info) == want)
+      .map(info => `<span>${info.title}</span> <font color=gray>${kind(info)}</font>`)
+      .join("<br>"))
+    .join("<br><br>\n")
+
+  document.querySelectorAll('span')
+    .forEach(elem => elem.addEventListener('click',preview))
+
+  function kind(info) {
+    if(info.title.startsWith('Patterns Of ')) return 'category'
+    if(info.title.endsWith(' Patterns')) return 'cluster'
+    if(info.synopsis.startsWith('…')) return 'pattern'
+    return 'index'
+  }
+
+  async function preview(event) {
+    const title = event.target.innerText
+    const info = sitemap.find(info => info.title == title)
+    const page = await fetch(`${host}/${info.slug}.json`).then(req => req.json())
+    const story = upgrade(info,page)
+    frame.open({title,story},event.shiftKey)
+  } 
+
+  function upgrade(info,page) {
+    const fixurl = item => {item.url = item.url.replace(/http:/,host); return item}
+    const fixhref = item => {item.text = item.text.replaceAll(/http:/g,host); return item}
+    const isgallery = item => item.type == 'html' && item.text.startsWith('<table')
+    return page.story
+      .map(item => {
+        if (isgallery(item)) return gallery(item)
+        if (item.type == 'html') return [{type:'code',text:item.text},fixhref(item)]
+        if (item.type == 'graphviz') return {type:'code',text:item.text}
+        if (item.type == 'image') return fixurl(item)
+        return item
+      })
+      .flat()
+  }
+
+  // {
+  //   "type": "image",
+  //   "id": "9289d6017e26eb5e",
+  //   "location": {
+  //     "latitude": "45.470058333333334",
+  //     "longitude": "-122.74588888888889"
+  //   },
+  //   "text": "The meter reader guy says ...",
+  //   "size": "wide",
+  //   "width": 183,
+  //   "height": 137,
+  //   "url": "/assets/plugins/image/313c947c146289c08e57388a5d6ab193.jpg"
+  // },
+
+  function gallery(old) {
+    const dump = obj => {
+      const what = JSON.stringify(obj,null,2).replaceAll(/</g,'&lt;')
+      const where = new Error('dump').stack.toString().split("\n")[2].split("/").reverse()[0]
+      return {type:'html',
+      text:`<details><summary>${where}</summary><pre>${what}</pre></details>`}}
+    const fixhref = item => {item.text = item.text.replaceAll(/http:/g,host); return item}
+    const item = fixhref(old)
+    const div = document.createElement('div')
+    div.innerHTML = item.text
+    const members = []
+    div.querySelectorAll('img').forEach(img => {
+      const url = img.getAttribute('src').replace(/http:/,'')
+      const text = img.parentElement.innerText.trim()
+      members.push({type:'image',text,size:'thumbnail',width:200,height:255,url})
+    })
+    const reordered = [1,0,3,2].map(n => members[n])
+    return [
+      {type:'pagefold',text:'new'},
+      ...reordered,
+      dump(old),
+      dump(reordered),
+      {type:'pagefold',text:'.'},
+      old
+    ]
+  }
+</script>
