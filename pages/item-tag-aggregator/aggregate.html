@@ -1,6 +1,10 @@
 <div id=result>working</div>
+<style>
+  span {cursor:pointer}
+</style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
   const uniq = (value, index, self) => self.indexOf(value) === index
 
   const context = await frame.context()
@@ -49,12 +53,14 @@
   window.result.innerHTML = Object.entries(members)
     .sort((a,b) => b[0]-a[0])
     .map(([key,value]) => `
-      <div><h3>${key}</h3>
+      <p><b>${key}</b>:
       ${value.sort()
         .map(word => `<span onclick=doclick(event)>${word}</span>`)
         .join(" ")}
-      </div>`)
-    .join("")
+      </p>`)
+    .join("")+
+      `<p><button onclick=dodownload(event)>download</button> as graph collection</p>`
+
 
   window.doclick = event => {
     const target = event.target
@@ -108,6 +114,36 @@
     }
 
     frame.open({title,story},event.shiftKey)
+  }
+
+  window.dodownload = event => {
+    console.log('download')
+    const graphs = []
+    for (const count of Object.keys(members).reverse()) {
+      if(count  < 2) continue
+      const names = members[count]
+      console.log({count,names})
+      for(const name of names) {
+        const graph = new Graph()
+        graph.addNode('Tag',{name,count})
+        const addPage = title => {
+          const name = title.replaceAll(/ +/g,"\\n")
+          const nid = graph.nodes.findIndex(node => node.props.name == name)
+          if(nid >= 0) return nid
+          return graph.addNode('Page',{name})
+        }
+        for(const tag of tags)
+          if(tag.word == name)
+            graph.addRel("",0,addPage(tag.title))
+        graphs.push({name,graph})
+      }
+    }
+    console.log({graphs})
+    const jsonl = graphs
+      .map(graph => JSON.stringify(graph))
+      .join("\n")
+    console.log({jsonl})
+    frame.download(jsonl,'aggregate.jsonl','application/jsonl')
   }
 
 </script>
