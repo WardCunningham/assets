@@ -60,6 +60,7 @@
       for (const pattern of category.details) {
         const nid = node(pattern.summary)
         graph.nodes[nid].props['url'] = `${host}/${pattern.summary}.html`
+        graph.nodes[nid].props['category'] = category.summary
         for (const related of pattern.details) {
           graph.addRel("",nid,node(related))
           // console.log(
