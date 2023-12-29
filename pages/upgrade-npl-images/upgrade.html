@@ -75,9 +75,10 @@
     div.innerHTML = item.text
     const members = []
     div.querySelectorAll('img').forEach(img => {
-      const url = img.getAttribute('src').replace(/http:/,'')
+      const url = img.getAttribute('src')
       const text = img.parentElement.innerText.trim()
-      members.push({type:'image',text,size:'thumbnail',width:200,height:255,url})
+      const id = `${Math.floor(Math.random()*100000000)}`
+      members.push({type:'image',text,size:'thumbnail',width:183,height:234,url,id})
     })
     const reordered = [1,0,3,2].map(n => members[n])
     return [
