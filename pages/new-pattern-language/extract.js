@@ -3,6 +3,7 @@
 
 import * as live from 'http://trails.ward.asia.wiki.org/assets/pages/leaflet-maps/live.js'
 import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
 
 live.setsite('npl.wiki')
 const chapters = ['Scale','Multiple Scale','Process']
@@ -58,9 +59,11 @@ function emit (section) {
   graph.addNode('Section',{name:section.section})
   section.patterns.forEach(pattern => {
     const here = pat(pattern.name)
-    graph.addRel('Has',0,here)
-    pattern.uplinks.forEach(name => graph.addRel('From',pat(name),here))
-    pattern.downlinks.forEach(name => graph.addRel('To',here,pat(name)))
+    const url = `http://npl.wiki/${asSlug(pattern.name)}.html`
+    graph.nodes[here].props['url'] = url
+    graph.addRel('has',0,here)
+    pattern.uplinks.forEach(name => graph.addRel('first',pat(name),here))
+    pattern.downlinks.forEach(name => graph.addRel('then',here,pat(name)))
   })
   console.log(JSON.stringify({name:section.section,graph:{nodes:graph.nodes,rels:graph.rels}}))
 }
