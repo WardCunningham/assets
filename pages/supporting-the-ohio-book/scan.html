@@ -1,0 +1,93 @@
+<div id=result>working</div>
+<style>
+  table {border-collapse: collapse; width:100%; text-align:center; font-size: smaller;}
+  td {padding:6px; width:25%; text-align:center}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
+  const upper = text => text.replace(/./,m => m[0].toUpperCase())
+  const heads = ['nursery','stuff','story']
+
+  const authors = (await frame.context()).page.story
+    .filter(item => item.type == 'roster')
+    .map(item => item.text.split(/\n/)
+      .filter(line => line.includes('.'))
+      .map(line => ({
+        site:line,
+        name:line.split(/\./)[0]
+      })))
+    .flat()
+  await Promise.all(
+    authors.map(author =>
+      fetch(`http://${author.site}/system/sitemap.json`)
+        .then(res => res.json())
+        .then(sitemap => scan(author,sitemap))))
+
+  window.result.innerHTML = `<table border=1>
+    <tr><th>who<th>${heads.join("<th>")}
+    ${authors
+      .map(author => `
+      <tr><td>${author.name}<td>${heads
+        .map(head =>author[head])
+        .join("<td>")}`)
+      .join("\n")}
+    </table>
+    <p><center>
+      <button onclick=dodownload(event)>download</button>
+    </center></p>`
+
+
+  function scan(author,sitemap) {
+    for (const head of heads) {
+      author.sitemap = sitemap
+      const links = sitemap
+        .find(info => info.slug.endsWith(head))
+        .links
+      author[head] = Object.keys(links||{}).length
+    }
+    return author
+  }
+
+  window.dodownload = event => {
+    const lines = []
+    for (const author of authors) {
+      const find = slug => author.sitemap.find(info => info.slug == slug)
+      const links = slug => Object.keys(find(slug).links||{})
+      const follow = (name, here, there) => {
+        const graph = new Graph()
+        { const name = fold(find(here).title)
+          const url = `http://${author.site}/${here}.html`
+          graph.addNode('Page',{name,url})}
+        for (const link of links(here)) {
+          const info = find(link)
+          const nid = info ?
+            graph.addNode('Page',{name:fold(info.title)}) :
+            graph.addNode('Remote',{name:link})
+          graph.addRel(" ",0,nid)
+        }
+        lines.push(JSON.stringify({name,graph}))
+      }
+      follow(upper(author.name),'welcome-visitors',links('welcome-visitors'))
+      for (const head of heads) {
+        const slug = `${author.name}s-${head}`
+        const info = find(slug)
+        if(info)follow (info.title, slug, links(slug))
+      }
+    }
+    frame.download(lines.join("\n"),'scan.jsonl','application/jsonl')
+  }
+
+  function fold(title) {
+    if(title.length < 25) return title
+    console.log({title})
+    const much = Math.floor(title.length/2)
+    const prefix = new RegExp(`(.{${much}}) `)
+    console.log({prefix})
+    const folded = title.replace(prefix, (_,a) => a+'\\n')
+    console.log({folded})
+    return folded
+  }
+
+</script>
