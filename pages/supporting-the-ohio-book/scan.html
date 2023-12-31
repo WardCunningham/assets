@@ -55,25 +55,35 @@
     for (const author of authors) {
       const find = slug => author.sitemap.find(info => info.slug == slug)
       const links = slug => Object.keys(find(slug).links||{})
-      const follow = (name, here, there) => {
+
+      const follow = (label, depth, here) => {}
         const graph = new Graph()
-        { const name = fold(find(here).title)
-          const url = `http://${author.site}/${here}.html`
-          graph.addNode('Page',{name,url})}
-        for (const link of links(here)) {
-          const info = find(link)
-          const nid = info ?
-            graph.addNode('Page',{name:fold(info.title)}) :
-            graph.addNode('Remote',{name:link})
-          graph.addRel(" ",0,nid)
+
+        const more = (depth, nid, here) => {
+          for (const link of links(here)) {
+            const info = find(link)
+            if(info) {
+              const nnid = graph.addNode('Page',{name:fold(info.title)})
+              graph.addRel(" ",nid,nnid)
+              if(depth>0) more(depth-1,nnid,link)
+            } else {
+              graph.addRel(" ",nid,graph.addNode('Remote',{name:link}))
+            }
+          }
         }
-        lines.push(JSON.stringify({name,graph}))
+
+        const name = fold(find(here).title)
+        const url = `http://${author.site}/${here}.html`
+        graph.addNode('Page',{name,url})
+        more(depth-1,0,here)
+        lines.push(JSON.stringify({name:label,graph}))
       }
-      follow(upper(author.name),'welcome-visitors',links('welcome-visitors'))
+
+      follow(upper(author.name),1,'welcome-visitors')
       for (const head of heads) {
         const slug = `${author.name}s-${head}`
         const info = find(slug)
-        if(info)follow (info.title, slug, links(slug))
+        if(info)follow (info.title,2,slug, links(slug))
       }
     }
     frame.download(lines.join("\n"),'scan.jsonl','application/jsonl')
