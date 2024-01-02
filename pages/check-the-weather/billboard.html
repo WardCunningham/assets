@@ -1,0 +1,23 @@
+<center><div id=result>working</div></center>
+<script type=module>
+  let count = 12
+  const f = c => 5/9*(c/16)+32
+  const avg = a => a.reduce((s,e)=>s+e,0)/a.length
+  const run = setInterval(refresh,5000)
+  refresh()
+
+  async function refresh() {
+    if(count-- <= 1) clearInterval(run)
+    const data = await fetch('http://home.c2.com:8020/').then(res => res.json())
+    const temp = f(avg(Object.values(data)))
+    result.innerHTML = `
+      <font face=Arial>
+       <font size=32>
+       ${temp.toFixed(2)}°F
+       </font>
+      <br>
+      In Portland, Oregon
+      </font>`
+  }
+
+</script>
