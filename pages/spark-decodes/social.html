@@ -79,7 +79,7 @@ function link(band) {
   let when = new Date(chan[0].when).toLocaleString()
   let rels = chan.map(r => `"${r.from}" -> "${r.to}"`).join("\n")
   let dot = `strict digraph {\nlayout=neato\nnode [style=filled fillcolor=bisque]\n${rels}}`
-  if (window && window.frameElement) {
+  if (window.location !== window.parent.location) {
     open(band)
   } else {
     display(band)
@@ -133,10 +133,9 @@ function open(band) {
   // ]
   window.parent.postMessage({
     action: "showResult",
-    pageKey: window.frameElement.name,
     keepLineup: event.shiftKey,
     page
-  })
+  },"*")
 }
 
 </script>
