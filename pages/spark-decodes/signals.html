@@ -9,6 +9,8 @@
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
   integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
   crossorigin=""></script>
+  <script src="https://unpkg.com/@joergdietrich/leaflet.terminator@1.0.0/L.Terminator.js"></script>
+
 
 </head>
 <style>
@@ -127,10 +129,13 @@ function familiar() {
 
 // M A P
 
-var map = L.map('map',{ "tap": false }).setView([45.470493,-122.7486411], 9)
+var map = L.map('map',{ "tap": false, worldCopyJump:true }).setView([45.470493,-122.7486411], 9)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map)
+const term = L.terminator({fillOpacity:.05});
+term.addTo(map);
+
 // map.locate({setView: false})
 
 // let marker = L.marker([lat,lon]).addTo(map)
@@ -247,6 +252,7 @@ let dist = {}
 
 function tally(spots) {
   let now = Date.now()
+  term.setTime(now)
   let f = spots[0].tunedfrequency/1000000
   let band = f>144?2: f>50?6: f>28?10: f>21?15: f>18?17: f>14?20: f>7?40: f>3.5?80: 160
   let time = new Date(spots[0].time).valueOf()
