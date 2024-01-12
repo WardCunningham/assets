@@ -7,21 +7,10 @@
   <div id="result">waiting</div><br>
   <div id="chart"></div>
 
-<script>
+<script type=module>
 
 const uniq = (value, index, self) => self.indexOf(value) === index
-
-// P A R A M E T E R S
-
-function hashed(hash, arg) {
-    let op = arg.split(/=/)
-    if (op[1]) hash[op[0]] = op[1]
-    return hash
-}
-
-let query = window.location.href.split(/\?/)[1]||''
-let params = query.split(/&/).reduce(hashed,{})
-
+const params = Object.fromEntries(new URLSearchParams(location.search).entries())
 
 // L I S T E N
 
@@ -32,7 +21,7 @@ socket.addEventListener('open', (event) => {
 })
 
 socket.addEventListener('message', (event) => {
-    let msg = JSON.parse(event.data)
+    const msg = JSON.parse(event.data)
     tally(msg.spots)
 })
 
@@ -40,83 +29,83 @@ socket.addEventListener('message', (event) => {
 // R E C O R D
 
 
-let log = {}  // band => [{when, from, to}, ...]
-let loc = {}  // call => {grid, city}
+const log = {}  // band => [{when, from, to}, ...]
+const loc = {}  // call => {grid, city}
 
 var live = null   // if displaying band
 var more = null   // if new data to display
 
 function tally(spots) {
-  let band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
-  let max = params['max']||80
+  const band = (Math.floor(spots[0].tunedfrequency/100000)/10).toFixed(1)
+  const max = params['max']||80
   while (log[band] && log[band].length > max) log[band].shift()
-  if(!Object.keys(log).length) result.innerHTML += '.'
+  if(!Object.keys(log).length) window.result.innerHTML += '.'
 
-  for (let spot of spots) {
+  for (const spot of spots) {
     let m = spot.msg.match(/^(\d?[A-Z]+\d[A-Z]+) (\d?[A-Z]+\d[A-Z]+) R/)
     if (m) {
-      let chan = log[band] = log[band] || []
-      let when = Date.now()
-      let from = m[2]
-      let to = m[1]
+      const chan = log[band] = log[band] || []
+      const when = Date.now()
+      const from = m[2]
+      const to = m[1]
       chan.push({when,from,to})
       if (live && live == band) more = true
     }
     else {
       m = spot.msg.match(/ (\d?[A-Z]+\d[A-Z]+) ([A-R][A-R]\d\d)/)
       if (m) {
-        let call = m[1]
-        let grid = m[2]
+        const call = m[1]
+        const grid = m[2]
         if(!(call in loc)) {
-          console.log({call,grid})
           loc[call] = {grid}
         }
       }
     }
   }
   if (more) display(live)
-  result.innerHTML = Object.keys(log).map(choice).join('<br>')
+  window.result.innerHTML = Object.keys(log).map(choice).join('<br>')
 }
 
 
 // R E N D E R
 
 function choice(band) {
-  let chan = log[band]
-  let when = new Date(chan[0].when).toLocaleTimeString()
-  return `<span onclick="link('${band}')">${band} ⇒ ${chan.length} R's since ${when} ${band==live ? '✔︎' : ''}</span>`
+  const chan = log[band]
+  const when = new Date(chan[0].when).toLocaleTimeString()
+  window.dolink = link
+  return `<span onclick="dolink('${band}')">${band} ⇒ ${chan.length} R's since ${when} ${band==live ? '✔︎' : ''}</span>`
 }
 
 function link(band) {
-  let chan = log[band]
-  let when = new Date(chan[0].when).toLocaleString()
-  let rels = chan.map(r => `"${r.from}" -> "${r.to}"`).join("\n")
-  let dot = `strict digraph {\nlayout=neato\nnode [style=filled fillcolor=bisque]\n${rels}}`
+  const chan = log[band]
+  const when = new Date(chan[0].when).toLocaleString()
+  const rels = chan.map(r => `"${r.from}" -> "${r.to}"`).join("\n")
+  const dot = `strict digraph {\nlayout=neato\nnode [style=filled fillcolor=bisque]\n${rels}}`
   if (window.location !== window.parent.location) {
     open(band)
   } else {
     display(band)
   }
-  result.innerHTML = Object.keys(log).map(choice).join('<br>')
+  window.result.innerHTML = Object.keys(log).map(choice).join('<br>')
 }
 
 function dot(band) {
-  let dot = [
+  const dot = [
     'strict digraph {',
     'layout=neato',
     'node [style=filled fillcolor=bisque]']
-  let chan = log[band]
-  let calls = chan
+  const chan = log[band]
+  const calls = chan
     .map(r => [r.from, r.to])
     .flat()
     .filter(uniq)
-  for (let call of calls) {
-    let props = []
+  for (const call of calls) {
+    const props = []
     if (!call.match(/^[AKNW]/)) props.push('fillcolor=lightgreen')
     if (call in loc) props.push(`label="${call}\\n${loc[call].grid}"`)
     if (props.length) dot.push(`"${call}" [${props.join(" ")}]`)
   }
-  for (let r of chan) {
+  for (const r of chan) {
     dot.push(`"${r.from}" -> "${r.to}"`)
   }
   dot.push('}')
@@ -127,7 +116,7 @@ function display(band) {
   live = band
   more = null
   hpccWasm.graphviz.layout(dot(band), "svg", "dot").then(svg => {
-    chart.innerHTML = svg;
+    window.chart.innerHTML = svg;
   })
 }
 
@@ -142,12 +131,12 @@ const create = (item) => ({type: "create", date: Date.now(), item: deepcopy(item
 const fork = (site) => ({type: "fork", site, date: Date.now()})
 
 function open(band) {
-  let chan = log[band]
-  let call = chan[0].from
-  let when = new Date(chan[0].when).toLocaleString()
-  let mins = ((Date.now() - chan[0].when)/60000).toFixed(1)
-  let dott = dot(band)
-  let page = {
+  const chan = log[band]
+  const call = chan[0].from
+  const when = new Date(chan[0].when).toLocaleString()
+  const mins = ((Date.now() - chan[0].when)/60000).toFixed(1)
+  const dott = dot(band)
+  const page = {
     title: `${call} on ${band} MHz`,
     story: [
       paragraph(`These acknowldgements were recorded over ${mins} minutes starting with ${call} at ${when}.`),
