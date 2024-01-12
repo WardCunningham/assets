@@ -9,6 +9,7 @@
 
 <script>
 
+const uniq = (value, index, self) => self.indexOf(value) === index
 
 // P A R A M E T E R S
 
@@ -39,7 +40,8 @@ socket.addEventListener('message', (event) => {
 // R E C O R D
 
 
-let log = {}
+let log = {}  // band => [{when, from, to}, ...]
+let loc = {}  // call => {grid, city}
 
 var live = null   // if displaying band
 var more = null   // if new data to display
@@ -59,6 +61,17 @@ function tally(spots) {
       let to = m[1]
       chan.push({when,from,to})
       if (live && live == band) more = true
+    }
+    else {
+      m = spot.msg.match(/ (\d?[A-Z]+\d[A-Z]+) ([A-R][A-R]\d\d)/)
+      if (m) {
+        let call = m[1]
+        let grid = m[2]
+        if(!(call in loc)) {
+          console.log({call,grid})
+          loc[call] = {grid}
+        }
+      }
     }
   }
   if (more) display(live)
@@ -88,11 +101,26 @@ function link(band) {
 }
 
 function dot(band) {
+  let dot = [
+    'strict digraph {',
+    'layout=neato',
+    'node [style=filled fillcolor=bisque]']
   let chan = log[band]
-  let dx = call => call.match(/^[AKNW]/) ? '' : `"${call}" [fillcolor=lightgreen]\n`
-  let dxer = chan.map(r => dx(r.from)+dx(r.to)).join('')
-  let rels = chan.map(r => `"${r.from}" -> "${r.to}"`).join("\n")
-  return`strict digraph {\nlayout=neato\nnode [style=filled fillcolor=bisque]\n${dxer}${rels}}`
+  let calls = chan
+    .map(r => [r.from, r.to])
+    .flat()
+    .filter(uniq)
+  for (let call of calls) {
+    let props = []
+    if (!call.match(/^[AKNW]/)) props.push('fillcolor=lightgreen')
+    if (call in loc) props.push(`label="${call}\\n${loc[call].grid}"`)
+    if (props.length) dot.push(`"${call}" [${props.join(" ")}]`)
+  }
+  for (let r of chan) {
+    dot.push(`"${r.from}" -> "${r.to}"`)
+  }
+  dot.push('}')
+  return dot.join("\n")
 }
 
 function display(band) {
@@ -127,10 +155,6 @@ function open(band) {
       paragraph(`See [[Spark Decodes]] for more scripts.`)
     ]
   }
-  // page.journal = [
-  //   create(page),
-  //   fork('calls.fed.wiki')
-  // ]
   window.parent.postMessage({
     action: "showResult",
     keepLineup: event.shiftKey,
