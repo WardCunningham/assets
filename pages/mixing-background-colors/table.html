@@ -1,0 +1,44 @@
+<button onclick=domix(event)>table</button> of mixed colors
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const table = document.createElement('div')
+  table.innerHTML = context.page.story.find(item => item.type=='html').text
+  const vec = rgb => [...rgb.matchAll(/\d+/g)].map(a=>+a[0])
+  const rgb = cell =>vec(cell.style.backgroundColor)
+
+  window.domix = async event => {
+    const cells = [...table.querySelectorAll('td')]
+    const cell = label => cells.find(cell => cell.innerText.startsWith(label))
+    const title = "Transmission Color Model"
+    const text =
+      `We compose rgb from row and column to get rgb for each cell.
+      Generated from [[Mixing Background Colors]]`
+    const story = [{type:'paragraph',text}]
+    const cols = ([1,2,3,4]).map(col => rgb(cell(`column ${col}`)))
+    const rows = ([1,2,3]).map(row => rgb(cell(`row ${row}`)))
+    // story.push({type:'code',text:JSON.stringify({cols,rows},null,2)})
+    story.push({type:'html',text:`<table style="width:100%; font-size:small; border-spacing:0">${mix(cols,rows)}</table>`})
+    frame.open({title,story},event.shiftKey)
+  }
+
+  function mix(cols,rows) {
+    const html = []
+    html.push(`<tr style="height:50px">`)
+    html.push(`<th>`)
+    for (const col of cols) {
+      const color = `rgb(${col})`
+      html.push(`<th style="background-color: ${color}">${col}`)
+    }
+    for (const row of rows) {
+      html.push(`<tr style="height:100px">`)
+      html.push(`<th style="background-color: ${`rgb(${row})`}"> ${row.join(",<br>")}`)
+      for (const col of cols) {
+        const sub = ([0,1,2]).map(i => Math.round(row[i]/256 * col[i]/256 * 256))
+        const color = `rgb(${sub})`
+        html.push(`<td style="background-color: ${color}; text-align:center"> ${row}<br>${col}<br>${sub}`)
+      }
+    }
+    return html.join("\n")
+  }
+</script>
