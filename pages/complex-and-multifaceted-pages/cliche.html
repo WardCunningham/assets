@@ -1,0 +1,56 @@
+<div id=result>working</div>
+<style>
+  body {font-family:sans-serif;}
+  span {cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const search = `http://search.fed.wiki.org:3030/match`
+  const payload = `match=and&find=words&input=true&query=multifaceted+complex`
+  const options = {
+    method:'POST',
+    body:payload,
+    accept:'application/json',
+    cache: 'no-cache',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'Content-Length': payload.length
+    },
+  }
+  const matches = await fetch(search,options).then(res => res.json())
+  const counts = {}
+  for(const slug in matches.result) {
+    const sites = matches.result[slug]
+    for(const site of sites)
+      counts[site] = (counts[site]||0) + 1
+  }
+  window.result.innerHTML = Object.entries(counts)
+    .sort((a,b) => b[1]-a[1])
+    .map(([site,count]) => `
+      <span onclick=doconfirm(event)>${site}</span>
+      <sup>${count}</sup>`)
+    .join("<br>")
+
+  window.doconfirm = async event => {
+    const target = event.target
+    const site = target.innerText
+    const pages = await Promise.all(Object.entries(matches.result)
+      .filter(entry => entry[1].includes(site))
+      .map(entry => fetch(`http://${site}/${entry[0]}.json`,{redirect:'follow'})
+        .then(res => res.json())
+        .catch(err => ({story:[]}))))
+    const synopsis = {
+      type:'paragraph',
+      text:`More clichés in [[Complex and Multifaceted Pages]].`}
+    const story = [synopsis, ...pages
+      .filter(page => page.story)
+      .map(page => {
+        const text = page.story
+          .map(item => (item.text||'').split(/\n/))
+          .flat()
+          .find(text => text.includes('multifaceted'))
+        return {type:'reference',site,title:page.title,text:(text||`Can't Confirm.`)}
+      })]
+    frame.open({title:site,story},event.shiftKey)
+  }
+</script>
