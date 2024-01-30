@@ -11,6 +11,7 @@
       .then(res => res.text()
       .then(text => {asset.text = text; return asset}))))
   console.log({csvs})
+  const num = Symbol('num')
   window.result.innerHTML = csvs
     .map(csv => details(csv.file,parse(csv)))
     .join("")
@@ -38,6 +39,7 @@
   function parse(csv) {
     const rows = csv.text.trim().split(/\n/)
       .map(line => line.split(/,/))
+      .map((row,i) => {row[num]=i+2; return row})
     const heads = csv.heads = rows.shift()
     csv.rows = rows
     return ([0,1,2])
@@ -60,10 +62,10 @@
 
   function drill(file,rows,heads,col,key,shiftKey) {
     const html = `<table border=1 style="border-collapse:collapse; padding:1en;">
-      <tr><th>${heads.join("<th>")}
+      <tr><th>#<th>${heads.join("<th>")}
       ${rows
         .filter(row => row[col] == key)
-        .map(row => `<tr><td>${row.slice(0,3).join("<td>")}`)
+        .map(row => `<tr><td>${row[num]}<td>${row.slice(0,3).join("<td>")}`)
       }`
     const title = `${heads[col]} of ${key}`
     const story = [
