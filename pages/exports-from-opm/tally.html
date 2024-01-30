@@ -1,4 +1,7 @@
 <div id=result>working</div>
+<style>
+  span {cursor:pointer}
+</style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const assets = await frame.assets()
@@ -12,6 +15,22 @@
     .map(csv => details(csv.file,parse(csv)))
     .join("")
 
+  window.dorows = event => {
+    const target = event.target
+    const detail = n => {
+      let t = target
+      for(let i=n*2; i>0; i--)
+        t = t.parentElement
+      return t}
+    const key = target.innerText
+    const label = detail(1).firstChild.innerText
+    const file = detail(2).firstChild.innerText
+    const csv = csvs.find(csv => csv.file == file)
+    const col = csv.heads.indexOf(label)
+    console.log({target,key,heads:csv.heads,label,col,file,csv})
+    drill(file,csv.rows,csv.heads,col,key,event.shiftKey)
+  }
+
   function details(summary,details) {
     return `<details><summary>${summary}</summary><div style="margin-left:1em;">${details}</div></details>`
   }
@@ -19,7 +38,8 @@
   function parse(csv) {
     const rows = csv.text.trim().split(/\n/)
       .map(line => line.split(/,/))
-    const heads = rows.shift()
+    const heads = csv.heads = rows.shift()
+    csv.rows = rows
     return ([0,1,2])
       .map(col => details(heads[col],tally(col,rows)))
       .join("")
@@ -34,8 +54,23 @@
       }, {})
     return Object.entries(counts)
       .sort((a,b) => b[1]-a[1])
-      .map(entry => `<span>${entry[0]}</span><sup>${entry[1]}</sup>`)
+      .map(entry => `<span onclick=dorows(event)>${entry[0]}</span><sup>${entry[1]}</sup>`)
       .join("<br>")
+  }
+
+  function drill(file,rows,heads,col,key,shiftKey) {
+    const html = `<table border=1 style="border-collapse:collapse; padding:1en;">
+      <tr><th>${heads.join("<th>")}
+      ${rows
+        .filter(row => row[col] == key)
+        .map(row => `<tr><td>${row.slice(0,3).join("<td>")}`)
+      }`
+    const title = `${heads[col]} of ${key}`
+    const story = [
+      {type:'paragraph',text:`Selecting from ${rows.length} rows.`},
+      {type:'paragraph',text:`Read from file ${file}.`},
+      {type:'html',text:html}]
+    frame.open({title,story},shiftKey)
   }
 
 </script>
