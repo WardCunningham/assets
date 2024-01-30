@@ -20,15 +20,22 @@
     const rows = csv.text.trim().split(/\n/)
       .map(line => line.split(/,/))
     const heads = rows.shift()
-    const tally = rows
-      .map(row => row[0])
+    return ([0,1,2])
+      .map(col => details(heads[col],tally(col,rows)))
+      .join("")
+  }
+
+  function tally(col,rows) {
+    const counts = rows
+      .map(row => row[col])
       .reduce((counts,field) => {
         counts[field] = (counts[field]||0) + 1
         return counts
       }, {})
-    return Object.entries(tally)
+    return Object.entries(counts)
       .sort((a,b) => b[1]-a[1])
       .map(entry => `<span>${entry[0]}</span><sup>${entry[1]}</sup>`)
       .join("<br>")
   }
+
 </script>
