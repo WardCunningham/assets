@@ -37,9 +37,21 @@
   }
 
   function parse(csv) {
+    const say = {
+      Aggregation: 'consists of',
+      Invocation: 'invokes',
+      Generalization: 'specifies',
+      Exhibition: 'exhibits',
+      Instrument: 'is required by',
+      Consumption: 'is consume by',
+      Agent: 'handles',
+      Invocation: 'invokes',
+      Result: 'yields'
+    }
     const rows = csv.text.trim().split(/\n/)
       .map(line => line.split(/,/))
       .map((row,i) => {row[num]=i+2; return row})
+      .map(row => {row[1] = say[row[1]]||row[1]; return row})
     const heads = csv.heads = rows.shift()
     csv.rows = rows
     return ([0,1,2])
