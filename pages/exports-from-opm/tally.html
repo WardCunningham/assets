@@ -1,0 +1,34 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const assets = await frame.assets()
+  const csvs = await Promise.all(assets
+    .filter(asset => asset.file.endsWith('.csv'))
+    .map(asset => fetch(asset.url)
+      .then(res => res.text()
+      .then(text => {asset.text = text; return asset}))))
+  console.log({csvs})
+  window.result.innerHTML = csvs
+    .map(csv => details(csv.file,parse(csv)))
+    .join("")
+
+  function details(summary,details) {
+    return `<details><summary>${summary}</summary><div style="margin-left:1em;">${details}</div></details>`
+  }
+
+  function parse(csv) {
+    const rows = csv.text.trim().split(/\n/)
+      .map(line => line.split(/,/))
+    const heads = rows.shift()
+    const tally = rows
+      .map(row => row[0])
+      .reduce((counts,field) => {
+        counts[field] = (counts[field]||0) + 1
+        return counts
+      }, {})
+    return Object.entries(tally)
+      .sort((a,b) => b[1]-a[1])
+      .map(entry => `<span>${entry[0]}</span><sup>${entry[1]}</sup>`)
+      .join("<br>")
+  }
+</script>
