@@ -1,13 +1,55 @@
 <button>map</button> region shown above
+<div id=result></div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  let others = null
   document.querySelector('button').addEventListener('click', async event => {
     const region = (await frame.sources('region'))[0].regionData
     const text =
-      `BOUNDARY ${region.south}, ${region.west}\n` +
-      `BOUNDARY ${region.north}, ${region.east}\n`
-    const story = [{type:'map',text}]
+      [`BOUNDARY ${region.south}, ${region.west}`,
+      `BOUNDARY ${region.north}, ${region.east}`,
+      ...others.map(marker => `${marker.item.location.latitude}, ${marker.item.location.longitude} ${marker.item.text}`)].join("\n")
+    const story = [{type:'map',text},...others.map(marker => marker.item)]
     const title = 'Preview of Map Region'
     frame.open({title,story},event.shiftKey)
   })
+
+  const markers = await frame.sources('marker')
+  const context = await frame.context()
+  const explore = await fetch(`http://photos.ward.dojo.fed.wiki/little-libraries-to-explore.json`)
+    .then(res => res.json())
+  const here = markers[0]
+  console.log({markers,here,context,explore})
+  if(context.slug == here.panel.slug && here.markerData.length) {
+    const near = [here.markerData[0].lat,here.markerData[0].lon]
+    others = markers
+      .filter(marker => marker.panel.slug != context.slug)
+      .filter(marker => marker.markerData.lat)
+      .map(marker => {
+        const far = [marker.markerData.lat,marker.markerData.lon]
+        marker.dist = distance(near,far)
+        return marker})
+      .sort((a,b) => a.dist - b.dist)
+      .slice(0,4)
+      .map(marker => {
+        marker.item = explore.story.find(item => item.id == marker.panel.itemId)
+        return marker
+      })
+    console.log({others})
+    window.result.innerHTML = `<p>Nearest Libraries</p><p>${others
+      .map(other => `${other.dist.toFixed(2)} miles to ${other.item.text}`)
+      .join("<br>")}</p>`
+  }
+
+  function distance(here,there) {
+    // http://js.ward.asia.wiki.org/great-circle-distance.html
+    const sin = Math.sin
+    const cos = Math.cos
+    const acos = Math.acos
+    const rad = deg => Math.PI * deg / 180
+    const [lat1,lon1] = here.map(rad)
+    const [lat2,lon2] = there.map(rad)
+    const earth = 3958.8
+    return earth * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon1-lon2))
+  }
 </script>
