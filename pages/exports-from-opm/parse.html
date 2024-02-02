@@ -1,0 +1,37 @@
+<div id=result>working</div>
+<script type=module>
+  const site = `http://ward.dojo.fed.wiki/assets/pages/exports-from-opm/`
+  const file = `Modeling%20Learning%20System.html`
+  const text = await fetch(`${site}/${file}`).then(res => res.text())
+  const tree = [] // [{summary:string, details:[tree, ...]}]
+
+  // Build the Tree
+
+  const div = document.createElement('div')
+  div.innerHTML = text
+  let here = div.firstElementChild
+  // console.log(here)
+  while(here.innerText != 'OPL spec.') {
+    // console.log(here)
+    if (here.tagName == 'B') {
+      console.log('title',here.innerText)
+      tree.push({summary:here.innerText,details:[]})}
+    if (here.tagName == 'P') {
+      console.log('item',here.innerText.slice(0,30))
+      tree[tree.length-1].details.push({summary:here.innerText})}
+    here = here.nextElementSibling
+  }
+  console.log(tree)
+
+  // Print the Tree
+
+  window.result.innerHTML = tree
+    .map(B => details(B.summary, B.details
+      .map(P => `<p>${P.summary}</p>`)
+      .join("")))
+    .join("")
+
+  function details(summary,details) {
+    return `<details><summary>${summary}</summary><div style="margin-left:1em;">${details}</div></details>`
+  }
+</script>
