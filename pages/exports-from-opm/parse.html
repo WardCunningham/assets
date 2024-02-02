@@ -10,24 +10,35 @@
   const div = document.createElement('div')
   div.innerHTML = text
   let here = div.firstElementChild
-  // console.log(here)
   while(here.innerText != 'OPL spec.') {
-    // console.log(here)
     if (here.tagName == 'B') {
-      console.log('title',here.innerText)
+      console.log(here.innerText)
       tree.push({summary:here.innerText,details:[]})}
     if (here.tagName == 'P') {
-      console.log('item',here.innerText.slice(0,30))
-      tree[tree.length-1].details.push({summary:here.innerText})}
+      console.log(' ',here.innerText.slice(0,60))
+      tree[tree.length-1].details.push({summary:here.innerText.split(/ /)[0],details:statement(here.firstElementChild)})}
     here = here.nextElementSibling
   }
   console.log(tree)
+
+  function statement(where) {
+    const branch = []
+    while(where) {
+      if (where.tagName == 'FONT') {
+        const color = where.getAttribute('color')
+        const text = where.innerText
+        branch.push({summary:`<font color=${color}>${text}</font>`})}
+      where = where.nextElementSibling}
+    return branch
+  }
 
   // Print the Tree
 
   window.result.innerHTML = tree
     .map(B => details(B.summary, B.details
-      .map(P => `<p>${P.summary}</p>`)
+      .map(P => details(P.summary,P.details
+        .map(FONT => `${FONT.summary}`)
+        .join("<br>")))
       .join("")))
     .join("")
 
