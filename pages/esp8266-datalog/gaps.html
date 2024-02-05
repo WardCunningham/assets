@@ -1,13 +1,14 @@
 <pre id=result>working</pre>
 <script type=module>
-  const path = `assets/plugins/datalog/esp8266-datalog/`
+  const path = `plugin/datalog/esp8266-datalog/day`
   const site = `http://found.ward.bay.wiki.org/${path}`
-  const days = [12,13,14,15,16,17,18,19,20]
-  const logs = day => 
-    fetch(`${site}/2024-01-${day}.log`)
+  // const days = [12,13,14,15,16,17,18,19,20]
+  const offsets = [9,8,7,6,5,4,3,2,1,0]
+  const logs = offset =>
+    fetch(`${site}/${offset}`)
       .then(res => res.text())
       .then(text => text.trim().split(/\n/))
-  const data = (await Promise.all(days.map(logs))).flat()
+  const data = (await Promise.all(offsets.map(logs))).flat()
   let now = JSON.parse(data.shift()).clock
   window.result.innerText = `begin ${new Date(now).toLocaleString()}\n`
   const keys = result => result
