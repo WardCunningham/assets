@@ -3,7 +3,7 @@
 
   const path = `plugin/datalog/esp8266-datalog/day`
   const site = `http://found.ward.bay.wiki.org/${path}`
-  const offsets = [9,8,7,6,5,4,3,2,1,0]
+  const offsets = [1,0]
   const report = {}
   const logs = offset =>
     fetch(`${site}/${offset}`)
