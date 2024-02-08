@@ -1,0 +1,12 @@
+<div id=result>working</div>
+<script type=module>
+  const gaps = await fetch('http://search.fed.wiki.org:3030/gaps').then(res => res.json())
+  if(Object.keys(gaps).length)
+    window.result.innerHTML = Object.entries(gaps)
+      .map((when,long) => `
+        ${Date(when).toLocaleString()}`)
+      .join("<br>")
+  else
+    window.result.innerHTML = 'no recent outage'
+
+</script>
