@@ -3,8 +3,11 @@
   const gaps = await fetch('http://search.fed.wiki.org:3030/gaps').then(res => res.json())
   if(Object.keys(gaps).length)
     window.result.innerHTML = Object.entries(gaps)
-      .map((when,long) => `
-        ${Date(when).toLocaleString()}`)
+      .map(([when,long]) => `
+        ${(long/1000/60).toFixed(1)}' --
+        ${new Date(+when).toLocaleString()
+          .replace(/\/20\d\d/,'')
+          .replace(/:\d\d /,' ')}` )
       .join("<br>")
   else
     window.result.innerHTML = 'no recent outage'
