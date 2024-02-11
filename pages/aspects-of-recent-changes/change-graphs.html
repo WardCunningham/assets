@@ -1,0 +1,76 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
+  const context = await frame.context()
+  const neighbors = await frame.neighbors()
+  const more = Symbol('more')
+  const sitemaps = await Promise.all(neighbors
+    .map(site => fetch(`//${site}/system/sitemap.json`)
+      .then(res => res.json())
+      .then(info => {info[more]={site}; return info})))
+  const allmaps = sitemaps.flat()
+  window.result.innerHTML = sitemaps
+    .map(sitemap => `${sitemap[more].site} ${sitemap.length} pages`)
+    .join("<br>")
+  const now = Date.now()
+  const intervals = {
+    day: 24*60*60*1000,
+    week: 24*60*60*1000*7,
+    month: 24*60*60*1000*30}
+  const interval = intervals.week
+  console.log({neighbors,sitemaps,now,interval})
+
+  const aspects = []
+  for (let i = 0; i<52; i++) {
+    const last = now-interval*i
+    const name = new Date(last).toLocaleDateString()
+    const nodes = edited(last-interval, last)
+    console.log(name,nodes)
+    const graph = linked(nodes)
+    aspects.push({name,graph})
+  }
+
+  window.dodownload = function(event) {
+    const text = aspects
+      .map(aspect => JSON.stringify(aspect))
+      .join("\n")
+    const name = `${context.slug}.jsonl`
+    frame.download(text,name,'application/json')
+  }
+
+  window.result.innerHTML += `
+    <p><button onclick=dodownload(event)>download</button></p>`
+
+  function edited(first,last) {
+    return sitemaps
+      .map(sitemap => sitemap
+        .filter(info => info.date > first && info.date <= last)
+        .filter(info => info.links))
+      .flat()
+  }
+
+  function linked(infos) {
+    const graph = new Graph()
+    for (const info of infos) {
+      const nid = graph.addNode('Page',{name:info.slug})
+      for (const name of newest(Object.keys(info.links))) {
+        graph.addRel('',nid,graph.addNode('Page',{name}))
+      }
+    }
+    return graph
+  }
+
+  function newest(slugs) {
+    const recent = slug => allmaps
+      .filter(info => info.slug == slug)
+    return slugs
+      .map(slug => [slug,recent(slug)])
+      .filter(pair => pair[1].length)
+      .map(pair => [pair[0],pair[1].sort((a,b) => b.date - a.date)[0]])
+      .sort((a,b) => b[1].date - a[1].date)
+      .map(pair => pair[0])
+      .slice(0,3)
+  }
+</script>
