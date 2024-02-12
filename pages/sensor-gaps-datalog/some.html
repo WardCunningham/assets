@@ -1,0 +1,26 @@
+<div id=result>working</div>
+<script type=module>
+  const datalog = `http://found.ward.fed.wiki/plugin/datalog`
+  const uniq = entries => Object.entries(Object.fromEntries(entries))
+  const samples = await Promise.all(([1,0])
+    .map(offset => 
+      fetch(`${datalog}/sensor-gaps-datalog/month/${offset}`)
+        .then(res => res.text())
+        .then(text => text.trim().split(/\n/)
+          .map(line => JSON.parse(line)))))
+  const gaps = Object.fromEntries(samples
+    .flat()
+    .map(sample => Object.entries(sample.result[0].data))
+    .flat())
+  if(Object.keys(gaps).length)
+    window.result.innerHTML = Object.entries(gaps)
+      .map(([when,long]) => `
+        ${new Date(+when).toLocaleString()
+          .replace(/\/20\d\d/,'')
+          .replace(/:\d\d /,' ')}: 
+        ${(long/1000/60).toFixed(1)} min` )
+      .join("<br>")
+  else
+    window.result.innerHTML = 'no recent outage'
+
+</script>
