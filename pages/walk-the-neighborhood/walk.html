@@ -1,0 +1,118 @@
+<p id=buttons>working</p>
+<p id=lineup></p>
+<div id=result></div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+// I N I T I A L I Z E
+
+  const context = await frame.context()
+  const neighbors = await frame.neighbors()
+  const sitemaps = await load(neighbors)
+  const lineup = []
+  const history = []
+
+  window.dostart = start
+  window.domore = more
+  window.buttons.innerHTML = `
+    <button onclick=dostart(event)>start</button>
+    <button onclick=domore(event)>more</button>`
+
+  function load(neighbors) {
+    window.result.innerHTML = neighbors
+      .map(site => `
+        <span data-site="${site}">
+          <img width=16 src="//${site}/favicon.png">
+        </span>`)
+      .join("")
+    return Promise.all(neighbors
+      .map(site => fetch(`//${site}/system/sitemap.json`)
+        .then(res => res.json())
+        .then(sitemap => {
+          window.result.querySelector(`span[data-site="${site}"]`)
+            .append(` ${sitemap.length} pages`)
+          sitemap.site=site
+          return sitemap})))
+  }
+
+  function info(page) {
+    const sitemap = sitemaps.find(sitemap => sitemap.site == page.site)
+    return sitemap.find(info => info.slug == page.slug)
+  }
+
+// I N T E R A C T I O N
+
+  function start(event) {
+    lineup.splice(0)
+    history.splice(0)
+    click(0,context.site,'dojo-practice-yearbooks')
+    lineup[0].history.splice(0)
+    show()
+  }
+
+  function more(event) {
+    const page = lineup[lineup.length-1]
+    const links = Object.keys(info(page).links || {})
+      .filter(slug => resolve(slug))
+      .filter(slug => !page.history.find(page => page.slug == slug))
+    if (links.length) {
+      const choice = links[Math.floor(Math.random()*links.length)]
+      const found = resolve(choice)
+      if (found) {
+        const {site,slug} = found
+        click(lineup.length-1,site,slug)}
+      else {
+        console.log('unresolved')}}
+    else {
+      console.log('pop')
+      lineup.pop()
+      more(event)}
+    show()
+  }
+
+// B E H A V I O R
+
+  function click(at,site,slug) {
+    const page = {site,slug,history:[]}
+    lineup.splice(at+1,Infinity,page)
+    lineup[at].history.push(page)
+    history.push(page)
+  }
+
+  function resolve(slug) {
+    for (const sitemap of sitemaps)
+      for (const info of sitemap)
+        if (info.slug == slug) return ({site:sitemap.site,slug})
+    return null
+  }
+
+// R E N D E R I N G
+
+  function show() {
+    console.log(history)
+    window.lineup.innerHTML = lineup.slice(0).reverse()
+      .map(({site,slug},i) => `${lineup.length-i} ${site}/${slug}`)
+      .join("<br>")
+    const title =  `To ${info(lineup[lineup.length-1]).title}`
+    const story = [{type:'graphviz',text:dotify()}]
+    frame.open({title,story},false)
+  }
+
+  function dotify() {
+    const quote = page => `"${page.slug.replaceAll('-',"\n")}"`
+    const dot = [
+      'digraph {',
+      'rankdir=TB',
+      'node [shape=box style=filled fillcolor=bisque]']
+    for (const here of lineup)
+      dot.push(`${quote(here)} [fillcolor=palegreen]`)
+    for (const here of history) {
+      for (const there of here.history)
+        dot.push(`${quote(here)} -> ${quote(there)}`)
+    }
+    dot.push('}')
+    return dot.join("\n")
+  }
+
+
+</script>
