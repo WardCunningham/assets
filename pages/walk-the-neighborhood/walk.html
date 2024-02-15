@@ -111,10 +111,9 @@
       'node [shape=box style=filled fillcolor=bisque]']
     for (const here of lineup)
       dot.push(`${quote(here)} [fillcolor=palegreen]`)
-    for (const here of history) {
+    for (const here of history)
       for (const there of here.history)
         dot.push(`${quote(here)} -> ${quote(there)}`)
-    }
     dot.push('}')
     return dot.join("\n")
   }
