@@ -1,0 +1,19 @@
+<div id=result>working</div>
+<style>
+  details {margin-left:1em;}
+</style>
+<script type=module>
+  const data = await fetch(`./sample.txt`)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n/))
+  const parse = () => data[0].match(/^(a|an) /)
+    ? {answer:data.shift()}
+    : {ask:data.shift(), yes:parse(), no:parse()}
+  const print = node =>
+    node.ask 
+    && `${node.ask}
+      <details><summary>yes</summary>${print(node.yes)}</details>
+      <details><summary>no</summary>${print(node.no)}</details>`
+    || node.answer
+  window.result.innerHTML = print(parse(data))
+</script>
