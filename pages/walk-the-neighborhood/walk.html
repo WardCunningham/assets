@@ -47,30 +47,36 @@
     history.splice(0)
     click(0,context.site,'dojo-practice-yearbooks')
     lineup[0].history.splice(0)
-    show()
+    show(event)
   }
 
   function more(event) {
-    const page = lineup[lineup.length-1]
-    const links = Object.keys(info(page).links || {})
-      .filter(slug => resolve(slug))
-      .filter(slug => !page.history.find(page => page.slug == slug))
-    if (links.length) {
-      const choice = links[Math.floor(Math.random()*links.length)]
-      const found = resolve(choice)
-      if (found) {
-        const {site,slug} = found
-        click(lineup.length-1,site,slug)}
-      else {
-        console.log('unresolved')}}
-    else {
-      console.log('pop')
-      lineup.pop()
-      more(event)}
-    show()
+    choose()
+    show(event)
   }
 
 // B E H A V I O R
+
+  function links(page) {
+    return Object.keys(info(page).links || {})
+      .map(slug => {
+        const site = resolve(slug)
+        const history = page.history.find(page => page.slug == slug)
+        return {slug,site,history}
+      })
+  }
+
+  function choose() {
+    const at = lineup.length-1
+    const options = links(lineup[at])
+      .filter(link => link.site && !link.history)
+    if (options.length) {
+      const choice = options[Math.floor(Math.random()*options.length)]
+      click(at,choice.site,choice.slug)}
+    else {
+      lineup.pop()
+      choose()}
+  }
 
   function click(at,site,slug) {
     const page = {site,slug,history:[]}
@@ -82,20 +88,19 @@
   function resolve(slug) {
     for (const sitemap of sitemaps)
       for (const info of sitemap)
-        if (info.slug == slug) return ({site:sitemap.site,slug})
+        if (info.slug == slug) return sitemap.site
     return null
   }
 
 // R E N D E R I N G
 
-  function show() {
-    console.log(history)
+  function show(event) {
     window.lineup.innerHTML = lineup.slice(0).reverse()
       .map(({site,slug},i) => `${lineup.length-i} ${site}/${slug}`)
       .join("<br>")
     const title =  `To ${info(lineup[lineup.length-1]).title}`
     const story = [{type:'graphviz',text:dotify()}]
-    frame.open({title,story},false)
+    frame.open({title,story},event.shiftKey)
   }
 
   function dotify() {
