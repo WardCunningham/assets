@@ -22,14 +22,44 @@
   const interval = intervals.week
   console.log({neighbors,sitemaps,now,interval})
 
-  const aspects = []
+  const aspects = [emphasis(),colors()]
   for (let i = 0; i<52; i++) {
     const last = now-interval*i
     const name = new Date(last).toLocaleDateString()
     const nodes = edited(last-interval, last)
-    console.log(name,nodes)
-    const graph = linked(nodes)
-    aspects.push({name,graph})
+    if (nodes.length) {
+      const graph = linked(nodes)
+      aspects.push({name,graph})
+    }
+  }
+
+  function emphasis() {
+    const name = 'Page Colors'
+    return {name, graph:new Graph ([{
+      type:'Graphviz',
+      in:[], out:[],
+      props:{name,
+        emphasis:{
+          Page:"fillcolor=lightblue",
+          Prompt:"fillcolor=bisque",
+          Graphviz:"fillcolor=white"
+        }
+      }}],[])
+    }
+  }
+
+  function colors() {
+    const name = 'Page Colors'
+    return {name, graph:new Graph ([{
+      type:'Graphviz',
+      in:[], out:[],
+      props:{name,
+        colors:{
+          Page:"lightblue",
+          Prompt:"bisque"
+        }
+      }}],[])
+    }
   }
 
   window.dodownload = function(event) {
@@ -53,10 +83,17 @@
 
   function linked(infos) {
     const graph = new Graph()
+    const node = slug => {
+      const type = slug.includes('-and-') ? 'Prompt' : 'Page'
+      const title = allmaps.find(info => info.slug==slug).title
+      const name = title.replaceAll(' ',"\n")
+      const nid = graph.nodes.findIndex(node => node.type==type && node.props.name==name)
+      return (nid>=0) ? nid : graph.addNode(type,{name})
+    }
     for (const info of infos) {
-      const nid = graph.addNode('Page',{name:info.slug})
+      const nid = node(info.slug)
       for (const name of newest(Object.keys(info.links))) {
-        graph.addRel('',nid,graph.addNode('Page',{name}))
+        graph.addRel('',nid,node(name))
       }
     }
     return graph
