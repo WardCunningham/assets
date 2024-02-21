@@ -4,6 +4,7 @@
   img {border: 16px solid white;}
 </style>
 <script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const data = await fetch(`./photos.txt`)
     .then(res => res.text())
     .then(text => text.trim().split(/\n/))
@@ -15,6 +16,18 @@
     && `${node.ask}
       <details><summary>yes</summary>${print(node.yes)}</details>
       <details><summary>no</summary>${print(node.no)}</details>`
-    || `You're thinking of ${node.answer}<p><img width=90% src="${node.photo}">`
+    || `You're thinking of ${node.answer}
+      <p><img width=90% src="${node.photo}"></p>
+      Not right?
+      <button data-answer="${node.answer}" onclick=doanimal(event)>add</button>
+      your animal.`
   window.result.innerHTML = print(parse(data))
+  window.doanimal = async event => {
+    const title = `Not ${event.target.dataset.answer}`
+    const text = `Here is how you stumped the [[Animal Guessing Game]].`
+    const story = [
+      {type:'paragraph',text},
+      {type:'code',text:window.result.innerText},
+      {type:'html',text:await fetch(`./form.html`).then(res => res.text())}]
+    frame.open({title,story},event.shiftKey)}
 </script>
