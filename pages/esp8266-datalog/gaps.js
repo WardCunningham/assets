@@ -1,9 +1,10 @@
 // Find and report gaps in sensor logs
-// Usage: deno run --allow-net gaps.js
+// Usage: deno run --allow-net gaps.js <days>
 
   const path = `plugin/datalog/esp8266-datalog/day`
   const site = `http://found.ward.bay.wiki.org/${path}`
-  const offsets = [1,0]
+  const days = +(Deno.args[0]||2)
+  const offsets = [...Array(days).keys()].reverse()
   const report = {}
   const logs = offset =>
     fetch(`${site}/${offset}`)
