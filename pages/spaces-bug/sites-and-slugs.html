@@ -1,0 +1,61 @@
+<div id=result>working</div>
+<style> span {cursor:pointer;} </style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  // -being-okay
+  // sites/david.reimage.fed.wiki/slugs.txt:-being-okay
+  // sites/dreyeck.ch/slugs.txt:-being-okay
+
+  const data = await fetch("http://ward.dojo.fed.wiki/assets/pages/spaces-bug/spaces-bug.txt")
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n\n/)
+      .map(each => each.split(/\n/))
+      .map(([slug,...lines]) => ({
+        slug,
+        sites:lines
+          .map(line => line
+            .split(/\/|\:/)[1])})))
+  console.log(data)
+
+  // slug: "-being-okay"
+  // sites: ['david.reimage.fed.wiki', 'dreyeck.ch']
+
+  const sites = data
+    .reduce ((sites,many) => {
+      for (let site of many.sites) {
+        sites[site] = sites[site]||[]
+        sites[site].push(many.slug)
+      }
+      return sites
+    },{})
+  console.log(sites)
+
+  // david.reimage.fed.wiki:
+  //   ["-being-okay", "false-sanctuary-"]
+
+  window.result.innerHTML = Object.entries(sites)
+    .sort((a,b) => b[1].length - a[1].length)
+    .map(([site,slugs]) => `
+      <details><summary>${site} (${slugs.length})</summary>
+      <div style="padding-left:1em;">
+        ${slugs
+          .map(slug => `<span>${slug}</span>`)
+          .join("<br>")}
+      </div></details>`)
+    .join("\n")
+
+  // ▼ david.reimage.fed.wiki (2)
+  //   -being-okay
+  //   false-sanctuary-
+
+  window.result.querySelectorAll('span')
+    .forEach(span => span.addEventListener('click',event => {
+      const target = event.target
+      const slug = target.innerText
+      const site = target.parentElement.parentElement.firstElementChild.innerText.split(/ /)[0]
+      console.log({slug,site})
+      frame.link({site,title:slug},event.shiftKey)
+    }))
+
+</script>
