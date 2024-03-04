@@ -9,13 +9,13 @@
   const search = 'http://search.fed.wiki.org:3030'
   window.dolink = async event => {
     const site = event.target.innerText
-// Debug ► HTML:sites-index ► get Sites:owner
+// Debug ► HTML:sites-indexed ► get Sites:owner
     const owner = (await fetch(`${search}/owner/${site}`).then(res => res.text())).trim()||'unknown'
     const title = `${site} Activity`
     const text = `${owner}'s ${site}.
       [http://${site} site]
       [http://${site}/system/sitemap.json sitemap]`
-// Debug ► HTML:sites-index ► get Sites:detail-sites
+// Debug ► HTML:sites-indexed ► get Sites:detail-sites
     const detail = await fetch(`${search}/logs/detail-sites/${site}`).then(res => res.text())
     const story = [
       {type:'paragraph',text},
@@ -23,7 +23,7 @@
       {type:'html',text:detail},
       {type:'roster',text:`Pages\n${site}`},
       {type:'activity',text:`ROSTER Pages`}]
-// Debug ► HTML:sites-index ► open Page:site-activity
+// Debug ► HTML:sites-indexed ► open Page:site-activity
     frame.open({title,story},event.shiftKey)
   }
   const rev = domain => domain.split('.').reverse().join('.')
@@ -43,7 +43,7 @@
   const sites = Object.entries(lines)
     .map(([domain,info]) => ({domain,info,rev:rev(domain)}))
     .sort((a,b) => a.rev>b.rev ? 1 : -1)
-// Debug ► HTML:sites-index ► set Window:summary
+// Debug ► HTML:sites-indexed ► set Window:summary
   window.summary.innerHTML = `<h3>${sites.length} Indexed Sites</h3>`
   const org = site => {
     const farms = /\b(wiki.org|sfw.c2.com|(dig|dojo|tries).fed.wiki)$/
@@ -51,7 +51,7 @@
     return site.rev.split('.').slice(0,sig).join('.')}
   const groups = sites
     .reduce((s,e) => {const k=org(e);s[k]=s[k]||[];s[k].push(e);return s},{})
-// Debug ► HTML:sites-index ► set Window:result
+// Debug ► HTML:sites-indexed ► set Window:result
   window.result.innerHTML = Object.entries(groups)
     .map(([org,group]) => `
       <details><summary>${rev(org)}</summary>
