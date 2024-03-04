@@ -1,4 +1,5 @@
 <div id=result>working</div>
+<div id=check></div>
 <style> span {cursor:pointer;} </style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
@@ -57,5 +58,39 @@
       console.log({slug,site})
       frame.link({site,title:slug},event.shiftKey)
     }))
+
+  const entries = Object.entries(sites)
+  const delay = time => new Promise(res => setTimeout(res,time));
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  let todo = 9999
+  const all = []
+
+  window.docheck = async event => {
+    const skips = [
+      'dreyeck.ch','risks.rodwell.me','wiki.mmelcher.org','jw.om.wiki.lrc.org.uk',
+      'jw.om.wiki.lrc.org.uk','flow.wiki.foprop.org','fedwiki.frankmcpherson.net']
+    for (let entry of entries) {
+      const [site,slugs] = entry
+      if(skips.includes(site)) continue
+      const checks = await Promise.all(slugs
+        .map(slug => fetch(`http://${site}/${slug}.json`)
+          .then(res => res.ok ? res.json() : null)
+          .then(page => page ?
+            [slug,page.title,asSlug(page.title),page.journal[0].date] :
+            ['??','??','??','??'])))
+      const troubles = checks
+        .filter(([want,title,have]) => have != want)
+      console.log({site,troubles})
+      if(troubles.length) {
+        all.push(`${site}\n${troubles.map(trouble => trouble.join('|')).join("\n")}`)
+        window.check.innerHTML = `<pre>${all.join("\n\n")}</pre>`
+      }
+
+      await delay(500)
+      if(!todo--) break
+    }
+  }
+
+  window.check.innerHTML = `<p><button onclick=docheck(event)>cross check</button> takes a minute</p>`
 
 </script>
