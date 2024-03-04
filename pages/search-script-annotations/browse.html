@@ -13,6 +13,7 @@
   const search = 'http://search.fed.wiki.org:3030'
   const xref = await fetch(`${search}/xref`).then(res => res.text())
   const lines = xref.trim().split(/\n/)
+    .filter(line => line.includes(' # '))
     .filter(line => line.includes('►'))
     .map(line => {
       const [file,num,_x,sys,_y,...rest] = line.split(/\s+/)
@@ -34,7 +35,6 @@
     </table>`
 
   const graphs = {}
-  new Graph()
   for (const line of lines) {
     if (!(line.sys in graphs))
       graphs[line.sys] = new Graph()
