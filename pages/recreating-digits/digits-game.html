@@ -12,7 +12,7 @@
 </style>
 <script type=module>
   const ops =['+','-','×','÷']
-  let starts,target
+  let starts,target,result
   challenge()
   let choice = [null,null,null]
   let values = [null,null,null]
@@ -23,12 +23,16 @@
     const col = target.dataset.col
     const row = target.parentElement.dataset.row
     document.querySelectorAll(`[data-col="${col}"]`)
-      .forEach(elem => {console.log(elem);elem.classList.remove('choice')})
+      .forEach(elem => {elem.classList.remove('choice')})
     target.classList.add('choice')
     values[col] = value
     choice[col] = row
+    compute()
+  }
+
+  function compute() {
     const expr = values.join(" ")
-    let result = '?'
+    result = '?'
     if(values[0] && values[1] && values[2] && choice[0] != choice[2]) {
       const [l,op,r] = values
       switch (op) {
@@ -39,22 +43,34 @@
       }
       if(!Number.isInteger(result)) result = '!'
     }
-    console.log({row,col,value,expr,result})
+    console.log(`${values.join(" ")} = ${result}`)
     window.expr.innerText = `${values.join(" ")} = `
     window.result.innerText = result
   }
 
   window.dosave = event => {
     const value = event.target.innerText
+    save(value)
+  }
+
+  function save (value){
     if(Number.isInteger(+value)){
       const del = [choice[0],choice[2]].sort()
       starts.splice(del[1],1)
       starts.splice(del[0],1)
       starts.push(value)
-      console.log({value,del,choice})
       choice = [null,null,null]
       values = [null,null,null]
       refresh() 
+    }
+  }
+
+  window.doauto = event => {
+    for(let i=8; i>0; i--){
+      save(result)
+      choice = auto()
+      values = [starts[choice[0]],ops[choice[1]],starts[choice[2]]]
+      compute()
     }
   }
 
@@ -62,11 +78,39 @@
     starts = Array.from({length:6},
       () => Math.ceil(Math.random()*Math.random()*100))
     if(new Set(starts).size != starts.length) challenge()
+    if(Math.min(...starts)<2) challenge()
+    if(Math.max(...starts)>25) challenge()
     target = Math.ceil(Math.random()*1000)
   }
 
+  function auto() {
+    let l, op, r
+    for (l=0;l<starts.length;l++)
+      for (r=0;r<starts.length;r++)
+        if (l!=r && starts[l]>20 && Number.isInteger(+starts[l]/+starts[r]))
+          return [l,3,r] // ÷
+    for (l=0;l<starts.length;l++)
+      for (r=0;r<starts.length;r++)
+        if (l!=r && +starts[l]<15 && +starts[r]<15)
+          return [l,2,r] // ×
+    for (l=0;l<starts.length;l++)
+      for (r=0;r<starts.length;r++)
+        if (+starts[l] > +starts[r]*2)
+          return [l,1,r] // -
+    for (l=0;l<starts.length;l++)
+      for (r=0;r<starts.length;r++)
+        if (l!=r && (+starts[l]<10 || +starts[r]<10))
+          return [l,0,r] // +
+    // for (l=0;l<starts.length;l++)
+    //   for (r=0;r<starts.length;r++)
+    //     if (l!=r)
+    //       return [l,0,r] // +
+    return [null,null,null]
+  }
+
   function refresh() {
-    const html = [`<p>Your target is ${target}</p>`]
+    const html = [`<p>Your target is ${target} <button onclick=doauto(event)>auto</button>
+</p>`]
     html.push('<table onclick=doexpr(event)>')
     for (let row=0; row<Math.max(ops.length,starts.length);row++){
       html.push(`<tr data-row=${row}>`)
@@ -75,7 +119,10 @@
       html.push(`<td data-col=2>${starts[row]||''}`)
     }
     html.push('</table>')
-    html.push(`<p>Click to keep <span id=expr></span><span id=result onclick=dosave(event)>?</span></p>`)
+    html.push(`<p>Click to keep
+      <span id=expr></span>
+      <span id=result onclick=dosave(event)>?</span>
+      </p>`)
     window.game.innerHTML = html.join("\n")
   }
 
