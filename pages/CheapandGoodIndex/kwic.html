@@ -1,0 +1,121 @@
+<div id=action></div>
+<div id=result>working</div>
+<style>.more {padding-left:20px;}</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+
+  const lines = await fetch('./Index%252B2024-02-26.txt')
+    .then(res => res.text())
+    .then(text => text.trim().split(/\r?\n/)
+      .map(line => line.replace(/ ?\.+/,': ')))
+
+  const index = []
+  for(let line of lines) {
+    if(line=='Index') continue
+    if(line.match(/^[a-z]/)) {
+      const [key,_] = line.split(/:/)
+      index.push({key,line,more:[]})
+    } else
+    if(line.match(/^[A-Z]/)) {
+      const [key,_] = line.split(/:/)
+      index.push({key,line,more:[]})
+    } else
+    if(line.match(/^ [A-Za-z]/)) {
+      const [_,key] = line.match(/([A-Za-z].*?):/)
+      index[index.length-1].more.push({key,line})
+    } else {
+      index.push({key:`"${line.replaceAll(/ /g,'_')}"`,line,more:[]})
+    }
+  }
+
+  window.result.innerHTML = index
+    .map(({key,line,more}) =>
+      more.length
+        ? `<details>
+            <summary title="${line}">${key}</summary>
+            ${details(more)}
+          </details>`
+        : `&nbsp; &nbsp;<span title="${line}">${key}</span><br>`)
+    .join("\n")
+
+  function details(more) {
+    return `
+      <div class=more>
+      ${more
+        .map(({key,line}) => `<span title="${line}">${key}</span>`)
+        .join("<br>")}
+      </div>`
+  }
+
+
+  window.doflat = event => {
+    const title = `Flat File`
+    const lines = index
+      .map(({key,line,more}) => [key, ...more.map(e => e.key)])
+      .flat()
+    const text = `<pre>${lines.join("\n")}</pre>`
+    const story = [{type:'html',text}]
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.dokwic = event => {
+    // const file = event.target.innerText
+    // const day = file.replace(/\.txt/,'')
+    // const asset = assets.find(asset => asset.file == file)
+    const title = `KWIC Index`
+    const lines = index
+      .map(({key,line,more}) => [key, ...more.map(e => e.key)])
+      .flat()
+    const stops = new Set(['of','and','in','at'])
+    // const text = await fetch(asset.url).then(res => res.text())
+    const story = [
+      {type:'paragraph',text:`Keyword Index. See [[Good and Cheap Recipes Index]]`}
+    ]
+    let when = '00:00:00'
+
+    {
+      const index = []
+      let m
+      for (let line of lines) {
+        // if (m = line.match(/^(\d\d:\d\d:\d\d) +From +(.*?) +To +(.*)/i)) {
+        //   when = m[1]
+        // } else {
+        let prefix = []
+        let suffix = line
+          .toLowerCase()
+          .replaceAll(/'t\b/g,'t')
+          .replaceAll(/'s\b/g,'s')
+          .split(/[^a-z]+/)
+          .filter(word => word.length)
+        while(suffix.length) {
+          if(suffix[0].length > 3 && !stops.has(suffix[0])){
+            const row = {when,prefix:prefix.slice(-4).join(" "),suffix:suffix.slice(0,4).join(" ")}
+            index.push(row)
+          }
+          prefix.push(suffix.shift())
+        }
+      }
+      index.sort((a,b) => a.suffix > b.suffix ? 1 : a.suffix < b.suffix ? -1 : b.when - a.when)
+      let group = 'zz'
+      let item = null
+      for(let row of index) {
+        if(!row.suffix.startsWith(group)) {
+          group = row.suffix.slice(0,2)
+          story.push({type:'pagefold',text:group})
+          item = {type:'markdown',text:''}
+          story.push(item)
+        }
+        const next = `${row.prefix} ${row.suffix.replace(/\w+/,`[$&](/view/${row.when})`)}\n`
+        if(!item.text.includes(next)) item.text += next
+      }
+      frame.open({title,story},event.shiftKey)
+    }
+  }
+
+  window.action.innerHTML = `
+    <p>
+      <button onclick=doflat(event)>flat file</button>
+      <button onclick=dokwic(event)>kwic index</button>
+    </p>`
+
+</script>
