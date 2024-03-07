@@ -4,7 +4,8 @@
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
 
-  const lines = await fetch('./Index%252B2024-02-26.txt')
+  const url = `http://ward.dojo.fed.wiki/assets/CheapandGoodIndex/Index%252B2024-02-26.txt`
+  const lines = await fetch(url)
     .then(res => res.text())
     .then(text => text.trim().split(/\r?\n/)
       .map(line => line.replace(/ ?\.+/,': ')))
@@ -47,7 +48,6 @@
       </div>`
   }
 
-
   window.doflat = event => {
     const title = `Flat File`
     const lines = index
@@ -59,63 +59,86 @@
   }
 
   window.dokwic = event => {
-    // const file = event.target.innerText
-    // const day = file.replace(/\.txt/,'')
-    // const asset = assets.find(asset => asset.file == file)
     const title = `KWIC Index`
-    const lines = index
-      .map(({key,line,more}) => [key, ...more.map(e => e.key)])
-      .flat()
-    const stops = new Set(['of','and','in','at'])
-    // const text = await fetch(asset.url).then(res => res.text())
     const story = [
       {type:'paragraph',text:`Keyword Index. See [[Good and Cheap Recipes Index]]`}
     ]
-    let when = '00:00:00'
-
-    {
-      const index = []
-      let m
-      for (let line of lines) {
-        // if (m = line.match(/^(\d\d:\d\d:\d\d) +From +(.*?) +To +(.*)/i)) {
-        //   when = m[1]
-        // } else {
-        let prefix = []
-        let suffix = line
-          .toLowerCase()
-          .replaceAll(/'t\b/g,'t')
-          .replaceAll(/'s\b/g,'s')
-          .split(/[^a-z]+/)
-          .filter(word => word.length)
-        while(suffix.length) {
-          if(suffix[0].length > 3 && !stops.has(suffix[0])){
-            const row = {when,prefix:prefix.slice(-4).join(" "),suffix:suffix.slice(0,4).join(" ")}
-            index.push(row)
-          }
-          prefix.push(suffix.shift())
-        }
+    const rows = kwic()
+    let group = 'zz'
+    let item = null
+    for(let row of rows) {
+      if(!row.suffix.startsWith(group)) {
+        group = row.suffix.slice(0,2)
+        story.push({type:'pagefold',text:group})
+        item = {type:'markdown',text:''}
+        story.push(item)
       }
-      index.sort((a,b) => a.suffix > b.suffix ? 1 : a.suffix < b.suffix ? -1 : b.when - a.when)
-      let group = 'zz'
-      let item = null
-      for(let row of index) {
-        if(!row.suffix.startsWith(group)) {
-          group = row.suffix.slice(0,2)
-          story.push({type:'pagefold',text:group})
-          item = {type:'markdown',text:''}
-          story.push(item)
-        }
-        const next = `${row.prefix} ${row.suffix.replace(/\w+/,`[$&](/view/${row.when})`)}\n`
-        if(!item.text.includes(next)) item.text += next
-      }
-      frame.open({title,story},event.shiftKey)
+      const next = `${row.prefix} ${row.suffix.replace(/\w+/,`[$&](/view/${row.when})`)}\n`
+      if(!item.text.includes(next)) item.text += next
     }
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.dodownload = event => {
+    let rows = kwic()
+    let group = 'zz'
+    let head = ''
+    let html = []
+    let text = ''
+    for(let row of rows) {
+      if(!row.suffix.startsWith(group)) {
+        if(text.length){
+          html.push(`<h3 id=${group}>${group}</h3><pre>${text}</pre>`)
+          head+=`<a href="#${group}">${group}<a>\n`
+          if(group[0]!=row.suffix[0])
+            head+=`<br>`
+        }
+        text = ''
+        group = row.suffix.slice(0,2)
+      }
+      const next = `${row.prefix} ${row.suffix.replace(/\w+/,`<b>$&</b>`)}\n`
+      if(!text.includes(next)) text += next
+    }
+    frame.download(head+html.join("\n"),'index.html','text/html')
   }
 
   window.action.innerHTML = `
     <p>
       <button onclick=doflat(event)>flat file</button>
       <button onclick=dokwic(event)>kwic index</button>
+      <button onclick=dodownload(event)>kwic download</button>
     </p>`
+
+  function kwic() {
+    const lines = index
+      .map(({key,line,more}) => [key, ...more.map(e => e.key)])
+      .flat()
+    const stops = new Set(['of','and','in','at'])
+    // const text = await fetch(asset.url).then(res => res.text())
+    let when = '00:00:00'
+    const rows = []
+    let m
+    for (let line of lines) {
+      // if (m = line.match(/^(\d\d:\d\d:\d\d) +From +(.*?) +To +(.*)/i)) {
+      //   when = m[1]
+      // } else {
+      let prefix = []
+      let suffix = line
+        .toLowerCase()
+        .replaceAll(/'t\b/g,'t')
+        .replaceAll(/'s\b/g,'s')
+        .split(/[^a-z]+/)
+        .filter(word => word.length)
+      while(suffix.length) {
+        if(suffix[0].length > 3 && !stops.has(suffix[0])){
+          const row = {when,prefix:prefix.slice(-4).join(" "),suffix:suffix.slice(0,4).join(" ")}
+          rows.push(row)
+        }
+        prefix.push(suffix.shift())
+      }
+    }
+    rows.sort((a,b) => a.suffix > b.suffix ? 1 : a.suffix < b.suffix ? -1 : b.when - a.when)
+    return rows
+  }
 
 </script>
