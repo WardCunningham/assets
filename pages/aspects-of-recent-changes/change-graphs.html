@@ -1,4 +1,5 @@
 <div id=result>working</div>
+<style>body {font-family:sans-serif;}</style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
@@ -78,7 +79,8 @@
     return sitemaps
       .map(sitemap => sitemap
         .filter(info => info.date > first && info.date <= last)
-        .filter(info => info.links))
+        .filter(info => !!info.links)
+        .filter(info => !info.title.endsWith(' Survey')))
       .flat()
   }
 
