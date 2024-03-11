@@ -16,19 +16,20 @@
     .filter(elem => elem.tagName.match(/h\d/i))
     .filter(elem => elem.innerText.match(/\S/))
     .map((elem,i,a) => {
-      const p = threshold => Math.random()*100 < threshold
-      const trial = p(80) ? 0 : p(60) ? 1 : p(50) ? 2 : 3
-      const style = `color:${['black','brown','red','blue'][trial]};`
+      const index = elem.dataset['index']
+      const next = a[i+1]?.dataset['index'] || last
+      const need = analyze(index,next)
       return `
-        <span class=index>${elem.dataset['index']}</span> &nbsp;
-        ${"| &nbsp; &nbsp;".repeat(+elem.tagName[1]-1)}  
-        <span style="${style}">${elem.innerText}</span>`})
+        <span class=index data-index=${index} data-next=${next}>${index}
+        &nbsp; ${"| &nbsp; &nbsp;".repeat(+elem.tagName[1]-1)}
+        <span style="color:${need}">${elem.innerText}</span></span>`})
     .join("<br>")
-  const limit = last
   window.result.querySelectorAll('span.index')
     .forEach(item => item.addEventListener('click',event => {
-      const first = +event.target.innerText
-      const last = +event.target.nextElementSibling?.nextElementSibling?.innerText || limit
+      const dataset = event.currentTarget.dataset
+      const first = dataset['index']
+      const last = dataset['next']
+      console.log({first,last})
       const text = children.slice(first,last)
         .map(elem => elem.outerHTML)
         .map(html => html.replace(/(&nbsp;){4,9}/,''))
@@ -37,7 +38,18 @@
         .join("\n")
       const title = `Preview ${first}-${last}`
       const story = [{type:'html',text}]
-      console.log(story)
       frame.open({title,story},event.shiftKey)
     }))
+
+  function analyze(first,last) {
+    const html = children.slice(first,last)
+      .map(elem => elem.innerHTML)
+      .join("\n")
+    const text = children.slice(first,last)
+      .map(elem => elem.innerText)
+      .join("\n")
+    const bloat = html.length - text.length
+    const scale = Math.floor(bloat/text.length * 100)
+    return scale < 20 ? 'black' : bloat < 1000 ? 'green' : html.length < 8000 ? 'red' : 'blue'
+  }
 </script>
