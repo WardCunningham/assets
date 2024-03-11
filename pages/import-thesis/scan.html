@@ -1,0 +1,43 @@
+<div id=result>working</div>
+<style>span.index{cursor:pointer;}</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const assets = `http://ward.dojo.fed.wiki/assets/pages/import-thesis`
+  const html = await fetch(`${assets}/KavitaTanna_IMAThesis.html`).then(res => res.text())
+  const div = document.createElement('div')
+  div.innerHTML = html
+  const children = Array.from(div.children)
+  const first = children.findIndex(elem => elem.innerText == 'CHAPTER I: INTRODUCTION')
+  const last = children.findIndex(elem => elem.innerText == 'References')
+  console.log({first,last})
+  children.forEach((elem,i) => elem.setAttribute('data-index',i))
+  window.result.innerHTML = children
+    .slice(first,last)
+    .filter(elem => elem.tagName.match(/h\d/i))
+    .filter(elem => elem.innerText.match(/\S/))
+    .map((elem,i,a) => {
+      const p = threshold => Math.random()*100 < threshold
+      const trial = p(80) ? 0 : p(60) ? 1 : p(50) ? 2 : 3
+      const style = `color:${['black','brown','red','blue'][trial]};`
+      return `
+        <span class=index>${elem.dataset['index']}</span> &nbsp;
+        ${"| &nbsp; &nbsp;".repeat(+elem.tagName[1]-1)}  
+        <span style="${style}">${elem.innerText}</span>`})
+    .join("<br>")
+  const limit = last
+  window.result.querySelectorAll('span.index')
+    .forEach(item => item.addEventListener('click',event => {
+      const first = +event.target.innerText
+      const last = +event.target.nextElementSibling?.nextElementSibling?.innerText || limit
+      const text = children.slice(first,last)
+        .map(elem => elem.outerHTML)
+        .map(html => html.replace(/(&nbsp;){4,9}/,''))
+        .map(html => html.replace(/src="images\//,`src="${assets}/images/`))
+        .map(html => html.replaceAll(/<span class="c36">(.*?)<\/span>/g,'<b>$1</b>'))
+        .join("\n")
+      const title = `Preview ${first}-${last}`
+      const story = [{type:'html',text}]
+      console.log(story)
+      frame.open({title,story},event.shiftKey)
+    }))
+</script>
