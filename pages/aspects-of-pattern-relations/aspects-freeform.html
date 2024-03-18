@@ -1,0 +1,77 @@
+<p>
+  <button onclick=dopreview(event)>preview</button>
+  <button onclick=dodownload(event)>download</button>
+<p>
+<pre id=result></pre>
+<script type=module>
+
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  import {digraph} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/digraph.js'
+  import {javascript} from 'http://ward.dojo.fed.wiki/assets/pages/mock-graph-data/javascript.js'
+  const context = await frame.context()
+  const items = context.page.story
+    .map((item,i,a) => {item.prev = a[i-1]; return item})
+    .filter(item => item.type=='code')
+    .map(item => {item.graph = parse(item.text); return item})
+  window.result.innerHTML = items
+    .map(item => `<details><summary>${item.prev.text}</summary><pre>${JSON.stringify(item.graph.tally(),null,2)}</pre></details>`)
+    .join("")
+  const sourceData = items.map(item => ({
+    name:item.name,
+    graph:{nodes:item.graph.nodes, rels:item.graph.rels}
+  }))
+  postMessage({action: "publishSourceData", name:'aspect', sourceData})
+
+  function parse(code) {
+    const g = new Graph()
+    let here // nid
+    for (const line of code.split(/\n+/)) {
+      const words = line.split(/ +/)
+      if (words[0].includes(':')) {
+        const [type,name] = words[0].split(/:/)
+        const match = node => node.type==type && node.props.name==name
+        here = g.nodes.findIndex(match)
+        if(here<0) here = g.addNode(type,{name})
+      } else {
+        const [type,name] = words[1].split(/:/)
+        const match = node => node.type==type && node.props.name==name
+        let to = g.nodes.findIndex(match)
+        if(to<0) to = g.addNode(type,{name})
+        const cap = word => word[0].toUpperCase() + word.slice(1)
+        g.addRel(cap(words[0]),here,to,{})
+        if(words[2] == 'which') here = to
+      }
+    }
+    return g
+  }
+
+  window.dopreview = function(event) {
+    const story = []
+    story.push({type:'paragraph',text:`From [[${context.page.title}]]`})
+    items.forEach(item => {
+      const dot = `digraph {
+        node [shape=box style=filled fillcolor=lightgreen]
+        ${digraph(item.graph)}
+      }`
+      story.push({type:'paragraph',text:item.prev.text})
+      story.push({type:'graphviz',text:dot})
+
+    })
+    const title = `${context.title.split(/ /).slice(-2).join(" ")} Graphs`
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.dodownload = function(event) {
+    const text = items
+      .map(item => {
+        const aspect = {name:item.prev.text, graph:item.graph}
+        return JSON.stringify(aspect)
+      })
+      .join("\n")
+
+    const name = `${context.slug}.jsonl`
+    frame.download(text,name,'application/json')
+  }
+
+</script>
