@@ -5,11 +5,17 @@
   import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
 
   const context = await frame.context()
-  const neighbors = await frame.neighbors()
+  console.log({context})
+  const roster = context.page.story
+    .filter(item => item.type=='roster')
+    .map(item => item.text.trim().split(/\n/)
+      .filter(line => line.match(/^\w+(\.\w+)+$/)))
+    .flat()
+
   const more = Symbol('more')
-  const sitemaps = await Promise.all(neighbors
-    .map(site => fetch(`//${site}/system/sitemap.json`)
-      .then(res => res.json())
+  const sitemaps = await Promise.all(roster
+    .map(site => fetch(`//${site}/system/sitemap.json`,{redirect:'follow'})
+      .then(res => res.ok ? res.json() : [])
       .then(sitemap => {
         sitemap[more]={site}
         for (const info of sitemap)
@@ -25,7 +31,7 @@
     week: 24*60*60*1000*7,
     month: 24*60*60*1000*30}
   const interval = intervals.week
-  console.log({neighbors,sitemaps,now,interval})
+  console.log({roster,sitemaps,now,interval})
 
   const aspects = [emphasis(),colors()]
   for (let i = 0; i<52; i++) {
@@ -68,16 +74,24 @@
     }
   }
 
-  window.dodownload = function(event) {
-    const text = aspects
-      .map(aspect => JSON.stringify(aspect))
-      .join("\n")
-    const name = `${context.slug}.jsonl`
-    frame.download(text,name,'application/json')
-  }
+  // window.dodownload = function(event) {
+  //   const text = aspects
+  //     .map(aspect => JSON.stringify(aspect))
+  //     .join("\n")
+  //   const name = `${context.slug}.jsonl`
+  //   frame.download(text,name,'application/json')
+  // }
 
-  window.result.innerHTML += `
-    <p><button onclick=dodownload(event)>download</button></p>`
+  // window.result.innerHTML += `
+  //   <p><button onclick=dodownload(event)>download</button></p>`
+
+  const sourceData = aspects.map(aspect => ({
+    name:aspect.name,
+    graph:{nodes:aspect.graph.nodes, rels:aspect.graph.rels}
+  }))
+  console.log({sourceData})
+  window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData},'*')
+
 
   function edited(first,last) {
     return sitemaps
