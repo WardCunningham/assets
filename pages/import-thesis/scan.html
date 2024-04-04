@@ -30,26 +30,38 @@
       const first = dataset['index']
       const last = dataset['next']
       console.log({first,last})
-      const text = children.slice(first,last)
-        .map(elem => elem.outerHTML)
-        .map(html => html.replace(/(&nbsp;){4,9}/,''))
-        .map(html => html.replace(/src="images\//,`src="${assets}/images/`))
-        .map(html => html.replaceAll(/<span class="c36">(.*?)<\/span>/g,'<b>$1</b>'))
-        .join("\n")
       const title = `Preview ${first}-${last}`
-      const story = [{type:'html',text}]
+      const story = convert(children.slice(first,last))
       frame.open({title,story},event.shiftKey)
     }))
 
   function analyze(first,last) {
-    const html = children.slice(first,last)
-      .map(elem => elem.innerHTML)
-      .join("\n")
-    const text = children.slice(first,last)
-      .map(elem => elem.innerText)
-      .join("\n")
-    const bloat = html.length - text.length
-    const scale = Math.floor(bloat/text.length * 100)
-    return scale < 20 ? 'black' : bloat < 1000 ? 'green' : html.length < 8000 ? 'red' : 'blue'
+    const elems = children.slice(first,last)
+    for(const elem of elems.slice(1)) {
+      if (elem.outerHTML.match(/<img/i)) return 'green'
+    }
+    for(const elem of elems.slice(1)) {
+      if (elem.outerHTML.match(/<table/i)) return 'red'
+    }
+    for(const elem of elems.slice(1)) {
+      if (!['P'].includes(elem.tagName)) return 'gray'
+    }
+    return 'black'
+  }
+
+  function convert(elems) {
+    console.log(elems.map(e => e.tagName).join(" "))
+    const paragraph = elem => ({type:'paragraph',text:elem.innerText})
+    const html = elem => ({type:'html',text:elem.outerHTML})
+
+    return elems
+      .map(elem => elem.tagName == 'P'
+        ? paragraph(elem)
+        : html(elem))
+
+      // .map(html => html.replace(/(&nbsp;){4,9}/,''))
+      // .map(html => html.replace(/src="images\//,`src="${assets}/images/`))
+      // .map(html => html.replaceAll(/<span class="c36">(.*?)<\/span>/g,'<b>$1</b>'))
+
   }
 </script>
