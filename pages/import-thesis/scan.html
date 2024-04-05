@@ -1,9 +1,17 @@
+<p><button id=toc onclick=dotoc(event) disabled>table of contents</button></p>
 <div id=result>working</div>
 <style>span.index{cursor:pointer;}</style>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const assets = `http://ward.dojo.fed.wiki/assets/pages/import-thesis`
   const html = await fetch(`${assets}/KavitaTanna_IMAThesis.html`).then(res => res.text())
+  const subs = Object.fromEntries((await frame.context()).page.story
+    .filter(item => item.type=='code')
+    .map(item => item.text.split(/\n\n/))
+    .flat()
+    .map(block => block.split(/\n/)))
+  const sub = title => subs[title] || title
+  console.log({subs})
   const div = document.createElement('div')
   div.innerHTML = html
   const children = Array.from(div.children)
@@ -22,7 +30,7 @@
       return `
         <span class=index data-index=${index} data-next=${next}>${index}
         &nbsp; ${"| &nbsp; &nbsp;".repeat(+elem.tagName[1]-1)}
-        <span style="color:${need}">${elem.innerText}</span></span>`})
+        <span style="color:${need}">${sub(elem.innerText)}</span></span>`})
     .join("<br>")
   window.result.querySelectorAll('span.index')
     .forEach(item => item.addEventListener('click',event => {
@@ -30,10 +38,22 @@
       const first = dataset['index']
       const last = dataset['next']
       console.log({first,last})
-      const title = `Preview ${first}-${last}`
+      const title = sub(children[first].innerText)
       const story = convert(children.slice(first,last))
       frame.open({title,story},event.shiftKey)
     }))
+  window.toc.disabled = false
+  window.dotoc = event => {
+    const title = 'A Study of the Impact of the Designed inGenuity (DiG) Learning Framework on Students in an Ethiopian School'
+    const text = window.result.innerText.split(/\n/)
+      .map(line => line
+        .replace(/^\d+/,'')
+        .replaceAll(/\|/g,'')
+        .replace(/(\S.*)/,"[[$1]]"))
+      .join("\n")
+    const story = [{type:'markdown',text}]
+    frame.open({title:sub(title),story},event.shiftKey)
+  }
 
   function analyze(first,last) {
     const elems = children.slice(first,last)
@@ -54,7 +74,7 @@
     const paragraph = elem => ({type:'paragraph',text:elem.innerText})
     const html = elem => ({type:'html',text:elem.outerHTML})
 
-    return elems
+    return elems.slice(1)
       .map(elem => elem.tagName == 'P'
         ? paragraph(elem)
         : html(elem))
@@ -64,4 +84,6 @@
       // .map(html => html.replaceAll(/<span class="c36">(.*?)<\/span>/g,'<b>$1</b>'))
 
   }
+
+
 </script>
