@@ -18,10 +18,11 @@
     .map(item => `<details><summary>${item.prev.text}</summary><pre>${JSON.stringify(item.graph.tally(),null,2)}</pre></details>`)
     .join("")
   const sourceData = items.map(item => ({
-    name:item.name,
+    name:item.prev.text,
     graph:{nodes:item.graph.nodes, rels:item.graph.rels}
   }))
-  postMessage({action: "publishSourceData", name:'aspect', sourceData})
+  console.log({sourceData})
+  window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData},'*')
 
   function parse(code) {
     const g = new Graph()
