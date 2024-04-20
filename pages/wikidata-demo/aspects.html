@@ -1,0 +1,29 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const code = context.page.story.find(item => item.type=='code')
+  const query = encodeURIComponent(code.text)
+  const url = `https://query.wikidata.org/sparql?format=json&query=${query}`
+  const t0 = Date.now()
+  const json = await fetch(url).then(res => res.json())
+  const dt = Date.now() - t0
+  console.log({query,json,dt})
+
+  window.domap = event => {
+    const locations = json.results.bindings
+      .map(binding => binding.coords.value)
+      .map(value => value.match(/Point\((.*?) (.*?)\)/).slice(1,3))
+    const title = `Map of ${context.page.title}`
+    const text = locations.map(loc => `${loc[1]}, ${loc[0]}`).join("\n")
+    const story = [
+      {type:'paragraph',text:`Result from [[${context.page.title}]]`},
+      code,
+      {type:'map',text},
+      {type:'paragraph',text:'See [[Aerial Map]]'}]
+    frame.open({title,story},event.shiftKey)
+  }
+  window.result.innerHTML = `
+    <p>${json.results.bindings.length} results in ${dt} ms</p>
+    <button onclick=domap(event)>Show Map</button>`
+</script>
