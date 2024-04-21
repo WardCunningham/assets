@@ -1,6 +1,8 @@
 <div id=result>working</div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
   const uniq = (value, index, self) => self.indexOf(value) === index
   const context = await frame.context()
   const code = context.page.story.find(item => item.type=='code')
@@ -19,6 +21,40 @@
     .map(b => `${b.humanLabel.value} ⇒ ${b.educatedatLabel.value}`)
     .filter(uniq)
     .sort()
+
+  const langs = json.results.bindings
+    .map(b => `${b.langLabel.value}|${b.lang.value}`)
+    .filter(uniq)
+    .sort()
+  const aspects = langs
+    .map(lang => {
+      const [language,url] = lang.split('|')
+      const graph = new Graph()
+      const lid = graph.addNode('Language',{name:language,url})
+      for (const b of json.results.bindings) {
+        if(b.langLabel.value == language) {
+          const human = b.humanLabel.value
+          let hid = graph.nodes.findIndex(node => node.props.name == human)
+          if (hid < 0) {
+            hid = graph.addNode("Human",{name:human})
+            for (const b of json.results.bindings) {
+              if(b.humanLabel.value == human) {
+                const school = b.educatedatLabel.value.replaceAll(' ',"\n")
+                let sid = graph.nodes.findIndex(node => node.props.name == school)
+                if (sid < 0) {
+                  sid = graph.addNode("School",{name:school})
+                }
+                graph.addRel("",sid,hid)
+              }
+            }
+          }
+          graph.addRel("",hid,lid)
+        }
+      }
+      return {name:language,graph}
+    })
+  console.log({langs,aspects})
+  window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData:aspects},'*')
 
   window.domap = event => {
     const latlon = value => value
