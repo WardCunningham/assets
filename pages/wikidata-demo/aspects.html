@@ -13,6 +13,11 @@
   const dt = Date.now() - t0
   console.log({json})
 
+  // console.log(json.results.bindings
+  //   .filter(b => b.educatedatLabel.value == 'University of Amsterdam')
+  //   .map(b => `${b.humanLabel.value} ${b.educatedat.value} => ${b.coords.value}`)
+  //   .filter(uniq))
+
   const wholang = json.results.bindings
     .map(b => `${b.langLabel.value} ⇒ ${b.humanLabel.value}`)
     .filter(uniq)
@@ -22,11 +27,10 @@
     .filter(uniq)
     .sort()
 
-  const langs = json.results.bindings
+  const aspects = json.results.bindings
     .map(b => `${b.langLabel.value}|${b.lang.value}`)
     .filter(uniq)
     .sort()
-  const aspects = langs
     .map(lang => {
       const [language,url] = lang.split('|')
       const graph = new Graph()
@@ -36,13 +40,15 @@
           const human = b.humanLabel.value
           let hid = graph.nodes.findIndex(node => node.props.name == human)
           if (hid < 0) {
-            hid = graph.addNode("Human",{name:human})
+            const url = b.human.value
+            hid = graph.addNode("Human",{name:human,url})
             for (const b of json.results.bindings) {
               if(b.humanLabel.value == human) {
                 const school = b.educatedatLabel.value.replaceAll(' ',"\n")
                 let sid = graph.nodes.findIndex(node => node.props.name == school)
                 if (sid < 0) {
-                  sid = graph.addNode("School",{name:school})
+                  const url = b.educatedat.value
+                  sid = graph.addNode("School",{name:school,url})
                 }
                 graph.addRel("",sid,hid)
               }
@@ -53,7 +59,7 @@
       }
       return {name:language,graph}
     })
-  console.log({langs,aspects})
+  console.log({aspects})
   window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData:aspects},'*')
 
   window.domap = event => {
