@@ -27,37 +27,35 @@
     .filter(uniq)
     .sort()
 
+
   const aspects = json.results.bindings
-    .map(b => `${b.langLabel.value}|${b.lang.value}`)
+    .map(b => b.langLabel.value)
     .filter(uniq)
     .sort()
-    .map(lang => {
-      const [language,url] = lang.split('|')
+    .map(name => {
       const graph = new Graph()
-      const lid = graph.addNode('Language',{name:language,url})
-      for (const b of json.results.bindings) {
-        if(b.langLabel.value == language) {
-          const human = b.humanLabel.value
-          let hid = graph.nodes.findIndex(node => node.props.name == human)
-          if (hid < 0) {
-            const url = b.human.value
-            hid = graph.addNode("Human",{name:human,url})
-            for (const b of json.results.bindings) {
-              if(b.humanLabel.value == human) {
-                const school = b.educatedatLabel.value.replaceAll(' ',"\n")
-                let sid = graph.nodes.findIndex(node => node.props.name == school)
-                if (sid < 0) {
-                  const url = b.educatedat.value
-                  sid = graph.addNode("School",{name:school,url})
-                }
-                graph.addRel("",sid,hid)
-              }
-            }
-          }
-          graph.addRel("",hid,lid)
-        }
+      const node = where => {
+        let nid = graph.nodes.findIndex(node => node.props.name == where.name)
+        if (nid < 0) nid = graph.addNode(where.type,{name:where.name, url:where.url})
+        return nid
       }
-      return {name:language,graph}
+      const rel = (here, there) => {
+        const hid = node(here)
+        const tid = node(there)
+        const rid = graph.rels.findIndex(rel => rel.from == hid && rel.to == there)
+        if (rid < 0) graph.addRel("",hid,tid,{})
+      }
+      for (const b of json.results.bindings) {
+        if(b.langLabel.value != name) continue
+        const language = {type:'Language', name:b.langLabel.value, url:b.lang.value}
+        const influence = {type:'Language', name:b.influenceLabel.value, url:b.influence.value}
+        const human = {type:'Human', name:b.humanLabel.value, url:b.human.value}
+        const school = {type:'School', name:b.educatedatLabel.value, url:b.educatedat.value}
+        rel(school,human)
+        rel(human,language)
+        rel(influence,language)
+      }
+      return {name,graph}
     })
   console.log({aspects})
   window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData:aspects},'*')
