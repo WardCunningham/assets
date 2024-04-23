@@ -48,12 +48,12 @@
       for (const b of json.results.bindings) {
         if(b.langLabel.value != name) continue
         const language = {type:'Language', name:b.langLabel.value, url:b.lang.value}
-        const influence = {type:'Language', name:b.influenceLabel.value, url:b.influence.value}
+        // const influence = {type:'Language', name:b.influenceLabel.value, url:b.influence.value}
         const human = {type:'Human', name:b.humanLabel.value, url:b.human.value}
-        const school = {type:'School', name:b.educatedatLabel.value, url:b.educatedat.value}
+        const school = {type:'School', name:b.educatedatLabel.value.replaceAll(' ',"\n"), url:b.educatedat.value}
         rel(school,human)
         rel(human,language)
-        rel(influence,language)
+        // rel(influence,language)
       }
       return {name,graph}
     })
