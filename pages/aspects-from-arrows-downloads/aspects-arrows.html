@@ -1,0 +1,82 @@
+<p id=choices onchange=dosource(event)>working</p>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  import {dotify} from 'http://hsc.fed.wiki/assets/home/dotify.js'
+  const context = await frame.context()
+  const assets = (await frame.assets())
+    .filter(asset => asset.slug == context.slug)
+    .filter(asset => asset.file.endsWith('.json'))
+    const jsons = await Promise.all(assets
+      .map(asset => fetch(asset.url)
+        .then(res => res.json())
+        .then(json => {asset.json = json; return json})))
+  window.dosource = dosource
+  window.dopreview = dopreview
+  window.choices.innerHTML = assets
+    .map((asset,i) => `
+      <input type=checkbox id=${i} checked >
+      <label for=${i}>${asset.file}</label>
+      <sup>${asset.json.nodes.length}</sup>`)
+    .concat(`<p><button onclick=dopreview(event)>preview</button></p>`)
+    .join("<br>")
+  console.log({assets,jsons})
+
+  function dosource(event) {
+    const want = [...window.choices.querySelectorAll('input:checked')]
+      .map(input => assets[+input.id])
+    console.log(want)
+    const sourceData = want
+      .map(asset => ({
+        name:asset.file.replace(/\.json$/,''),
+        graph:arrows(asset.json)}))
+    console.log({sourceData})
+    window.parent.postMessage({
+      action: "publishSourceData",
+      name:'aspect',
+      sourceData},'*')
+  }
+
+  function arrows(json) {
+    const graph = new Graph()
+    const nids = {}
+    for (const n of json.nodes)
+      nids[n.id] = graph.addNode(
+        n.labels[0],
+        n.caption
+          ? Object.assign({}, n.properties, {name:n.caption})
+          : n.properties
+      )
+
+    for (const r of json.relationships)
+      graph.addRel(r.type,nids[r.fromId],nids[r.toId])
+    return graph
+  }
+
+  async function dopreview(event) {
+    const want = [...window.choices.querySelectorAll('input:checked')]
+      .map(input => assets[+input.id])
+    const jsons = await Promise.all(want
+      .map(asset => fetch(asset.url).then(res => res.text())))
+    console.log({assets,want,jsons})
+    const details = jsons
+      .map((json,i) => {
+        const graph = arrows(JSON.parse(json))
+        const text = `${want[i].file} [https://arrows.app/#/import/json=${btoa(json)} arrows]`
+        const dot = dotify({graph,merged:{nids:[]}}).replace('{',"{ rankdir=LR ")
+        return [
+          {type:'paragraph',text},
+          {type:'graphviz',text:dot}]
+      })
+      .flat() 
+    const text = `Selections from [[${context.page.title}]].`
+    const title = 'Aspects From Arrows Preview'
+    const story = [
+      {type:'paragraph',text},
+      ...details,
+      {type:'paragraph',text:`Open more sources or launch Solo from here.`},
+      {type:'solo',text:`LINEUP`}]
+    frame.open({title,story},event.shiftKey)
+  }
+
+</script>
