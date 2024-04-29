@@ -10,7 +10,7 @@
     .map(item => item.text.split(/\n\n/))
     .flat()
     .map(block => block.split(/\n/)))
-  const sub = title => subs[title] || title
+  const sub = (title,index) => subs[title] || subs[index] || title
   console.log({subs})
   const div = document.createElement('div')
   div.innerHTML = html
@@ -30,7 +30,7 @@
       return `
         <span class=index data-index=${index} data-next=${next}>${index}
         &nbsp; ${"| &nbsp; &nbsp;".repeat(+elem.tagName[1]-1)}
-        <span style="color:${need}">${sub(elem.innerText)}</span></span>`})
+        <span style="color:${need}">${sub(elem.innerText,index)}</span></span>`})
     .join("<br>")
   window.result.querySelectorAll('span.index')
     .forEach(item => item.addEventListener('click',event => {
@@ -38,8 +38,8 @@
       const first = dataset['index']
       const last = dataset['next']
       console.log({first,last})
-      const title = sub(children[first].innerText)
-      const story = convert(children.slice(first,last))
+      const title = sub(children[first].innerText,first)
+      const story = convert(children.slice(first,last),event.shiftKey)
       frame.open({title,story},event.shiftKey)
     }))
   window.toc.disabled = false
@@ -69,18 +69,38 @@
     return 'black'
   }
 
-  function convert(elems) {
+  function convert(elems,debug) {
     console.log(elems.map(e => e.tagName).join(" "))
+    const code = elem => ({type:'code',text:debug?elem.outerHTML:''})
     const paragraph = elem => ({type:'paragraph',text:elem.innerText})
-    const html = elem => ({type:'html',text:elem.outerHTML})
+    const html = elem => ({type:'html',text:elem.innerHTML})
+    const image = elem => {
+      const m = elem.innerHTML.match(/src="(.*?)".*?width: (\d+).*?height: (\d+).*$/)
+      return {type: 'image',text:'caption',size:'wide',width:m[2],url:`${assets}/${m[1]}`
+      }
+    }
+    const table = elem => {
+      const data = [...elem.rows].map(t => [...t.children].map(u => u.innerText))
+      console.log(data);
+      const text = `<table border=1 style="border-collapse: collapse;">${
+        data.map(row=>`<tr><td>${
+          row.join("<td>")}`).join("\n")}</table>`
+      return {type:'html',text}
+    }
 
     return elems.slice(1)
-      .map(elem => elem.tagName == 'P'
-        ? paragraph(elem)
-        : html(elem))
-
+      .map(elem => [
+        code(elem),
+        elem.tagName == 'TABLE'
+        ? table(elem)
+        : elem.tagName == 'P'
+          ? elem.innerHTML.match(/<img/)
+            ? image(elem)
+            : paragraph(elem)
+          : html(elem)])
+      .flat()
+      .filter(item => item.text.length)
       // .map(html => html.replace(/(&nbsp;){4,9}/,''))
-      // .map(html => html.replace(/src="images\//,`src="${assets}/images/`))
       // .map(html => html.replaceAll(/<span class="c36">(.*?)<\/span>/g,'<b>$1</b>'))
 
   }
