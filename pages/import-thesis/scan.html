@@ -1,4 +1,7 @@
-<p><button id=toc onclick=dotoc(event) disabled>table of contents</button></p>
+<p>
+  <button id=toc onclick=dotoc(event) disabled>table of contents</button>
+  <button id=tor onclick=dotor(event) disabled>table of references</button>
+</p>
 <div id=result>working</div>
 <style>span.index{cursor:pointer;}</style>
 <script type=module>
@@ -11,7 +14,6 @@
     .flat()
     .map(block => block.split(/\n/)))
   const sub = (title,index) => subs[title] || subs[index] || title
-  console.log({subs})
   const div = document.createElement('div')
   div.innerHTML = html
   const children = Array.from(div.children)
@@ -19,6 +21,7 @@
   const last = children.findIndex(elem => elem.innerText == 'References')
   console.log({first,last})
   children.forEach((elem,i) => elem.setAttribute('data-index',i))
+  const refs = {}
   window.result.innerHTML = children
     .slice(first,last)
     .filter(elem => elem.tagName.match(/h\d/i))
@@ -54,9 +57,31 @@
     const story = [{type:'markdown',text}]
     frame.open({title:sub(title),story},event.shiftKey)
   }
+  window.tor.disabled = false
+  window.dotor = event => {
+    const title = "Table of References"
+    const text = Object.entries(refs)
+      .map(([sect,cites]) => `[[${sub(sect)}]]\n${
+        cites.map(cite => `- ([[${cite.replaceAll(/[()]/g,'')}]])  `).join("\n")
+      }`).join("\n\n")
+    const story = [{type:'markdown',text}]
+    frame.open({title:sub(title),story},event.shiftKey)
+  }
+
 
   function analyze(first,last) {
     const elems = children.slice(first,last)
+    const cites= /\(\w+, \d{4}.*?\)/g
+
+    for (const elem of elems.slice(1)) {
+      const text = elem.innerText
+      const hits = [...text.matchAll(cites)]
+      const sect = elems[0].innerText
+      if(hits.length) {
+        if (!(sect in refs)) refs[sect] = []
+        refs[sect].push(...hits.map(hit => hit[0]))
+      }
+    }
     for(const elem of elems.slice(1)) {
       if (elem.outerHTML.match(/<img/i)) return 'green'
     }
@@ -71,9 +96,12 @@
 
   function convert(elems,debug) {
     console.log(elems.map(e => e.tagName).join(" "))
+    const cites = /\((\w+, \d{4}.*?)\)/g
+    const cite = text => text.replaceAll(cites,(_,c) => `([[${c}]])`)
+
     const code = elem => ({type:'code',text:debug?elem.outerHTML:''})
-    const paragraph = elem => ({type:'paragraph',text:elem.innerText})
-    const html = elem => ({type:'html',text:elem.innerHTML})
+    const paragraph = elem => ({type:'paragraph',text:cite(elem.innerText)})
+    const html = elem => ({type:'html',text:cite(elem.innerHTML)})
     const image = elem => {
       const m = elem.innerHTML.match(/src="(.*?)".*?width: (\d+).*?height: (\d+).*$/)
       return {type: 'image',text:'caption',size:'wide',width:m[2],url:`${assets}/${m[1]}`
@@ -81,7 +109,6 @@
     }
     const table = elem => {
       const data = [...elem.rows].map(t => [...t.children].map(u => u.innerText))
-      console.log(data);
       const text = `<table border=1 style="border-collapse: collapse;">${
         data.map(row=>`<tr><td>${
           row.join("<td>")}`).join("\n")}</table>`
