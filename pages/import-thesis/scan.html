@@ -19,6 +19,7 @@
   const children = Array.from(div.children)
   const first = children.findIndex(elem => elem.innerText == 'CHAPTER I: INTRODUCTION')
   const last = children.findIndex(elem => elem.innerText == 'References')
+  const limit = last
   console.log({first,last})
   children.forEach((elem,i) => elem.setAttribute('data-index',i))
   const refs = {}
@@ -42,7 +43,7 @@
       const last = dataset['next']
       console.log({first,last})
       const title = sub(children[first].innerText,first)
-      const story = convert(children.slice(first,last),event.shiftKey)
+      const story = convert(first,last,event.shiftKey)
       frame.open({title,story},event.shiftKey)
     }))
   window.toc.disabled = false
@@ -94,7 +95,8 @@
     return 'black'
   }
 
-  function convert(elems,debug) {
+  function convert(first,last,debug) {
+    const elems = children.slice(first,last)
     console.log(elems.map(e => e.tagName).join(" "))
     const cites = /\((\w+, \d{4}.*?)\)/g
     const cite = text => text.replaceAll(cites,(_,c) => `([[${c}]])`)
@@ -115,7 +117,7 @@
       return {type:'html',text}
     }
 
-    return elems.slice(1)
+    const story = elems.slice(1)
       .map(elem => [
         code(elem),
         elem.tagName == 'TABLE'
@@ -127,6 +129,15 @@
           : html(elem)])
       .flat()
       .filter(item => item.text.length)
+
+    if(last < limit)
+      story.push({
+        type:'paragraph',
+        text:`Next [[${sub(children[last].innerText,last)}]]`
+      })
+
+    return story
+
       // .map(html => html.replace(/(&nbsp;){4,9}/,''))
       // .map(html => html.replaceAll(/<span class="c36">(.*?)<\/span>/g,'<b>$1</b>'))
 
