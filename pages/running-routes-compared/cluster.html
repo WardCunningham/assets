@@ -1,0 +1,46 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const nums = marks => marks.map(line => line.split(/[, ]+/).slice(0,2))
+  const grid = (here,there) =>
+    69 * Math.abs(here[0]-there[0]) + 
+    49 * Math.abs(here[1]-there[1])
+  const marks = context.page.story
+    .filter(item => item.type == 'map')
+    .map(item => {
+      const lines = item.text.trim().split(/\n/)
+      const name = lines[0]
+      const marks = nums(lines.slice(1))
+      return marks.map(mark => [...mark,name])
+    })
+    .flat()
+  const clusters = []
+  for (const mark of marks) {
+    const hit = clusters.findIndex(cluster => grid(mark,cluster[0])<0.1)
+    if(hit >= 0) clusters[hit].push(mark)
+    else clusters.push([mark])
+  }
+  clusters.sort((a,b) => b.length - a.length)
+
+  window.docluster = event => {
+    const title = `Running Route Marks Clustered`
+    const text = `Results from [[${context.page.title}]].`
+    const story = [{type:'paragraph',text}]
+    const want = clusters.filter(cluster => cluster.length > 1)
+    for (const cluster of want) {
+      const pairs = cluster
+        .map(here => cluster
+          .map(there => grid(here,there)))
+        .flat(2)
+        .sort()
+        .reverse()
+      const text = 
+        [`Count ${cluster.length}, Diameter ${pairs[0].toFixed(4)}`, ...cluster]
+        .join("\n")
+      story.push({type:'map',text})
+    }
+    frame.open({title,story},event.shiftKey)
+  }
+  window.result.innerHTML = `<button onclick=docluster(event)>preview</button> cluster maps`
+</script>
