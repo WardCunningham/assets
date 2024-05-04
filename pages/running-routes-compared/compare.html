@@ -10,6 +10,13 @@
     const home = marks[0]
     const away = marks.slice(1).map(there => grid(home,there))
     return Math.max(...away) != away[away.length-1]}
+  const dist = (loop,marks) => {
+    const path = loop
+      ? [...marks, marks[0]]
+      : [...marks, ...marks.reverse().slice(1)]
+    return path.slice(1)
+      .map((there,i) => [path[i],there])
+      .reduce((sum,each) => sum+grid(...each), 0)}
   window.result.innerHTML = context.page.story
     .filter(item => item.type == 'map')
     .map(item => {
@@ -17,13 +24,7 @@
       const name = lines[0]
       const marks = nums(lines.slice(1))
       const loop = kind(marks)
-      const path = loop
-        ? [...marks, marks[0]]
-        : [...marks, ...marks.reverse().slice(1)]
-      const dist = path.slice(1)
-        .map((there,i) => [path[i],there])
-        .reduce((sum,each) => sum+grid(...each), 0)
-      return `${dist.toFixed(2)} ${loop?'loop':'back'} ${name}`
+      return `${dist(loop,marks).toFixed(2)} ${loop?'loop':'back'} ${name}`
     })
     .join("<br>")
 </script>
