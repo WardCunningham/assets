@@ -3,24 +3,38 @@
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
   import {dotify} from 'http://hsc.fed.wiki/assets/home/dotify.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
   const context = await frame.context()
+  const roster = Promise.all(context.page.story
+      .filter(item => item.type == 'roster')
+      .map(item => item.text.trim().split(/\n/)
+        .filter(line => line.match(/^[\w\.]+$/)))
+      .flat()
+      .filter(uniq)
+      .map(line => fetch(`//${line}/system/sitemap.json`)
+        .then(res => res.json())
+        .then(json => {json.site = line; return json})))
   const assets = (await frame.assets())
     .filter(asset => asset.slug == context.slug)
     .filter(asset => asset.file.endsWith('.json'))
-    const jsons = await Promise.all(assets
-      .map(asset => fetch(asset.url)
-        .then(res => res.json())
-        .then(json => {asset.json = json; return json})))
+  const jsons = await Promise.all(assets
+    .map(asset => fetch(asset.url)
+      .then(res => res.json())
+      .then(json => {asset.json = json; return json})))
+  window.choices.innerText = `working on roster`
+  const sitemaps = await roster
+  console.log({sitemaps,assets,jsons})
+
   window.dosource = dosource
   window.dopreview = dopreview
   window.choices.innerHTML = assets
     .map((asset,i) => `
-      <input type=checkbox id=${i} checked >
+      <input type=checkbox id=${i} >
       <label for=${i}>${asset.file}</label>
       <sup>${asset.json.nodes.length}</sup>`)
     .concat(`<p><button onclick=dopreview(event)>preview</button></p>`)
     .join("<br>")
-  console.log({assets,jsons})
 
   function dosource(event) {
     const want = [...window.choices.querySelectorAll('input:checked')]
@@ -37,19 +51,38 @@
       sourceData},'*')
   }
 
+  function exact(name) {
+    const slug = asSlug(name)
+    for (const sitemap of sitemaps)
+      for (const info of sitemap)
+        if(info.slug == slug)
+          return {title:info.title,site:sitemap.site}
+    return null
+  }
+
+  function partial(name) {
+    const slug = asSlug(name)
+    for (const sitemap of sitemaps) {
+      for (const info of sitemap) {
+        if(info.slug.startsWith(slug))
+          return {title:info.title,site:sitemap.site}
+      }
+    }
+    return null
+  }
+
   function arrows(json) {
     const graph = new Graph()
     const nids = {}
-    for (const n of json.nodes)
-      nids[n.id] = graph.addNode(
-        n.labels[0],
-        n.caption
-          ? Object.assign({}, n.properties, {name:n.caption})
-          : n.properties
-      )
-
+    for (const n of json.nodes) {
+      const type = n.labels[0] || 'Node'
+      const name = n.caption || n.properties.name || 'Unknown'
+      const bindings = exact(name) || partial(name) || {}
+      const props = Object.assign({}, n.properties, {name,...bindings})
+      nids[n.id] = graph.addNode(type,props)
+    }
     for (const r of json.relationships)
-      graph.addRel(r.type,nids[r.fromId],nids[r.toId])
+      graph.addRel(r.type,nids[r.fromId],nids[r.toId],r.properties)
     return graph
   }
 
@@ -62,7 +95,12 @@
     const details = jsons
       .map((json,i) => {
         const graph = arrows(JSON.parse(json))
-        const text = `${want[i].file} [https://arrows.app/#/import/json=${btoa(json)} arrows]`
+        const resolved = graph.nodes.filter(node => ('site' in node.props))
+        console.log({resolved})
+        const text = `
+          ${want[i].file},
+          ${graph.nodes.length} nodes, ${resolved.length} resolved.
+          [https://arrows.app/#/import/json=${btoa(json)} arrows]`
         const dot = dotify({graph,merged:{nids:[]}}).replace('{',"{ rankdir=LR ")
         return [
           {type:'paragraph',text},
