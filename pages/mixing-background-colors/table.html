@@ -4,6 +4,7 @@
   const context = await frame.context()
   const table = document.createElement('div')
   table.innerHTML = context.page.story.find(item => item.type=='html').text
+  const hex = vecs => vecs.map(vec => `[${vec}]`)
   const vec = rgb => [...rgb.matchAll(/\d+/g)].map(a=>+a[0])
   const rgb = cell =>vec(cell.style.backgroundColor)
 
@@ -17,8 +18,14 @@
     const story = [{type:'paragraph',text}]
     const cols = ([1,2,3,4]).map(col => rgb(cell(`column ${col}`)))
     const rows = ([1,2,3]).map(row => rgb(cell(`row ${row}`)))
-    // story.push({type:'code',text:JSON.stringify({cols,rows},null,2)})
-    story.push({type:'html',text:`<table style="width:100%; font-size:small; border-spacing:0">${mix(cols,rows)}</table>`})
+    story.push({type:'html',text:`
+      <table style="width:100%; font-size:small; border-spacing:0">
+        ${mix(cols,rows)}
+      </table>
+      <pre style="font-size:x-small">
+const cols = [${hex(cols)}]
+const rows = [${hex(rows)}]
+      </pre>`})
     frame.open({title,story},event.shiftKey)
   }
 
