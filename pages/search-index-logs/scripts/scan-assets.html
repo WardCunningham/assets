@@ -1,0 +1,98 @@
+<div id=result>working</div>
+<div id=doit></div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
+  const solo = `http://search.dojo.fed.wiki/assets/pages/solo-super-collaborator`
+  const context = await frame.context()
+  const assets = await frame.assets()
+  const item = assets[0].item
+  const files = await Promise.all(
+    assets
+      .filter(asset => asset.item == item && asset.file.endsWith('.html'))
+      .map(asset => fetch(asset.url)
+        .then(res => res.text())
+        .then(text => asset.html=text)))
+
+  window.dodownload = event =>
+    frame.download(jsonl(),'file.graph.jsonl','application/json')
+  window.dopreview = event => {
+    const url = `${solo}/README.html?add=${btoa(jsonl())}`
+    // window.open(url, '_blank')
+    window.doit.innerHTML = `<p><a href="${url}" target=_blank>Open Inspector</a></p>`
+    const title = 'Graph Inspector'
+    const text = `[${url} inspect]`
+    const story = [{type:'paragraph',text}]
+    frame.open({title,story},event.shiftKey)}
+  window.docollate = event => {
+    console.log({context})
+    const title = `Collate ${context.page.title}`
+    const there = `${context.origin}/${frame.asSlug(title)}.json`
+    const url = `${solo}/README.html?scan=${there}`
+    const graphs = files.map(scan).filter(scan => scan.length)
+    const text = `[${url} inspect]`
+    const story = [{type:'paragraph',text,graphs}]
+    frame.open({title,story},event.shiftKey)}
+
+  window.result.innerHTML = `
+    ${files.length} files
+    <button onclick=dopreview(event)>preview</button>
+    <button onclick=docollate(event)>collate</button>
+    <button onclick=dodownload(event)>download</button>`
+
+  function jsonl () {
+    console.log({files})
+    return files
+      .map(scan)
+      .flat()
+      .map(scan => JSON.stringify(scan))
+      .join("\n")
+  }
+
+  function scan(html) {
+    const file = 'tbd'
+    const graphs = {}
+    const lines = html.trim().split(/\n/)
+      .filter(line => line.includes('\/\/ '))
+      .filter(line => line.includes('►'))
+      .map((line,num) => {
+        const [_x,sys,_y,...rest] = line.split(/\s+/)
+        return {file,num,_x,sys,_y, rest}
+      })
+    for (const line of lines) {
+      if (!(line.sys in graphs))
+        graphs[line.sys] = new Graph()
+      console.log(line)
+      const code = line.rest.join(" ").replace(/ ► /g,"\n")
+      add(graphs[line.sys],code)
+    }
+    console.log(graphs)
+    return Object.entries(graphs)
+      .map(([name,graph]) => ({name,graph}))
+
+    function add(g,code) {
+      let here // nid
+      for (const line of code.split(/\n+/)) {
+        const words = line.split(/ +/)
+        if (words[0].includes(':')) {
+          const [type,name] = words[0].split(/:/)
+          const match = node => node.type==type && node.props.name==name
+          here = g.nodes.findIndex(match)
+          if(here<0) here = g.addNode(type,{name})
+        } else {
+          const [type,name] = words[1].split(/:/)
+          const match = node => node.type==type && node.props.name==name
+          let to = g.nodes.findIndex(match)
+          if(to<0) to = g.addNode(type,{name})
+          // const cap = word => word[0].toUpperCase() + word.slice(1)
+          g.addRel(words[0],here,to,{})
+          if(words[2] == 'which') here = to
+        }
+      }
+    }
+
+    return graph
+  }
+
+</script>
