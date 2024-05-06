@@ -43,7 +43,7 @@
       const last = dataset['next']
       console.log({first,last})
       const title = sub(children[first].innerText,first)
-      const story = convert(first,last,event.shiftKey)
+      const story = convert(first,last,event.altKey)
       frame.open({title,story},event.shiftKey)
     }))
   window.toc.disabled = false
