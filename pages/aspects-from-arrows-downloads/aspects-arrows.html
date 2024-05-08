@@ -30,11 +30,12 @@
   window.dopreview = dopreview
   window.choices.innerHTML = assets
     .map((asset,i) => `
-      <input type=checkbox id=${i} >
+      <input type=checkbox id=${i} checked>
       <label for=${i}>${asset.file}</label>
       <sup>${asset.json.nodes.length}</sup>`)
     .concat(`<p><button onclick=dopreview(event)>preview</button></p>`)
     .join("<br>")
+  dosource({})
 
   function dosource(event) {
     const want = [...window.choices.querySelectorAll('input:checked')]
