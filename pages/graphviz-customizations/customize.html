@@ -1,0 +1,39 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  import {dotify} from 'http://hsc.fed.wiki/assets/home/dotify.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const context = await frame.context()
+  const choices = context.page.story
+    .filter(item => item.type=='code')
+    .map(item => item.text.trim().split(/\n{2,}/))
+    .flat()
+    .map(text => text.trim().split(/\n/)
+      .map(line => line.trim().split(/:/)
+        .map(field => field.trim())))
+  window.result.innerHTML = `<p>${choices
+    .map(choice => `<span>${choice[0]}</span><sup>${choice.length-1}</sup>`)
+    .join("<br>")
+  }</p>`
+  console.log(choices)
+  const sourceData = choices
+    .map(choice => ({
+      name:choice[0][0],
+      graph:emphasis(choice[0][0],choice.slice(1))}))
+  console.log({sourceData})
+  window.parent.postMessage({
+    action: "publishSourceData",
+    name:'aspect',
+    sourceData},'*')
+
+  function emphasis(name,rules) {
+    const graph = new Graph()
+    const emphasis = Object.fromEntries(rules)
+    Object.assign(emphasis, {Graphviz:"fillcolor=white"})
+    graph.addNode('Graphviz', {name,emphasis})
+    return graph
+  }
+
+</script>
