@@ -41,13 +41,14 @@ export async function assets() {
   for (let source of assets){
     let site = source.panel.site
     let slug = source.panel.slug
+    let origin = source.panel.origin
     let item = source.panel.itemId
     for (let dir of Object.keys(source.assetsData)) {
       for (let path of Object.keys(source.assetsData[dir])) {
         for (let file of source.assetsData[dir][path]) {
-          path = path.startsWith("//") ? path : `//${site}${path}`
-          let url = `${path}/${dir}/${file}`
-          let row = {site,slug,item,dir,path,file,url}
+          let assets = path.startsWith("//") ? path : `${origin}${path}`
+          let url = `${assets}/${dir}/${file}`
+          let row = {site,slug,origin,item,dir,path,file,url}
           table.push(row)
         }
       }
