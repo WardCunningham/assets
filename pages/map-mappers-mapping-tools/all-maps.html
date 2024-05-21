@@ -1,0 +1,39 @@
+<div id=result>working</div>
+<style>
+  details span {cursor:pointer}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const match = 'http://search.fed.wiki.org:3030/match'
+  const query = 'find=slugs&search=true&query=++item-type-survey'
+  const post = {
+    method: "POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body: query}
+  const sites = await fetch(match, post)
+    .then(res => res.json())
+    .then(json => json.result['item-type-survey'])
+  console.log({sites})
+  window.result.innerHTML = sites
+    .map(site =>`<span id=${site}>${site}<br></span>`)
+    .join('')
+  window.dolink = event => {
+    const site = event.target.dataset['site']
+    const title = event.target.innerText
+    frame.link({site,title},event.shiftKey)
+  }
+  for (const site of sites) {
+    const sup = n => {window[site].outerHTML = `<span>${site}<sup>${n}</sup><br></span>`}
+    const page = await fetch(`http://${site}/item-type-survey.json`).then(res => res.ok ? res.json() : {} )
+    const item = page?.story?.find(item => item.type=='frame' && item.survey)
+    if (item) {
+      const infos = item.survey.filter(info => 'map' in info.types)
+      console.log({site,item,infos})
+      if (infos.length)
+        window[site].outerHTML = `<details><summary>${site}<sup>${infos.length}</sup></summary>${infos
+          .map(info => `<span data-site=${site} onclick=dolink(event)>${info.title}</span><sup>${info.types.map}</sup>`)
+          .join(' ')}</details>`
+      else sup('0')}
+    else sup('x')
+  }
+</script>
