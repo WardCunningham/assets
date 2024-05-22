@@ -1,0 +1,34 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js';
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
+  const context = await frame.context()
+  const items = context.page.story
+    .map((item,i) => {item.index = i; return item})
+    .filter(item => item.type=='code')
+  console.log({items})
+  const sourceData = items.map(parse)
+  console.log({sourceData})
+  window.parent.postMessage({
+    action: "publishSourceData",
+    name:'aspect',
+    sourceData},'*')
+  window.result.innerHTML = sourceData
+    .map(aspect => `${aspect.name}<sup>${aspect.graph.nodes.length}</sup>`)
+    .join("<br>")
+
+  function parse(item) {
+    const name = context.page.story[item.index-1].title
+    const lines = item.text.split(/\n/)
+    const graph = new Graph()
+    let nid = graph.addNode('Line',{name:lines.shift()})
+    while(lines.length) {
+      const next = graph.addNode('Line',{name:lines.shift().trim()})
+      graph.addRel('',nid,next)
+      nid = next
+    }
+    return {name,graph}
+  }
+
+</script>
