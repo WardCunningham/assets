@@ -1,0 +1,23 @@
+<div id=result>working</div>
+<script type=module>
+  const url = `http://found.ward.fed.wiki/assets/pages/wyatt-ride-guide/Wyatt%20Ride%20Guide.svg`
+  const original = await fetch(url).then(res => res.text())
+  const shortened = original
+    // .replaceAll(/fill="none"/g,'')
+
+    .replaceAll(/stroke="#000000"/g,'')
+    .replaceAll(/stroke="none"/g,'stroke="#000000"')
+    .replaceAll(/stroke-width="1.0"/g,'')
+    .replaceAll(/stroke-linejoin="round"/g,'')
+    .replaceAll(/stroke-linecap="butt"/g,'')
+    .replaceAll(/fill-rule="evenodd"/g,'')
+    .replaceAll(/fill="#000000"/g,'')
+    .replaceAll(/fill-opacity="0.0"/g,'')
+    .replaceAll(/ +/g,' ')
+    .replaceAll(/(\d)\.\d*/g,"$1")
+    .replaceAll(/" \//g,'"/')
+
+  console.log({org:original.length,short:shortened.length})
+  console.log(shortened)
+  window.result.innerHTML = shortened
+</script>
