@@ -1,0 +1,41 @@
+<div id=result>working</div>
+<style>body {font-family:sans-serif;}</style>
+<script type=module>
+  const repo = 'WardCunningham/wiki-plugin-mech/main/client/mech.js'
+  const url = `https://raw.githubusercontent.com/${repo}`
+  const source = await fetch(url).then(res => res.text())
+  const lines = source.trim().split(/\n/)
+
+  const sects = scan(/\/\/ +([A-Z]( +[A-Z]){3,})$/)
+  const functs = scan(/\bfunction *(\w+)\b/)
+  const troubles = scan(/\btrouble\b.*?`(.*?)`/)
+
+  const blocks = sects.find(({i,n,m}) => m.input == '// B L O C K S')
+  const things = [sects,functs,troubles]
+  const details = nest('',things,blocks.i,blocks.n)
+  window.result.innerHTML = "<p>" + details.flat(3).join("<br>\n")
+
+  function scan (regex) {
+    const want = lines
+      .map((line,i) => ({i,m:line.match(regex)}))
+      .filter(({i,m}) => m)
+    want.forEach((f,i) => f.n = want[i+1]?.i||-1)
+    return want
+  }
+
+  function nest(indent,things,i,n) {
+    const html = [] 
+    const parts = things.shift()
+    const indented = indent + ' &nbsp; &nbsp; '
+    for (const part of parts.filter(part => part.i>=i && part.i<n)) {
+      const repo = 'WardCunningham/wiki-plugin-mech/blob/main/client/mech.js'
+      const github = `https://github.com/${repo}#L${part.i}-L${part.n}`
+      const block = (_,emit) => `<b>${emit.toUpperCase()}</b> <a href="${github}" target=_blank>🔗</a>`
+      const line = part.m[1].replace(/(\w+)_emit/,block)
+      html.push(indent+line)
+      if(things.length)
+        html.push(...nest(indented,things.slice(),part.i,part.n))
+    }
+    return html
+  }
+</script>
