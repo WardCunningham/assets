@@ -1,0 +1,72 @@
+<div id=result>working</div>
+<style>
+  body {font-family:sans-serif;}
+</style>
+<script type=module>
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  const repo = 'WardCunningham/wiki-plugin-mech/main/client/mech.js'
+  const url = `https://raw.githubusercontent.com/${repo}`
+  const source = await fetch(url).then(res => res.text())
+  const lines = source.trim().split(/\n/)
+
+  const sects = scan(/\/\/ +([A-Z]( +[A-Z]){3,})$/)
+  const functs = scan(/\bfunction *(\w+)\b/)
+  const inputs = scan(/\binspect\(elem,'(\w+)',state\)/)
+  const outputs = scan(/\bstate\.(\w+) *=/)
+  console.log({functs,inputs,outputs})
+  const troubles = scan(/\btrouble\b.*?`(.*?)`/)
+
+  const blocks = sects.find(({i,n,m}) => m.input == '// B L O C K S')
+  const aspects = {}
+  let kelley = null
+
+  window.result.innerHTML = 
+    "<h2>inputs</h2>" + nest('read','',[functs,inputs],blocks.i,blocks.n).flat(3).join("<br>\n") + 
+    "<h2>outputs</h2>" + nest('write','',[functs,outputs],blocks.i,blocks.n).flat(3).join("<br>\n")
+
+  const sourceData = Object.entries(aspects)
+    .map(([name,graph]) => ({name,graph}))
+  console.log({sourceData})
+  window.parent.postMessage({
+    action: "publishSourceData",
+    name:'aspect',
+    sourceData},'*')
+
+
+  function scan (regex) {
+    const want = lines
+      .map((line,i) => ({i:i+1,m:line.match(regex)}))
+      .filter(({i,m}) => m)
+    want.forEach((f,i) => f.n = want[i+1]?.i||-1)
+    return want
+  }
+
+  function nest(type,indent,things,i,n) {
+
+    const html = [] 
+    const parts = things.shift()
+    const indented = indent + ' &nbsp; &nbsp; '
+    for (const part of parts.filter(part => part.i>=i && part.i<n)) {
+      const repo = 'WardCunningham/wiki-plugin-mech/blob/main/client/mech.js'
+      const github = `https://github.com/${repo}#L${part.i}-L${part.n}`
+      const block = (_,emit) => `<b>${emit.toUpperCase()}</b> <a href="${github}" target=_blank>🔗</a>`
+      const line = part.m[1].replace(/(\w+)_emit/,block)
+      html.push(indent+line+` <sup>${part.i}</sup>`)
+      if(part.m[1].match(/_emit$/)) {
+        if(!(part.m[1] in aspects)) {
+          const [name,emit] = part.m[1].split(/_/)
+          console.log('add',part)
+          const graph = new Graph()
+          graph.addNode('block',{name:name.toUpperCase()})
+          aspects[part.m[1]] = graph
+        }
+        kelley = aspects[part.m[1]]
+      } else {
+        kelley.addRel(type,0,kelley.addNode('state',{name:part.m[1]}),{})
+      }
+      if(things.length)
+        html.push(...nest(type,indented,things.slice(),part.i,part.n))
+    }
+    return html
+  }
+</script>
