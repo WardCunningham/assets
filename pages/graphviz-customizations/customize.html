@@ -26,6 +26,7 @@
     sourceData},'*')
 
   function emphasis(items) {
+    if(!items) return []
     return syntax(items)
       .map(({name,rules}) => {
         const graph = new Graph()
@@ -38,6 +39,7 @@
   }
 
   function layout(items) {
+    if(!items) return []
     return syntax(items)
       .map(({name,rules}) => {
         const graph = new Graph()
