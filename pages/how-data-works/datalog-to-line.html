@@ -1,0 +1,41 @@
+<center><div id=result>working</div></center>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const assets = (await frame.assets())
+    .filter(asset => asset.file.endsWith('.log'))
+  console.log({assets})
+  const datalog = await fetch(assets[0].url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n/))
+    .then(lines => lines.map(line => JSON.parse(line)))
+  console.log({datalog})
+  window.dopreview = dopreview
+  result.innerHTML = `
+    ${datalog.length} samples<br>
+    <button onclick=dopreview(event)>preview</button>`
+
+  function dopreview(event) {
+    const f = c => 9/5*(c/16)+32
+    const avg = a => a.reduce((s,e)=>s+e,0)/a.length
+    const hour = datalog.filter(log => new Date(log.clock).getHours()==13)
+    console.log({hour})
+    const samples = hour
+      .map(row => row.result
+        .find(sensor => sensor.name == 'garage')
+        .data)
+      .map(data => f(avg(Object.values(data))))
+    console.log({samples})
+    const data = samples
+      .map((sample,i) => [hour[i].clock,+sample.toFixed(1)])
+    const title = 'Datalog as Line'
+    const text = `
+      This page has been generated from [[${context.page.title}]].
+      Scrub over the Data or the Line to see specific values.`
+    const story = [
+      {type:'chart',data,caption:'Degrees Fahrenheit'},
+      {type:'paragraph',text},
+      {type:'line'}]
+    frame.open({title,story},event.shiftKey)
+  }
+</script>
