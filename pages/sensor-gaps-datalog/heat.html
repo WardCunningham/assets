@@ -1,0 +1,51 @@
+<div style="background-color:white">
+  <div style="background-color:#eee" id=result>working</div>
+</div>
+
+<script type="module">
+
+import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
+const datalog = `http://found.ward.fed.wiki/plugin/datalog`
+const uniq = entries => Object.entries(Object.fromEntries(entries))
+const samples = await Promise.all(([6,5,4,3,2,1,0])
+  .map(offset => 
+    fetch(`${datalog}/sensor-gaps-datalog/month/${offset}`)
+      .then(res => res.text())
+      .then(text => text.trim().split(/\n/)
+        .map(line => JSON.parse(line)))))
+const gaps = Object.fromEntries(samples
+  .flat()
+  .map(sample => Object.entries(sample.result[0].data||{}))
+  .flat())
+const days = []
+const oneday = 24*60*60*1000
+for (const date in gaps) {
+  const day = Math.floor(date/oneday)
+  const have = days.find(obj => obj.day==day)
+  if(have) {
+    have.gaps++
+    have.time+=gaps[date]
+  }
+  else {
+    days.push({day,gaps:1,time:gaps[date]})
+  }
+}
+console.log({samples,gaps,days})
+const mins = time => Math.ceil(time/1000/60)
+const plot = Plot.plot({
+  padding: 0,
+  x: {axis: null},
+  color: {scheme:'orrd', legend: true, label: "outage minutes"},
+  marks: [
+    Plot.cell(days, {
+      x: (d) => Math.floor(d.day/7),
+      y: (d) => d.day%7,
+      fill: (d) => mins(d.time),
+      title: (d) => `${mins(d.time)} mins / ${d.gaps} gaps`,
+      inset: 0.5
+    })
+  ]
+})
+window.result.replaceWith(plot)
+
+</script>
