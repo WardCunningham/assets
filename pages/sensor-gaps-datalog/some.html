@@ -2,7 +2,7 @@
 <script type=module>
   const datalog = `http://found.ward.fed.wiki/plugin/datalog`
   const uniq = entries => Object.entries(Object.fromEntries(entries))
-  const samples = await Promise.all(([1,0])
+  const samples = await Promise.all(([6,5,4,3,2,1,0])
     .map(offset => 
       fetch(`${datalog}/sensor-gaps-datalog/month/${offset}`)
         .then(res => res.text())
@@ -10,7 +10,7 @@
           .map(line => JSON.parse(line)))))
   const gaps = Object.fromEntries(samples
     .flat()
-    .map(sample => Object.entries(sample.result[0].data))
+    .map(sample => Object.entries(sample.result[0].data||{}))
     .flat())
   if(Object.keys(gaps).length)
     window.result.innerHTML = Object.entries(gaps)
