@@ -1,0 +1,164 @@
+<p id=result>working</p>
+<p id=hubs></p>
+<style>
+  body {font-family:sans-serif;}
+  span {cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const hubcount = +(params.hubcount || 25)
+  const hubdays = +(params.hubdays || 9999)
+  const refdays = +(params.refdays || 9999)
+  const since = days => Date.now()-(days*24*60*60*1000)
+  const age = info => `${Math.floor((Date.now()-info.date)/(24*60*60*1000))} days old`
+  const context = await frame.context()
+  console.log({context})
+  const roster = context.page.story
+    .filter(item => item.type=='roster')
+    .map(item => item.text.trim().split(/\n/)
+      .filter(line => line.match(/^\w+(\.\w+)+$/)))
+    .flat()
+
+  const more = Symbol('more')
+  const sitemaps = await Promise.all(roster
+    .map(site => fetch(`//${site}/system/sitemap.json`,{redirect:'follow'})
+      .then(res => res.ok ? res.json() : [])
+      .then(sitemap => {
+        sitemap[more]={site}
+        for (const info of sitemap)
+          info.site = site
+        return sitemap})))
+  const allmaps = sitemaps.flat()
+  window.result.innerHTML = sitemaps
+    .map(sitemap => `${sitemap[more].site} ${sitemap.length} pages`)
+    .join("<br>")
+  console.log({roster,sitemaps})
+
+  for (const info of allmaps) {
+    for (const link in info.links||{}) {
+      const index = allmaps.findIndex(info => info.slug == link)
+      if(index<0) continue
+      const indexed = allmaps[index]
+      if(indexed.date < since(refdays)) continue
+      if(!('cites' in indexed)) indexed.cites = []
+      if(!indexed.cites.includes(info.slug)) indexed.cites.push(info.slug)
+    }
+  }
+  const hubs = allmaps
+    .filter(info => info.date>since(hubdays) && info.cites && info.cites.length > 3)
+    .sort((a,b) => b.cites.length - a.cites.length)
+  const showing = hubs.slice(0,hubcount)
+  window.dolink = event => {
+    const title = event.target.innerText
+    const site = showing.find(info => info.title == title).site
+    frame.link({site,title},event.shiftKey)
+  }
+  console.log({hubs,showing})
+  const highlight = (title,length) => {
+    const color = showing.find(info => info.title == title)
+      ? `color=darkorange`
+      : ''
+    return `<font ${color} title="${title}">${length}</font>`
+  }
+  const impact = info =>
+    Object.keys(info.links||{})
+      .map(slug => hubs.find(info => info.slug == slug))
+      .filter(ref => ref && ref.cites)
+      .map(ref => highlight(ref.title, ref.cites.length))
+      .join(", ")
+  window.hubs.innerHTML = showing
+    .map(info => `
+      <sup title="${info.cites.sort().join("\n")}">${info.cites.length}</sup>
+      <span onclick=dolink(event) title="${age(info)}">${info.title}</span>
+      <sub>${impact(info)}</sub>`)
+    .join("<br>")
+
+  const aspects = [emphasis() /*,colors()*/]
+  for (const info of showing) {
+    const name = info.title
+    const graph = linked(info)
+    aspects.push({name,graph})
+  }
+
+  const sourceData = aspects.map(aspect => {
+    console.log({aspect})
+    return ({
+      name:aspect.name,
+      graph:{nodes:aspect.graph.nodes, rels:aspect.graph.rels}
+    })})
+  console.log({sourceData})
+  window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData},'*')
+
+
+
+  function emphasis() {
+    const name = 'Page Colors'
+    return {name, graph:new Graph ([{
+      type:'Graphviz',
+      in:[], out:[],
+      props:{name,
+        emphasis:{
+          Page:"fillcolor=lightblue",
+          Prompt:"fillcolor=bisque",
+          Graphviz:"fillcolor=white"
+        }
+      }}],[])
+    }
+  }
+
+  function colors() {
+    const name = 'Page Colors'
+    return {name, graph:new Graph ([{
+      type:'Graphviz',
+      in:[], out:[],
+      props:{name,
+        colors:{
+          Page:"lightblue",
+          Prompt:"bisque"
+        }
+      }}],[])
+    }
+  }
+
+  function linked(info) {
+    const graph = new Graph()
+    const node = slug => {
+      const type = slug.includes('-and-') ? 'Prompt' : 'Page'
+      const info = allmaps.find(info => info.slug==slug)
+      const title = info.title
+      const site = info.site
+      const name = title.replaceAll(' ',"\n")
+      const nid = graph.nodes.findIndex(node => node.type==type && node.props.name==name)
+      return (nid>=0) ? nid : graph.addNode(type,{name,site})
+    }
+    const nid = node(info.slug)
+    for (const name of newest(Object.keys(info.links||{}))){
+      const kid = node(name)
+      graph.addRel('',nid,kid)
+      const parents = allmaps.find(info => info.slug==name)?.cites || []
+      for (const parent of newest(parents))
+        graph.addRel('',node(parent),kid)
+    }
+    for (const name of newest(info.cites))
+      graph.addRel('',node(name),nid)
+    return graph
+  }
+
+  function newest(slugs) {
+    const recent = slug => allmaps
+      .filter(info => info.slug == slug)
+    return slugs
+      .map(slug => [slug,recent(slug)])
+      .filter(pair => pair[1].length)
+      .map(pair => [pair[0],pair[1].sort((a,b) => b.date - a.date)[0]])
+      .sort((a,b) => b[1].date - a[1].date)
+      .map(pair => pair[0])
+      .slice(0,3)
+  }
+
+
+
+</script>
