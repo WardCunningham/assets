@@ -4,6 +4,8 @@
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
 
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+
   const context = await frame.context()
   console.log({context})
   const roster = context.page.story
@@ -30,11 +32,14 @@
     day: 24*60*60*1000,
     week: 24*60*60*1000*7,
     month: 24*60*60*1000*30}
-  const interval = intervals.week
-  console.log({roster,sitemaps,now,interval})
+  const period = Object.keys(intervals)
+    .find(key => key in params) || 'week'
+  const interval = intervals[period]
+  const limit = params[period] || 12
+  console.log({roster,sitemaps,now,period,limit,interval})
 
-  const aspects = [emphasis(),colors()]
-  for (let i = 0; i<52; i++) {
+  const aspects = [emphasis() /*,colors()*/]
+  for (let i = 0; i<limit; i++) {
     const last = now-interval*i
     const name = new Date(last).toLocaleDateString()
     const nodes = edited(last-interval, last)
