@@ -25,12 +25,15 @@ for (const date in gaps) {
   if(have) {
     have.gaps++
     have.time+=gaps[date]
+    have.last = date
   }
   else {
-    days.push({day,gaps:1,time:gaps[date]})
+    days.push({day,date,gaps:1,time:gaps[date]})
   }
 }
-console.log({samples,gaps,days})
+const local = epoch => new Date(+epoch).toLocaleString()
+const intervals = days.map(day => `${local(day.date)}${day.last?` to ${local(day.last)}`:''}`)
+console.log({samples,gaps,days,intervals})
 const mins = time => Math.ceil(time/1000/60)
 const plot = Plot.plot({
   padding: 0,
@@ -41,7 +44,7 @@ const plot = Plot.plot({
       x: (d) => Math.floor(d.day/7),
       y: (d) => d.day%7,
       fill: (d) => mins(d.time),
-      title: (d) => `${mins(d.time)} mins / ${d.gaps} gaps`,
+      title: (d) => `${mins(d.time)} mins / ${d.gaps} gaps\n${local(d.date)}`,
       inset: 0.5
     })
   ]
