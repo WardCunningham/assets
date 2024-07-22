@@ -1,25 +1,37 @@
 <div id=result>working</div>
 <script type=module>
   import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  const asSlug = (title) => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const page = (site,title) => fetch(`//${site}/${asSlug(title)}.json`).then(res => res.json())
 
   const inputs = [
     {author:'Alexander',site:'garden.asia.wiki.org',slug:'garden-patterns-inventory'},
     {author:'Mehaffy',site:'house.asia.wiki.org',slug:'house-patterns-inventory'}]
+
   const sourceData = await Promise.all(inputs.map(aspect))
-  console.log({sourceData})
-  window.result.innerHTML = sourceData.map(aspect => `${aspect.name}`).join("<br>")
-  window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData},'*')
+  window.result.innerHTML = sourceData
+    .map(aspect =>`${aspect.name} <sup>${aspect.graph.nodes.length}</sup>`)
+    .join("<br>")
+  window.parent
+    .postMessage({action: "publishSourceData", name:'aspect', sourceData},'*')
 
   async function aspect({author,site,slug}) {
-    const inventory = await fetch(`//${site}/${slug}.json`).then(res => res.json())
+    const inventory = await page(site,slug)
     const titles = bullets(inventory)
-    console.log({titles})
     const graph = new Graph()
     for(const title of titles) {
-      console.log(title)
-      const nid = graph.addNode('pattern',{name:title,site})
+      const nid = node(graph,title,site)
+      const pattern = await page(site,title)
+      for(const title of arrows(pattern))
+        graph.addRel('',nid,node(graph,title,site))
     }
     return {name:author,graph}
+  }
+
+  function node(graph,name,site) {
+    const nid = graph.nodes.findIndex(node => node.props.name==name && node.props.site==site)
+    if(nid >= 0) return nid
+    return graph.addNode('pattern',{name,site})
   }
 
   function bullets(page) {
@@ -30,6 +42,16 @@
         .join(" "))
       .map(text => [...text.matchAll(/\[\[(.*?)\]\]/g)]
         .map(m => m[1]))
+      .flat()
+  }
+
+  function arrows(page) {
+    return page.story
+      .filter(item => item.type == 'graph')
+      .map(item => item.text.trim().split(/\n/)
+        .filter(line => line.startsWith('HERE --> '))
+        .map(line => line.split(' --> ')[1].trim())
+      )
       .flat()
   }
 
