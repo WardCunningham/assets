@@ -1,0 +1,36 @@
+<div id=result>working</div>
+<script type=module>
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
+  const inputs = [
+    {author:'Alexander',site:'garden.asia.wiki.org',slug:'garden-patterns-inventory'},
+    {author:'Mehaffy',site:'house.asia.wiki.org',slug:'house-patterns-inventory'}]
+  const sourceData = await Promise.all(inputs.map(aspect))
+  console.log({sourceData})
+  window.result.innerHTML = sourceData.map(aspect => `${aspect.name}`).join("<br>")
+  window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData},'*')
+
+  async function aspect({author,site,slug}) {
+    const inventory = await fetch(`//${site}/${slug}.json`).then(res => res.json())
+    const titles = bullets(inventory)
+    console.log({titles})
+    const graph = new Graph()
+    for(const title of titles) {
+      console.log(title)
+      const nid = graph.addNode('pattern',{name:title,site})
+    }
+    return {name:author,graph}
+  }
+
+  function bullets(page) {
+    return page.story
+      .filter(item => item.type == 'markdown')
+      .map(item => item.text.trim().split(/\n/)
+        .filter(line => line.startsWith('-'))
+        .join(" "))
+      .map(text => [...text.matchAll(/\[\[(.*?)\]\]/g)]
+        .map(m => m[1]))
+      .flat()
+  }
+
+</script>
