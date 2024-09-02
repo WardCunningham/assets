@@ -8,12 +8,11 @@
     .map(item => item.text.trim().split(/\n/))
     .flat()
     .map(line => line.toLowerCase())
-  console.log(lines)
 
-  const title = line => line.split(/ /).slice(0,4).join(" ")
-
+  const title = line => line.split(/ /).slice(0,9).join(" ")
+  const sylab = line => [...line.matchAll(/[bcdfghjklmnpqrstvwxyz]?[aeiou]/g)]
 
   window.result.innerHTML = lines
-    .map(line => title(line))
-    .join("<br>")
+    .map(line => `${title(line)}<br>${sylab(line).join('->')}`)
+    .join("<br><br>")
 </script>
