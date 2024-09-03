@@ -1,5 +1,6 @@
 <div id=result>working</div>
 <script type=module>
+
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
   const context = await frame.context()
@@ -9,10 +10,32 @@
     .flat()
     .map(line => line.toLowerCase())
 
-  const title = line => line.split(/ /).slice(0,9).join(" ")
-  const sylab = line => [...line.matchAll(/[bcdfghjklmnpqrstvwxyz]?[aeiou]/g)]
+  const title = line => line.split(/ /).slice(0,4).join(" ")
+  const sylab = line => [...line.matchAll(/[bcdfghjklmnpqrstvwxz]?[aeiouy]/g)].map(m => m[0])
+
+  const nid = (graph,name) => {
+    let index = graph.nodes.findIndex(n => n.props.name==name)
+    if (index<0) index = graph.addNode('syllable',{name})
+    return index}
+
+  const graph = line => {
+    const g = new Graph()
+    let last = null
+    for (const s of sylab(line)) {
+      const here = nid(g,s)
+      if(last != null) g.addRel('',last,here)
+      last = here}
+    return g}
+
+  const sourceData = lines
+    .map(line => ({name:title(line),graph:graph(line)}))
+  window.parent.postMessage({
+    action: "publishSourceData",
+    topic:'aspect',
+    sourceData},'*')
 
   window.result.innerHTML = lines
     .map(line => `${title(line)}<br>${sylab(line).join('->')}`)
     .join("<br><br>")
+
 </script>
