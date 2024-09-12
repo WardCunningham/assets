@@ -13,17 +13,12 @@
   const title = line => line.split(/ /).slice(0,4).join(" ")
   const sylab = line => [...line.matchAll(/[bcdfghjklmnpqrstvwxz]?[aeiouy]/g)].map(m => m[0])
 
-  const nid = (graph,name) => {
-    let index = graph.nodes.findIndex(n => n.props.name==name)
-    if (index<0) index = graph.addNode('syllable',{name})
-    return index}
-
   const graph = line => {
     const g = new Graph()
     let last = null
     for (const s of sylab(line)) {
-      const here = nid(g,s)
-      if(last != null) g.addRel('',last,here)
+      const here = g.addUniqNode('syllable',{name:s})
+      g.addRel('',last,here)
       last = here}
     return g}
 
