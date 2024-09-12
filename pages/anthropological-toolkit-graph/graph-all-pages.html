@@ -1,0 +1,44 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
+  const url = 'http://found.ward.fed.wiki/assets/pages/anthropological-toolkit-graph/all-pages.txt'
+  const sourceData = await fetch(url)
+      .then(res => res.text())
+      .then(asAspects)
+  console.log(sourceData)
+  window.parent.postMessage({
+    action: "publishSourceData",
+    topic:'aspect',
+    sourceData},'*')
+
+  window.result.innerHTML = `${sourceData.length} aspects`
+
+  function asAspects (text) {
+    const aspects = []
+    for (const line of text.trim().split(/\n/)) {
+      const graph = new Graph()
+      const html = line.replaceAll(/\\n/g,"")
+      const div = document.createElement('div')
+      div.innerHTML = html
+      const name = div.querySelector('h1').innerText
+      graph.addNode('title',{name:name.toLowerCase().trim().replaceAll(/ |_/g,'\\n')})
+      const paras = [...div.querySelectorAll('p')]
+      for (const para of paras) {
+        if (para.innerText.match(/ links to /)) {
+          const names = ([...para.querySelectorAll('a')])
+            .map(a => a.innerText.replaceAll(/_/g,'\\n'))
+          const here = graph.addUniqNode('',{name:names[0]})
+          const there = graph.addUniqNode('',{name:names[1]})
+          graph.addRel('',0,here)
+          graph.addRel('',here,there)
+        }
+      }
+      aspects.push({name,graph})
+    }
+    const rank = aspect => aspect.graph.nodes.length
+    return aspects.sort((a,b) => rank(b)-rank(a))
+  }
+
+</script>

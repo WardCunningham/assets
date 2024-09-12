@@ -1,0 +1,22 @@
+<div id=result>working</div>
+<script type=module>
+  const list = 'affordance agnosia aporia archaeology argumentation_theory axonometric_projection autopoiesis bifocal_ethnography blueprints boundary_objects cabling catachresis chronotopes collage_montage colligation commitment dialetheism ekphrasis emic_etic epistemography epiphany equifinality equivocation essentially_contested_concepts exaptation exemplar faithfulness figuration finitism forbearing hapax hesse_nets incommensurability infirming instauration ironic_detachment irrealism isolarion life_writing mosaic non_ergodic ostension palimpsest_memory paraethnography partiality pattern_language positioning_theory prosopography repleteness representation_nonrepresentation representational_force sgraffito stochastic_variation synaesthesia teleoanalysis things translation vagueness vignettes wicked_problems'.split(/ /)
+
+  const items = await Promise.all(list.slice(0,5)
+    .map(name => `https://mambila.info/Toolkit_Hypertext/${name}.html`)
+    .map(url => fetch(url)
+      .then(res => res.text())
+      .then(asItem)))
+  console.log(items)
+
+  function asItem (html) {
+    const div = document.createElement('div')
+    div.innerHTML = html
+    const name = div.querySelector('h1').innerText
+    const paras = [...div.querySelectorAll('p')]
+    const here = 0
+    const there = paras.indexOf(p.innerText.startsWith('To read more '))
+    return {type:'html',text:`${name} ⇒ ${paras.slice(here,there).join("\n")}`}
+  }
+
+</script>
