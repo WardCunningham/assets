@@ -10,7 +10,7 @@
   console.log(sourceData)
   window.parent.postMessage({
     action: "publishSourceData",
-    topic:'aspect',
+    name:'aspect',
     sourceData},'*')
 
   window.result.innerHTML = `${sourceData.length} aspects`
