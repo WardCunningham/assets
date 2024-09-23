@@ -3,6 +3,7 @@
   <tr><td><td>
   <tr><td><td>
 </table>
+<div id=counts></div>
 
 <style>
   table {width: 100%; table-layout: fixed;}
@@ -44,6 +45,7 @@
       return info.images})
     .flat()
   console.log({survey,sufix,images})
+  window.counts.innerText = `showing ${size[0]*size[1]} of ${images.length} images.`
 
   let i=0
   let want = 'none'
