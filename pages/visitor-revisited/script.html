@@ -1,4 +1,4 @@
-<div id=result style="font-family: sans-serif;=----[[[[">working</div>
+<div id=result style="font-family:sans-serif">working</div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const context = await frame.context()
@@ -10,9 +10,11 @@
   const {site,slug} = page.story
     .find(item => item.type == 'reference')
 
-  const tree = nest(markup.slice(),{in:[],out:[]},0)
+  const tree = nest(markup.slice(),[],0)
   console.log({context,site,slug,page,markup,tree})
-  const html = indent(tree,'')
+  const here = {site,slug}
+  const html = indent(tree,[])
+  // const html = indent(['HELLO',['GOODBYE']],[])
   console.log({html})
   window.result.innerHTML = html
 
@@ -22,11 +24,11 @@
       let spaces = m[1].length
       let command = m[2]
       if (spaces == indent) {
-        here.in.push(command)
+        here.push(command)
         lines.shift()
       } else if (spaces > indent) {
-        var more = {in:[],out:[]}
-        here.in.push(more)
+        var more = []
+        here.push(more)
         nest(lines, more, spaces)
       } else {
         return here
@@ -35,12 +37,12 @@
     return here
   }
 
-  function indent(tree,space) {
-    console.log({tree})
-    return tree.in
-      .map(node => typeof node == 'string'
-        ? space + node.replaceAll(/=[^ \]]+/g,'')
-        : indent(node, space+' &nbsp; '))
+  function indent(tree,path) {
+    const label = i => [...path,i]
+    return tree
+      .map((node,i) => typeof node == 'string'
+        ? `<font color=gray>${label(i).join('.')}</font> ${node.replaceAll(/=[^ \]]+/g,'')}`
+        : indent(node, label(i)))
       .join('<br>')
   }
 
