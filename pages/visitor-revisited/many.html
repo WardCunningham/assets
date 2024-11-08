@@ -1,0 +1,10 @@
+<div id=result style="font-family:sans-serif"></div>
+<script type=module>
+  const tick = word => window.result.innerHTML += `${Date.now()} ${word}<br>`
+  const page = fetch('http://fed.wiki/welcome-visitors.json').then(res => res.json())
+  tick('fetch')
+  const part = async it => {await page; tick(it)}
+  const [story,journal] = await Promise.all([part('story'),part('journal')])
+  const title = await part('title')
+  tick('done')
+</script>
