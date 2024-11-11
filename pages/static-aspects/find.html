@@ -1,0 +1,59 @@
+<div id=result>working</div>
+<script type=module>
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const assets = 'http://ward.dojo.fed.wiki/assets/pages/static-aspects'
+  const js = await fetch(`${assets}/refresh.js`).then(res => res.text())
+  const json = await fetch(`${assets}/refresh.json`).then(res => res.json())
+
+  const word = params.function
+  console.log({js,json,word})
+  
+  const counts = {}
+  const tick = key => counts[key] = counts[key]+1 || 1
+  count(json)
+  console.log(counts)
+  window.result.innerHTML = `<pre>${JSON.stringify(counts,null,2)}</pre>`
+
+  function count(json) {
+    // console.log(json)
+    if(!json) return tick('null')
+    if(typeof json == 'string') return tick('string')
+    if(typeof json == 'number') return tick('number')
+    if(Array.isArray(json)) return tick('array')
+    const entries = Object.entries(json)
+    for (const [key,value] of entries) {
+      if(['start','end'].includes(key)) continue
+      tick(key)
+      if(Array.isArray(value))
+        for(const more of value)
+          count(more)
+      else {
+        console.log({key,value})
+        if(key == 'id') console.log(value)
+      }
+    }
+  }
+
+  // function find(json,stack,more) {
+  //   if(!more) return
+  //   console.log({json,stack,more})
+  //   if(Array.isArray(json))
+  //     for(const each of json)
+  //       find(each,stack,more-1)
+  //   else if (typeof json == 'string')
+  //     return
+  //   else if (typeof json == 'number')
+  //     return
+  //   else if (!json)
+  //     return
+  //   else {
+  //     if(json?.name == word) console.log('FOUND',json,stack,word)
+  //     for(const [key,value] of Object.entries(json))
+  //       if (!(['start','end','type','kind'].includes(key)))
+  //         return
+  //       else
+  //         find(value,[...stack,key],more-1)
+  //   }
+  // }
+
+</script>
