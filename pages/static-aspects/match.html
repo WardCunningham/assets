@@ -1,0 +1,29 @@
+<div id=result>working</div>
+<script type=module>
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+  const assets = 'http://ward.dojo.fed.wiki/assets/pages/static-aspects'
+  const js = await fetch(`${assets}/refresh.js`).then(res => res.text())
+  const json = await fetch(`${assets}/refresh.json`).then(res => res.json())
+
+
+  const rules = {
+    Program({body}) {body.map(parse)},
+    VariableDeclaration({kind,declarations}) {declarations.map(parse)},
+    VariableDeclarator({id,init}) {parse(id);parse(init)},
+    Identifier({start,name}) {console.log(start,name)},
+    CallExpression({callee}) {parse(callee); arguments[0]['arguments'].map(parse)},
+    FunctionExpression({params,body}) {params.map(parse); parse(body)},
+    MemberExpression({object,property}) {parse(object); parse(property)},
+    ObjectPattern({properties}) {properties.map(parse)},
+    ExpressionStatement({expression}) {parse(expression)},
+    IfStatement({test,consequent}) {parse(test); parse(consequent)},
+    BlockStatement({body}) {body.map(parse)},
+    ReturnStatement({argument}) {parse(argument)}
+  }
+
+  function parse(json) {console.log('PARSING',json?.type); (rules[json?.type]||fail)(json)}
+  function fail(json) {console.log('FAIL',json?.type,json?.start,Object.keys(json||{}))}
+
+  parse(json)
+
+</script>
