@@ -51,7 +51,7 @@
 
   parse(json)
   window.result.innerHTML = Object.entries(tally)
-    .sort((a,b) => b[1]-a[1])
+    .sort((a,b) => a[1]==b[1] ? (a[0]>b[0] ? 1 : -1) : b[1]-a[1])
     .map(([k,v]) => `${v} ${k}`)
     .join("<br>\n")
 
