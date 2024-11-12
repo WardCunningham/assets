@@ -9,7 +9,7 @@
   const rules = {
     Program({body}) {body.map(parse)},
     VariableDeclaration({kind,declarations}) {declarations.map(parse)},
-    VariableDeclarator({id,init}) {parse(id);parse(init)},
+    VariableDeclarator({id,init}) {parse(id);if(init)parse(init)},
     Identifier({start,name}) {console.log(start,name)},
     CallExpression({callee}) {parse(callee); arguments[0]['arguments'].map(parse)},
     FunctionExpression({params,body}) {params.map(parse); parse(body)},
@@ -18,12 +18,30 @@
     ExpressionStatement({expression}) {parse(expression)},
     IfStatement({test,consequent}) {parse(test); parse(consequent)},
     BlockStatement({body}) {body.map(parse)},
-    ReturnStatement({argument}) {parse(argument)}
+    ReturnStatement({argument}) {if(argument)parse(argument)},
+
+    Literal({start,value,raw}) {console.log(start,raw)},
+    AssignmentExpression({operator,left,right}) {console.log(operator);parse(left);parse(right)},
+    LogicalExpression({operator,left,right}) {console.log(operator);parse(left);parse(right)},
+    BinaryExpression({operator,left,right}) {console.log(operator);parse(left);parse(right)},
+    UnaryExpression({operator,prefix,argument}) {console.log(prefix?'prefix':'suffix',operator); parse(argument)},
+    ObjectExpression({properties}) {properties.map(parse)},
+    Property({key,value}) {parse(key);parse(value)},
+    ArrayExpression({elements}) {elements.map(parse)},
+    ArrowFunctionExpression({params,body}) {params.map(parse);parse(body)},
+    TemplateLiteral({expressions,quasis}) {quasis.map(parse);expressions.map(parse)},
+    TemplateElement({start,end}) {console.log(end-start,'bytes')}
   }
 
+  const tally = {}
+  function count(it) {tally[it] = (tally[it]||0) +1}
   function parse(json) {console.log('PARSING',json?.type); (rules[json?.type]||fail)(json)}
-  function fail(json) {console.log('FAIL',json?.type,json?.start,Object.keys(json||{}))}
+  function fail(json) {count(json?.type); console.log('FAIL',json?.type,json?.start,Object.keys(json||{}))}
 
   parse(json)
+  window.result.innerHTML = Object.entries(tally)
+    .sort((a,b) => b[1]-a[1])
+    .map(([k,v]) => `${v} ${k}`)
+    .join("<br>\n")
 
 </script>
