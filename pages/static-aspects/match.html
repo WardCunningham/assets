@@ -10,8 +10,9 @@
     Program({body}) {body.map(parse)},
     VariableDeclaration({kind,declarations}) {declarations.map(parse)},
     VariableDeclarator({id,init}) {parse(id);if(init)parse(init)},
-    Identifier({start,name}) {console.log(start,name)},
+    Identifier({start,name}) {count(name); console.log(start,name)},
     CallExpression({callee}) {parse(callee); arguments[0]['arguments'].map(parse)},
+    NewExpression({callee}) {parse(callee); arguments[0]['arguments'].map(parse)},
     FunctionExpression({params,body}) {params.map(parse); parse(body)},
     MemberExpression({object,property}) {parse(object); parse(property)},
     ObjectPattern({properties}) {properties.map(parse)},
@@ -25,18 +26,28 @@
     LogicalExpression({operator,left,right}) {console.log(operator);parse(left);parse(right)},
     BinaryExpression({operator,left,right}) {console.log(operator);parse(left);parse(right)},
     UnaryExpression({operator,prefix,argument}) {console.log(prefix?'prefix':'suffix',operator); parse(argument)},
+    UpdateExpression({operator,prefix,argument}) {console.log(prefix?'prefix':'suffix',operator); parse(argument)},
     ObjectExpression({properties}) {properties.map(parse)},
     Property({key,value}) {parse(key);parse(value)},
     ArrayExpression({elements}) {elements.map(parse)},
+    ArrayPattern({elements}) {elements.map(parse)},
     ArrowFunctionExpression({params,body}) {params.map(parse);parse(body)},
     TemplateLiteral({expressions,quasis}) {quasis.map(parse);expressions.map(parse)},
-    TemplateElement({start,end}) {console.log(end-start,'bytes')}
+    TemplateElement({start,end}) {console.log(end-start,'bytes')},
+
+    ForStatement({init,test,update,body}) {parse(init);parse(test);parse(update);parse(body)},
+    ForInStatement({left,right,body}) {parse(left); parse(right); parse(body)},
+    ForOfStatement({left,right,body}) {parse(left); parse(right); parse(body)},
+    ChainExpression({expression}) {parse(expression)},
+    ConditionalExpression({test,consequent,alternative}) {parse(test);parse(consequent);parse(alternative)},
+    ContinueStatement(){},
+    BreakStatement(){}
   }
 
   const tally = {}
   function count(it) {tally[it] = (tally[it]||0) +1}
   function parse(json) {console.log('PARSING',json?.type); (rules[json?.type]||fail)(json)}
-  function fail(json) {count(json?.type); console.log('FAIL',json?.type,json?.start,Object.keys(json||{}))}
+  function fail(json) {console.log('FAIL',json?.type,json?.start,Object.keys(json||{}))}
 
   parse(json)
   window.result.innerHTML = Object.entries(tally)
