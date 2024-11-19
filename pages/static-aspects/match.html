@@ -1,16 +1,49 @@
-<div id=result>working</div>
+<pre id=result></pre>
 <script type=module>
   const params = Object.fromEntries(new URLSearchParams(location.search).entries())
   const assets = 'http://ward.dojo.fed.wiki/assets/pages/static-aspects'
-  const js = await fetch(`${assets}/refresh.js`).then(res => res.text())
-  const json = await fetch(`${assets}/refresh.json`).then(res => res.json())
+  const js = await fetch(`${assets}/page.js`).then(res => res.text())
+  const json = await fetch(`${assets}/page.json`).then(res => res.json())
 
 
+// 599 MemberExpression
+// 190 CallExpression
+// 139 VariableDeclarator
+// 81 Property
+// 54 FunctionExpression
+// 23 AssignmentExpression
+// 18 BinaryExpression
+// 17 ArrowFunctionExpression
+// 13 TemplateLiteral
+// 12 LogicalExpression
+// 9 ArrayPattern
+// 6 ReturnStatement
+// 5 UnaryExpression
+// 4 IfStatement
+// 3 ForInStatement
+// 3 UpdateExpression
+// 2 ForOfStatement
+// 2 NewExpression
+
+  const stack=[]
+  const want = 'pageObject'
+  function show(name) {
+    if (name==want) {
+      // const [start,end] = stack[1]
+      // let got = js.substring(start,end)
+      // for (const [start,end] of stack.slice(2)) {
+      //   if ((end-start) < 100)
+      //     got = js.substring(start,end)
+      // }
+      // window.result.innerText += got + "\n\n"
+      window.result.innerText += stack[2].type + ' ' + stack[1].type + ' ' + want + "\n"
+    }
+  }
   const rules = {
     Program({body}) {body.map(parse)},
     VariableDeclaration({kind,declarations}) {declarations.map(parse)},
     VariableDeclarator({id,init}) {parse(id);if(init)parse(init)},
-    Identifier({start,name}) {count(name); console.log(start,name)},
+    Identifier({start,name}) {count(name); show(name); console.log(start,name)},
     CallExpression({callee}) {parse(callee); arguments[0]['arguments'].map(parse)},
     NewExpression({callee}) {parse(callee); arguments[0]['arguments'].map(parse)},
     FunctionExpression({params,body}) {params.map(parse); parse(body)},
@@ -41,18 +74,31 @@
     ChainExpression({expression}) {parse(expression)},
     ConditionalExpression({test,consequent,alternative}) {parse(test);parse(consequent);parse(alternative)},
     ContinueStatement(){},
-    BreakStatement(){}
+    BreakStatement(){},
+
+    AssignmentPattern({left,right}) {parse(left);parse(right)},
+    WhileStatement({test,body}) {parse(test);parse(body)},
+    TryStatement({block,handler,finalizer}) {parse(block);parse(handler);parse(finalizer)},
+    CatchClause({param,body}) {parse(param);parse(body)}
   }
 
   const tally = {}
   function count(it) {tally[it] = (tally[it]||0) +1}
-  function parse(json) {console.log('PARSING',json?.type); (rules[json?.type]||fail)(json)}
+  function parse(json) {
+    if(json) {
+      const type = json?.type;
+      stack.unshift(json);
+      console.log('PARSING',type);
+      (rules[type]||fail)(json);
+      stack.shift()
+    }
+  }
   function fail(json) {console.log('FAIL',json?.type,json?.start,Object.keys(json||{}))}
 
   parse(json)
-  window.result.innerHTML = Object.entries(tally)
+  window.result.innerText += Object.entries(tally)
     .sort((a,b) => a[1]==b[1] ? (a[0]>b[0] ? 1 : -1) : b[1]-a[1])
     .map(([k,v]) => `${v} ${k}`)
-    .join("<br>\n")
+    .join("\n")
 
 </script>
