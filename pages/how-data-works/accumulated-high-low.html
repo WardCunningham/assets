@@ -1,0 +1,25 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const item = context.page.story.find(item => item.type == 'frame')
+  if (!item.data) {
+    window.result.innerText = 'no data in this item'
+  } else {
+    const last = new Date(item.data.at(-1).max.clock).toLocaleDateString()
+    const f = c => (9/5*c+32).toFixed(1)
+    const head = `<tr><td>start heating<td>min<td>stop heating<td>max`
+    const rows = item.data
+      .map(day => `<tr>
+        <td>${new Date(day.min.clock).toLocaleTimeString()}
+        <td>${f(day.min.temp)}°F
+        <td>${new Date(day.max.clock).toLocaleTimeString()}
+        <td>${f(day.max.temp)}°F`)
+      .join("\n")
+
+    window.result.innerHTML = `
+      ${item.data.length} recorded events, last on ${last}<p>
+      <table width=100%>\n${head}\n${rows}\n</table>`
+  }
+
+</script>

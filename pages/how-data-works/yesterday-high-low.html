@@ -1,0 +1,65 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const site = 'found.ward.bay.wiki.org'
+  const slug = 'esp8266-datalog'
+  const url = `http://${site}/plugin/datalog/${slug}/day/1`
+  const avg = list => list.reduce((sum,each) => sum+each) / list.length
+
+  // R E T R I E V E
+
+  const raw = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n/))
+    .then(lines => lines.map(line => JSON.parse(line)))
+  console.log(raw[0])
+  window.result.innerHTML = `
+    From: ${new Date(raw[0].clock).toLocaleString()}<br>
+    To: ${new Date(raw.at(-1).clock).toLocaleString()}<br>`
+
+  // S E L E C T
+
+  const signal = raw
+    .map(sample => {
+      const clock = sample.clock
+      const data = sample.result.find(sensor => sensor.name == 'desk')?.data
+      // const temp = data.map(datum => avg(Object.values(datum))/16)
+      return {clock,data}})
+    .filter(({clock,data}) => data)
+    .map(({clock,data}) => ({clock,temp:avg(Object.values(data))/16}))
+  console.log(signal[0])
+  window.result.innerHTML += `
+    Samples: ${raw.length},
+    Missing: ${raw.length-signal.length}<br>`
+
+  // D E T E C T
+
+  let min = {clock:0,temp:999}
+  let max = {clock:0,temp:-999}
+  for (const each of signal) {
+    if (each.temp < min.temp) min = each
+    if (each.temp > max.temp) max = each
+  }
+  console.log({min,max})
+  const t = epoch => new Date(epoch).toLocaleTimeString()
+  const f = c => (9/5*c+32).toFixed(1)
+  const dt = d => (d/(60*60*1000)).toFixed(2)
+  const df = c => (9/5*c).toFixed(1)
+  window.result.innerHTML += `
+    Minimum: ${f(min.temp)}°F at ${t(min.clock)}<br>
+    Maximum: ${f(max.temp)}°F at ${t(max.clock)}<br>
+    Change: ${df(max.temp-min.temp)}°F in ${dt(max.clock-min.clock)} hours<br>`
+
+  // R E C O R D
+
+  window.record = async event => {
+    const page = await fetch('/warming-the-house.json').then(res => res.json())
+    const item = page.story.find(item => item.type == 'frame')
+    item.data = item.data || []
+    item.data.push({min,max})
+    frame.open(page,event.shiftKey)
+  }
+  window.result.innerHTML += `
+    <br><button onclick=record(event)>record</button><br>`
+
+</script>
