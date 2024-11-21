@@ -30,8 +30,9 @@
       .map((sample,i) => [hour[i].clock,+sample.toFixed(1)])
     const title = 'Datalog as Line'
     const text = `
-      This page has been generated from [[${context.page.title}]].
-      Scrub over the Data or the Line to see specific values.`
+      This page has been generated from the nearby page titled [[${context.page.title}]].
+      Scrub over the numeric data or the graphical line to see specific values.
+      Click below to save this page in wiki.`
     const story = [
       {type:'chart',data,caption:'Degrees Fahrenheit'},
       {type:'paragraph',text},
