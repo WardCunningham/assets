@@ -1,0 +1,18 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input.3.txt'
+  const text = await fetch(url).then(res => res.text())
+
+  // Sum the product of all mul(a,b) instructions.
+  const ops = [...text.matchAll(/mul\((\d{1,3}),(\d{1,3})\)/g)]
+  const one = ops.reduce((sum,each) => sum + Number(each[1]) * Number(each[2]),0)
+
+  // Separate regions identified by do() and don't() instructions.
+  const maybe = text.split(/do\(\)/)
+  const yes = maybe.map(may => may.split(/don't\(\)/)[0])
+  const ops2 = [...yes.join("").matchAll(/mul\((\d{1,3}),(\d{1,3})\)/g)]
+  const two = ops2.reduce((sum,each) => sum + Number(each[1]) * Number(each[2]),0)
+  
+  console.log({ops,one,maybe,yes,two})
+  window.result.innerHTML = `${one} for part 1<br>${two} for part 2`
+</script>

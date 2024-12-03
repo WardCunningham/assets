@@ -1,0 +1,24 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input.1.txt'
+  const text = await fetch(url).then(res => res.text())
+  const pairs = text.trim()
+    .split(/\n/)
+    .map(line => line.split(/ +/))
+  const lists = pairs
+    .reduce((sum,each) => [[...sum[0],+each[0]], [...sum[1],+each[1]]], [[],[]])
+    .map(list => list.sort((a,b)=>a-b))
+
+  // Pair numbers in assending sequence, sum differences.
+  const diffed = lists[0]
+    .map((a,i) => {const b = lists[1][i]; return Math.abs(a-b)})
+    .reduce((sum,each) => sum+each)
+
+  // Sum first list scaled by frequency in second list.
+  const matched = lists[0]
+    .map(a => a * lists[1].filter(b => b == a).length)
+    .reduce((sum,each) => sum+each)
+
+  console.log({text,pairs,lists,diffed,matched})
+  window.result.innerHTML = `${diffed} for part 1<br>${matched} for part 2`
+</script>

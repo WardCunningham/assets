@@ -1,0 +1,25 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input.2.txt'
+  const text = await fetch(url).then(res => res.text())
+  const reports = text.trim()
+    .split(/\n/)
+    .map(line => line
+      .split(/ +/)
+      .map(Number))
+
+  // Count sequences that increase or decrease uniformly.
+  const increasing = report => report
+    .slice(0,-1)
+    .map((level,i) => [1,2,3].includes(report[i+1]-level))
+    .reduce((sum,each) => sum && each)
+  const safe = report => increasing(report) || increasing(report.slice().reverse())
+  const many = reports.filter(safe).length
+
+  // Allow one out of sequence number in a sequence.
+  const damped = report => safe(report) || report.some((level,i) => safe(report.toSpliced(i,1)))
+  const more = reports.filter(damped).length
+
+  console.log({text,reports,many,more})
+  window.result.innerHTML = `${many} for part 1<br>${more} for part 2`
+</script>
