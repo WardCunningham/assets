@@ -1,0 +1,76 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input.4.txt'
+  const text = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n/))
+  const width = text[0].length
+  const height = text.length
+  const whats = ['X','M','A','S']
+  const wheres = [new Set(),new Set(),new Set(),new Set()]
+  for(let i=0; i<4; i++) {
+    const what = whats[i]
+    const where = wheres[i]
+    for(let x=0; x<width; x++) {
+      for(let y=0; y<height; y++) {
+        const letter = text[y].substring(x,x+1)
+        if(what==letter) where.add(x+y*width*5)
+      }
+    }
+  }
+  console.log(wheres.map(where => where.size))
+  const plus = (a,dir) => a + (dir[0]+dir[1]*width*5)
+  const dirs = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]
+
+  // Step each of 8 directions starting with the first letter.
+  let one = 0
+  const keep = new Set()
+  for(const dir of dirs) {
+    for(const x of [...wheres[0]]) {
+      const m = plus(x,dir)
+      if(wheres[1].has(m)) {
+        const a = plus(m,dir)
+        if(wheres[2].has(a)) {
+          const s = plus(a,dir)
+          if(wheres[3].has(s)) {
+            keep.add(x).add(m).add(a).add(s)
+            one++
+          }
+        }
+      }
+    }
+  }
+
+  // Slant left and right, forward and backwards, at each letter a.
+  let two = 0
+  const keep2 = new Set()
+  const [m,s] = [wheres[1],wheres[3]]
+  const right = [dirs[1],dirs[5]]
+  const left = [dirs[3],dirs[7]]
+  const ok = (a,p,q) => p[0].has(plus(a,q[0])) && p[1].has(plus(a,q[1]))
+
+  for(const a of [...wheres[2]])
+    if(
+      (ok(a,[m,s],right)||ok(a,[s,m],right)) &&
+      (ok(a,[m,s],left)||ok(a,[s,m],left))) {
+        for(const corner of [...right,...left]) keep2.add(a).add(plus(a,corner))
+        two++
+      }
+  
+  window.result.innerHTML = `
+    <details><summary>${one} for part 1</summary>
+    ${show(keep)}
+    </details>
+    <details><summary>${two} for part 2</summary>
+    ${show(keep2)}
+    </details>`
+
+  function show (marks) {
+    const copy = text.map(line => line.split(''))
+    for(let y=0; y<height; y++)
+      for(let x=0; x<width; x++)
+        if(!marks.has(x+y*width*5))
+          copy[y][x] = '.'
+    return `<pre>${copy.map(line => line.join('')).join("\n")}</pre>`
+  }
+</script>
