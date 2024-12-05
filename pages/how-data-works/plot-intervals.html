@@ -1,0 +1,19 @@
+<div id=plot></div>
+<script src='https://cdn.plot.ly/plotly-2.35.2.min.js'></script>
+<script type=module>
+  const site = 'data.ward.dojo.fed.wiki'
+  const url = `http://${site}/warming-the-house.json`
+  const page = await fetch(url).then(res => res.json())
+  const data = page.story.find(item => item.data).data
+  const dt = epoch => new Date(epoch%(24*60*60*1000))
+  const df = c => 9/5*c+32
+  const traces = data.map(d => ({
+    x: [dt(d.min.clock), dt(d.max.clock)],
+    y: [df(d.min.temp), df(d.max.temp)],
+    mode: 'line',
+    type: 'scatter',
+    showlegend: false
+  }))
+  console.log({page,data,traces})
+  Plotly.newPlot('plot', traces);
+</script>
