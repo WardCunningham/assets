@@ -8,9 +8,10 @@
   } else {
     const last = new Date(item.data.at(-1).max.clock).toLocaleDateString()
     const f = c => (9/5*c+32).toFixed(1)
-    const head = `<tr><td>start heating<td>min<td>stop heating<td>max`
+    const head = `<tr><td>date<td>start<td>min<td>stop<td>max`
     const rows = item.data
       .map(day => `<tr>
+        <td>${new Date(day.min.clock).toLocaleDateString()}
         <td>${new Date(day.min.clock).toLocaleTimeString()}
         <td>${f(day.min.temp)}°F
         <td>${new Date(day.max.clock).toLocaleTimeString()}
