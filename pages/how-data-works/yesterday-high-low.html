@@ -22,7 +22,7 @@
   const signal = raw
     .map(sample => {
       const clock = sample.clock
-      const data = sample.result.find(sensor => sensor.name == 'desk')?.data
+      const data = sample.result.find(sensor => sensor.name == 'office')?.data
       // const temp = data.map(datum => avg(Object.values(datum))/16)
       return {clock,data}})
     .filter(({clock,data}) => data)
