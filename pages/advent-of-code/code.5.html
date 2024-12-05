@@ -1,0 +1,45 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input.5.txt'
+  const [rules,updates] = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n\n/))
+    .then(parts => parts.map(part => part.trim().split(/\n/)))
+    .then(parts => parts.map(part => part.map(line => line.split(/[|,]/).map(word => Number(word)))))
+  console.log({rules,updates})
+
+  // Sum midpoints of sequences for which all applicable precedence rules are met.
+  const ok = (rule,update) => {
+    const a = update.indexOf(rule[0])+1
+    const b = update.indexOf(rule[1])+1
+    return !a || !b || a<b }
+  const correct = updates
+    .filter(update => rules
+      .reduce((sum,each) => sum && ok(each,update), true))
+  const mid = update => update[Math.floor(update.length/2)]
+  const one = correct.reduce((sum,each) => sum + mid(each), 0)
+
+  // Bubble sort sequences reversing elements that violate rules.
+  const incorrect = updates.filter(update => !correct.includes(update))
+  console.log({correct,incorrect})
+  const corrected = JSON.parse(JSON.stringify(incorrect))
+  const keys = rules.map(rule => JSON.stringify(rule))
+  for(const updating of corrected) {
+    for(let i=1;i<updating.length;i++) {
+      for(let j=1;j<updating.length;j++) {
+        const a = updating[j-1]
+        const b = updating[j]
+        if(keys.includes(JSON.stringify([b,a]))) {
+          updating[j-1] = b
+          updating[j] = a
+        }
+      }
+    }
+  }
+  const two = corrected.reduce((sum,each) => sum + mid(each), 0)
+
+  console.log({correct,one})
+  console.log({corrected,two})
+  window.result.innerHTML = `${one} for part 1<br>${two} for part 2`
+
+</script>
