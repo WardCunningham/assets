@@ -1,0 +1,38 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input.7.txt'
+  const lines = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n/))
+  const equations = lines
+    .map(line => line.split(': '))
+    .map(([value,args]) => ({
+      value:Number(value),
+      args:args
+        .split(' ')
+        .map(arg => Number(arg))
+        .reverse()}))
+  console.log({lines,equations})
+
+  // Select and sum equations where possible sum/products match provided values.
+  const comp = ([first,...rest]) => rest.length==1 ?
+    [first * rest[0], first + rest[0]] :
+    [...comp(rest).map(more => first * more),
+      ...comp(rest).map(more => first + more)]
+  const one = equations
+    .filter(eqn => comp(eqn.args).includes(eqn.value))
+    .reduce((sum,each) => sum+each.value, 0)
+
+  // Select and sum equations where possible operations include concatenation.
+  const cat = (a,b) => Number(`${b}${a}`)
+  const comp3 = ([first,...rest]) => rest.length==1 ?
+    [first * rest[0], first + rest[0], cat(first,rest)] :
+    [...comp3(rest).map(more => first * more),
+      ...comp3(rest).map(more => first + more),
+      ...comp3(rest).map(more => cat(first,more))]
+  const two = equations
+    .filter(eqn => comp3(eqn.args).includes(eqn.value))
+    .reduce((sum,each) => sum+each.value, 0)
+
+  window.result.innerHTML = `${one} for part 1<br>${two} for part 2`
+</script>

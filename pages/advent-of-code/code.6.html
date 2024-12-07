@@ -1,0 +1,97 @@
+<div id=result>working</div>
+<script type=module>
+  // const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input.6.txt'
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/sample.6.txt'
+  const map = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n/))
+    .then(lines => lines.map(line => line.split('')))
+  const trail = JSON.parse(JSON.stringify(map))
+  const blocks = []
+  const height = map.length
+  const width = map[0].length
+  const show = field => `<pre>${field.map(row => row.join('')).join("<br>")}</pre>`
+  console.log({height,width,map})
+
+  const start = () => {
+    for(let y=0;y<height;y++)
+      for(let x=0;x<width;x++)
+        if(!['.','#'].includes(map[y][x]))
+          return [x,y]
+  }
+  const arrows = ['^','>','v','<']
+  let here = start()
+  let dir = 0
+  let steps = [[0,-1],[1,0],[0,1],[-1,0]]
+  const next = () => [here[0]+steps[dir][0], here[1]+steps[dir][1]]
+  const safe = step => step[0]>=0 && step[0]<width && step[1]>=0 && step[1]<height
+  const mark = step => map[step[1]][step[0]]
+
+  // Count squares touched while winding around obstacles.
+  let one = 1
+  trail[here[1]][here[0]]='X'
+  while(safe(next())) {
+    if(mark(next())=='.') {
+      here = next()
+      if(trail[here[1]][here[0]]!='X') {
+        one++
+        trail[here[1]][here[0]]='X' 
+        blocks.push(here)     
+      }
+    }
+    else {
+      dir = (dir+1)%4
+    }
+  }
+  console.log({here,one})
+
+  // Count squares that if blocked lead to looping.
+  const places = JSON.parse(JSON.stringify(trail))
+  let two = 0
+  here = start()
+  dir = 0
+  console.log({here,blocks})
+  let turns
+  let count
+  let block
+  const blocked = (where) => where  [0]==block[0] && where  [1]==block[1]
+
+  const loop = () => {
+    block = blocks.shift()
+    here = start()
+    dir = 0
+    count = 0
+    turns = new Set()
+    while(safe(next())) {
+      if(mark(next())=='.' && !blocked(next())) {
+        here = next()
+        count++
+      }
+      else {
+        const turn = `${here}-${dir}`
+        if(turns.has(turn)) {
+          places[here[1]][here[0]] = '<font color=red>◉</font>'
+          return true} 
+        turns.add(turn)
+        dir = (dir+1)%4
+      }
+    }
+    return false
+  }
+  while(blocks.length) {
+    const looped = loop()
+    if(looped) two++
+    console.log({blocks:blocks.length,looped,count,two,turns:turns.size})
+  }
+
+  console.log({here,two})
+
+
+  window.result.innerHTML = `
+    <details><summary>${one} for part 1</summary>
+    ${show(trail)}
+    </details>
+    <details><summary>${two} for part 2</summary>
+    ${show(places)}
+    </details>`
+</script>
