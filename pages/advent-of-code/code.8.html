@@ -27,6 +27,7 @@
 
   window.result.innerHTML += `<pre>${join(show(ants))}</pre>`
 
+  // Count cells separated by like marks by their interval.
   const antinodes = new Map()
   for (const mark of ants.keys()) 
     for (const a of ants.get(mark))
@@ -38,6 +39,7 @@
   window.result.innerHTML += `<pre>${join(show(antinodes))}</pre>`
   const one = new Set(antinodes.get('#')).size
 
+  // Count all cells in a row spaced by any pair of marks.
   const harmonics = new Map()
   for (const mark of ants.keys()){ 
       for (const a of ants.get(mark))
