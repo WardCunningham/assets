@@ -1,0 +1,74 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input/input.8.txt'
+  const map = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n/))
+    .then(lines => lines.map(line => line.split('')))
+  const join = map => map.map(dots => dots.join('')).join("\n")
+  const width = map[0].length
+  const height = map.length
+  const ants = new Map()
+  const add = (map,key,obj) => map.has(key) ? map.get(key).push(obj) : map.set(key,[obj])
+
+  window.result.innerHTML = `<pre>${join(map)}</pre>`
+
+  for (let x=0; x<width; x++)
+    for (let y=0; y<height; y++)
+      if (map[y][x]!='.')
+        add(ants,map[y][x],`${y}|${x}`)
+  const nums = point => point.split('|').map(num => Number(num))
+  const minus = (a,b) => {
+    const [a0, a1, b0, b1] = [a,b].map(nums).flat()
+    return `${a0-b0}|${a1-b1}`}
+  const safe = p => {
+    const [p0, p1] = nums(p)
+    return p0>=0 && p0<height && p1>=0 && p1<width}
+
+  window.result.innerHTML += `<pre>${join(show(ants))}</pre>`
+
+  const antinodes = new Map()
+  for (const mark of ants.keys()) 
+    for (const a of ants.get(mark))
+      for (const b of ants.get(mark))
+        if (a!=b) {
+          const v = minus(b,a)
+          const q = minus(a,v)
+          if(safe(q)) add(antinodes,'#',q)}
+  window.result.innerHTML += `<pre>${join(show(antinodes))}</pre>`
+  const one = new Set(antinodes.get('#')).size
+
+  const harmonics = new Map()
+  for (const mark of ants.keys()){ 
+      for (const a of ants.get(mark))
+        for (const b of ants.get(mark))
+          if (a!=b) {
+            add(harmonics,'#',a)
+            const v = minus(b,a)
+            let q = minus(a,v)
+            while(safe(q)) {
+              add(harmonics,'#',q)
+              q = minus(q,v)}}}
+
+  window.result.innerHTML += `<pre>${join(show(harmonics))}</pre>`
+  const two = new Set(harmonics.get('#')).size
+
+
+  function show(marks) {
+    const map = Array(height).fill(Array(width).fill('.')).map(row => row.slice())
+    for (const mark of marks.keys())  
+      for (const place of marks.get(mark)) {
+        const p = place.split('|').map(num => Number(num))
+        map[nums(place)[0]][nums(place)[1]] = mark}
+    return map}
+
+  console.log({map,ants,antinodes,harmonics})
+
+  window.result.innerHTML = `
+    <details><summary>${one} for part 1</summary>
+      <pre>${join(show(antinodes))}</pre>
+    </details>
+    <details><summary>${two} for part 2</summary>
+      <pre>${join(show(harmonics))}</pre>
+    </details>`
+</script>
