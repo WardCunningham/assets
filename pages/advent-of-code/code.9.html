@@ -1,0 +1,73 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input/input.9.txt'
+  const map = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim())
+
+  const disk = []
+  for (let i=0;i<map.length;i++) {
+    const size = Number(map.substring(i,i+1))
+    if (i%2) disk.push(...Array(size).fill('.'))
+    else disk.push(...Array(size).fill({id:i/2}))}
+
+  const files = []
+  for (let i=0;i<map.length;i++) {
+    const size = Number(map.substring(i,i+1))
+    if (i%2) files.push({type:'space',size})
+    else files.push({type:'file',id:i/2, size})}
+
+
+  // Sum product of file id times occupied block id after block-wise compaction.
+  const gap = () => {
+    const space = disk.findIndex(block => block == '.')
+    const file = disk.length-1-disk.findIndex((block,i,a) => a[a.length-1-i]!='.')
+    return space<file ? {space,file} : false}
+  let g
+  while ((g=gap())) {
+    disk[g.space] = disk[g.file]
+    disk[g.file] = '.'}
+  const one = disk
+    .reduce((sum,each,i) =>
+      sum + (each=='.' ? 0 : each.id*i), 0)
+
+  // Sum products after file-wise compaction.
+  let failing = 99
+  let t0 = Date.now()
+  for (let id=files.at(-1).id; id>=0; id--) {
+    const file = files.findIndex(file => file.type=='file' && file.id == id)
+    const from = files[file]
+    if(from.size >= failing) continue
+    const space = files.findIndex(space => space.type=='space' && space.size >= from.size)
+    if (space>=0 && space < file) {
+      const into = files[space]
+      if (into.size == from.size) {into.type = from.type; into.id = from.id}
+      else {into.size -= from.size; files.splice(space,0,{...from})}
+      from.type='space'
+    } else {
+      if(from.size < failing) {
+        console.log('in',Date.now()-t0,'failing at',id,'size',from.size)
+        failing = from.size
+      }
+    }
+  }
+  const two = files
+    .map(alloc => Array(alloc.size).fill(alloc.type=='space' ? 0 : alloc.id))
+    .flat()
+    .reduce((sum,each,i) => sum + each*i, 0)
+
+  function show(blocks) {
+    return blocks
+      .map(alloc => alloc=='.' ? '.' : alloc.id < 10 ? `${alloc.id}` : '●')
+      .join('')
+  }
+  function show2(files) {
+    return files
+      .map(alloc => alloc.type=='space' ?
+        '.'.repeat(alloc.size) :
+        (alloc.id < 10 ? `${alloc.id}` : '●').repeat(alloc.size))
+      .join('')
+  }
+
+  window.result.innerHTML += `${one} for part 1<br>${two} for part 2`
+</script>

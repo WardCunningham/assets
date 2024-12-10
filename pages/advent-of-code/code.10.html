@@ -1,0 +1,55 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input/input.10.txt'
+  const map = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n/))
+    .then(lines => lines.map(line => line.split('')))
+  const width = map[0].length
+  const height = map.length
+  const safe = (x,y) => x>=0 && x<width && y>=0 && y<height
+  const join = map => map.map(dots => dots.join('')).join("\n")
+  const trails = []
+  for (let x=0; x<width; x++)
+    for (let y=0; y<height; y++)
+      if (map[y][x]=='0')
+        trails.push([x,y])
+
+  // Sum number of goals reachable from each trail start.
+  const score = (x,y) => {
+    const goals = new Set()
+    const search = (x,y,z) => {
+      if(!safe(x,y)) return
+      const here = map[y][x]
+      if(here!=z) return
+      if(here==9) return goals.add(`(${x},${y})`) 
+      search(x+1,y,z+1)
+      search(x-1,y,z+1)
+      search(x,y+1,z+1)
+      search(x,y-1,z+1)
+    }
+    search(x,y,0)
+    return goals.size
+  }
+
+  // Sum number of trail routes that reach any goal.
+  const rating = (x,y) => {
+    const goals = new Set()
+    const search = (x,y,z) => {
+      if(!safe(x,y)) return 0
+      const here = map[y][x]
+      if(here!=z) return 0
+      if(here==9) return 1
+      return (
+        search(x+1,y,z+1) +
+        search(x-1,y,z+1) +
+        search(x,y+1,z+1) +
+        search(x,y-1,z+1) )
+    }
+    return search(x,y,0)
+  }
+  const one = trails.reduce((sum,each) => sum + score(...each), 0)
+  const two = trails.reduce((sum,each) => sum + rating(...each), 0)
+  window.result.innerHTML = `${one} for part 1<br>${two} for part 2`
+
+</script>
