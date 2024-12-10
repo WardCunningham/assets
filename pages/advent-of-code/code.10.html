@@ -34,7 +34,6 @@
 
   // Sum number of trail routes that reach any goal.
   const rating = (x,y) => {
-    const goals = new Set()
     const search = (x,y,z) => {
       if(!safe(x,y)) return 0
       const here = map[y][x]
@@ -48,6 +47,7 @@
     }
     return search(x,y,0)
   }
+
   const one = trails.reduce((sum,each) => sum + score(...each), 0)
   const two = trails.reduce((sum,each) => sum + rating(...each), 0)
   window.result.innerHTML = `${one} for part 1<br>${two} for part 2`
