@@ -1,0 +1,47 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input/input.11.txt'
+  let line = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/ /).map(str => ({count:1, number:Number(str)})))
+
+  // Iteratively enlarge and then split objects. Count the number of objects after 25 and 75 iterations.
+  const counts = []
+  for (let blink=1; blink<=75; blink++) {
+  let next = []
+    while(line.length)
+      next.push(...apply(line.shift()))
+    for (const stone of next.flat()) {
+      const i = line.findIndex(s => s.number == stone.number)
+      if(i<0) line.push(stone)
+      else(line[i].count += stone.count )
+    }
+    console.log(`(${blink})`,analize(line))
+    counts.push(line.reduce((sum,each) => sum+each.count, 0))
+  }
+
+  function apply(stone) {
+    const len = Math.floor(Math.log10(stone.number ))+1
+    if (stone.number==0) return [{count:stone.count,number:1}]
+    if (len%2 == 0) return [
+      {count:stone.count, number:Math.floor(stone.number/(10**(len/2)))},
+      {count:stone.count, number:Math.floor(stone.number%(10**(len/2)))}]
+    return [{count:stone.count, number:stone.number*2024}]
+  }
+
+  function show(line) {
+    const stones = []
+    for (const  stone of line) {
+      stones.push(stone.count==1 ? stone.number : `${stone.number}×${stone.count}`)
+    }
+    return stones.join(" ")
+  }
+
+  function analize(line) {
+    return show(line.toSorted((a,b) => b.count-a.count).slice(0,5))
+  }
+
+  const one = counts[24]
+  const two = counts[74]
+  window.result.innerHTML = `${one} for part 1<br>${two} for part 2`
+</script>
