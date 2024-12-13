@@ -1,0 +1,59 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input/input.12.txt'
+  const map = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n/))
+    .then(lines => lines.map(line => line.trim().split('')))
+
+  const width = map[0].length
+  const height = map.length
+  console.log({width,height,map})
+  const safe = (x,y) => x>=0 && x<width && y>=0 && y<height
+  const join = map => map.map(dots => dots.join('')).join("\n")
+  const todo = map => {
+    for(let y=0; y<height; y++)
+      for(let x=0; x<width; x++)
+        if(map[y][x]!='.') return [x,y]
+    return null}
+
+  // Sum the product of area times permimeter for all regions of the map.
+  const regions = []
+  let more
+  while(more = todo(map)) {
+    const name = map[more[1]][more[0]]
+    const region = {name,plots:[]}
+    flood(more,region)
+    region.area = region.plots.length
+    region.perimeter = perimeter(region.plots)
+    regions.push(region)
+  }
+
+  const one = regions.reduce((sum,each) => sum+each.area*each.perimeter,0)
+  console.log({one})
+
+  function flood([x,y],region) {
+    if(!safe(x,y) || map[y][x]=='.' || map[y][x]!=region.name) return
+    map[y][x]='.'
+    region.plots.push([x,y])
+    flood([x+1,y],region)
+    flood([x-1,y],region)
+    flood([x,y+1],region)
+    flood([x,y-1],region)
+  }
+
+  function perimeter(plots) {
+    const f = (x,y) => `${x}|${y}`
+    const moves = [[+1,0],[-1,0],[0,+1],[0,-1]]
+    const occupied = new Set(plots.map(([x,y])=>f(x,y)))
+    const sides = (x,y) => moves.reduce((sum,each) => {
+      const xy = [x+each[0],y+each[1]]
+      const occ = occupied.has(f(...xy))
+      const inc = occ ? 0 : 1
+      return sum+inc}, 0)
+    return plots.reduce((sum,each) => sum+sides(each[0],each[1]), 0)
+  }
+
+  window.result.innerHTML = `${one} for part 1<br>${null} for part 2`
+
+</script>
