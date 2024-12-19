@@ -46,7 +46,7 @@
     if (nodes.length) {
       const graph = linked(nodes)
       // aspects.push({name,graph})
-      aspects.push(...partitions({name,graph}))
+      aspects.push(...partitions({name,graph},last-interval, last))
     }
   }
 
@@ -101,12 +101,16 @@
     const node = slug => {
       const type = slug.includes('-and-') ? 'Prompt' : 'Page'
       const info = allmaps.find(info => info.slug==slug)
+      const twins = allmaps.filter(info => info.slug==slug).length
       const title = info.title
       const site = info.site
       const date = info.date
       const name = title.replaceAll(' ',"\n")
       const nid = graph.nodes.findIndex(node => node.type==type && node.props.name==name)
-      return (nid>=0) ? nid : graph.addNode(type,{name,site,date})
+      const result = (nid>=0) ? nid : graph.addNode(type,{name,site,date})
+      if(twins>1) graph.nodes[result].props.twins = twins
+      return result
+
     }
     for (const info of infos) {
       const nid = node(info.slug)
@@ -129,7 +133,7 @@
       .slice(0,3)
   }
 
-  function partitions(aspect) {
+  function partitions(aspect,from,until) {
     const input = aspect.graph
     const output = [] // graphs
     let doing = {} // nid => new nid
@@ -184,9 +188,12 @@
     const topic = graph => {
       const node = graph.nodes.slice(0)
         .sort((a,b) => when(b)-when(a))
+        .filter(a => when(a)>=from && when(a)<=until)
         [0]
+      console.log({node,nodes:graph.nodes,name:aspect.name})
+      if(!node) return aspect.name
       const words = node.props.name.split(/\s+/)
-      return words.slice(0,2).join(' ')
+      return words.slice(0,3).join(' ')
     }
 
     return output.reverse()

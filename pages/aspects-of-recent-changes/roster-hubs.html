@@ -128,11 +128,15 @@
     const node = slug => {
       const type = slug.includes('-and-') ? 'Prompt' : 'Page'
       const info = allmaps.find(info => info.slug==slug)
+      const twins = allmaps.filter(info => info.slug==slug).length
       const title = info.title
       const site = info.site
+      const date = info.date
       const name = title.replaceAll(' ',"\n")
       const nid = graph.nodes.findIndex(node => node.type==type && node.props.name==name)
-      return (nid>=0) ? nid : graph.addNode(type,{name,site})
+      const result = (nid>=0) ? nid : graph.addNode(type,{name,site,date})
+      if(twins>1) graph.nodes[result].props.twins = twins
+      return result
     }
     const nid = node(info.slug)
     for (const name of newest(Object.keys(info.links||{}))){
