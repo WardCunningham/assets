@@ -1,0 +1,115 @@
+<div id=result>working</div>
+<style>
+  body {font-family:sans-serif;}
+  span {cursor:pointer;}
+</style>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
+
+  const TSH=s=>{for(var i=0,h=9;i<s.length;)h=Math.imul(h^s.charCodeAt(i++),9**9);return h^h>>>9}
+  const hsl2rgb = (h,s,l) => {
+   let a=s*Math.min(l,1-l);
+   let f= (n,k=(n+h/30)%12) => l - a*Math.max(Math.min(k-3,9-k,1),-1);
+   return [f(0),f(8),f(4)];    
+  } 
+  const color = site => hsl2rgb(Math.floor(Math.abs(TSH(site)/9))%360,0.5,0.5).map(c => Math.floor(c*256).toString(16)).join('') 
+
+
+  const context = await frame.context()
+  console.log({context})
+  const option = word => {
+    return context.page.story
+      .filter(item => item.type=='markdown')
+      .map(item => item.text.trim().split(/\n/)
+        .filter(line => line.match(new RegExp(`- \\[x\\] ${word}`))))
+      .flat().length}
+  console.log({color:option('color'),empty:option('empty')})
+  const roster = context.page.story
+    .filter(item => item.type=='roster')
+    .map(item => item.text.trim().split(/\n/)
+      .filter(line => line.match(/^\w+(\.\w+)+$/)))
+    .flat()
+
+  const more = Symbol('more')
+  const sitemaps = await Promise.all(roster
+    .map(site => fetch(`//${site}/system/sitemap.json`,{redirect:'follow'})
+      .then(res => res.ok ? res.json() : [])
+      .then(sitemap => {
+        sitemap[more]={site}
+        for (const info of sitemap)
+          info.site = site
+        return sitemap})))
+  const allmaps = sitemaps.flat()
+  window.result.innerHTML = sitemaps
+    .map(sitemap => `${sitemap[more].site} ${sitemap.length} pages`)
+    .join("<br>")+`<p>`
+  const now = Date.now()
+  const intervals = {
+    day: 24*60*60*1000,
+    week: 24*60*60*1000*7,
+    month: 24*60*60*1000*30}
+  const period = Object.keys(intervals)
+    .find(key => key in params) || 'week'
+  const interval = intervals[period]
+  const limit = params[period] || 12
+  console.log({roster,sitemaps,now,period,limit,interval})
+
+  const aspects = []
+  for (let i = 0; i<limit; i++) {
+    const last = now-interval*i
+    const name = new Date(last).toLocaleDateString()
+    const infos = edited(last-interval, last)
+    if(infos.length || option('empty')) aspects.push({name,infos})
+  }
+
+  window.result.addEventListener("click", event => {
+    const target = event.target
+    const hover = target.getAttribute('title')
+    if(hover) {
+      const [title,site,sparks] = hover.trim().split(/\n/)
+      frame.link({title,site},event.shiftKey)
+    }
+  })
+
+  for (const aspect of aspects) {
+    const {name,infos} = aspect
+    window.result.innerHTML += `${name}<sup>${infos.length}</sup>`
+    const pages = await Promise.all(infos.map(({site,slug,date}) =>
+      fetch(`//${site}/${slug}.json`)
+        .then(res => res.json()
+        .then(json => {
+          json.date = date
+          json.site = site
+          return json}))))
+    const age = page => page.date - (page.journal[0]?.date||page.date)
+    const spark = page => {
+      let sparks = []
+      let earliest = page.date - age(page)
+      for (let last = page.date; last>earliest; last-=interval) {
+        const activity = (page.journal || [])
+          .filter(action => action.date<last && action.date>last-interval)
+        sparks.push(activity.length >= 14 ? '❚' : activity.length ? '|' : '.')
+      }
+      return sparks.join('')
+    }
+    pages.sort((a,b) => age(a) - age(b))
+    window.result.innerHTML += ` —` + pages
+      .map(page => {
+        const style = option('color') ? `color:${color(page.site)};` : ''
+        return `<span style="${style}" title="${page.title}\n${page.site}\n${spark(page)}">
+          ${Math.floor(age(page)/interval)}</span>`})
+      .join(" ")+"<br>"
+  }
+
+  function edited(first,last) {
+    return sitemaps
+      .map(sitemap => sitemap
+        .filter(info => info.date > first && info.date <= last)
+        .filter(info => !!info.links)
+        .filter(info => !info.title.endsWith(' Survey')))
+      .flat()
+  }
+</script>
