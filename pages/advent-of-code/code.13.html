@@ -15,15 +15,34 @@
 
   // Find the combination of two moves that vector sums to a goal.
   let one = 0
+  console.log('part 1')
   for (const game of games) {
     const ma = Math.floor(game.prize.x/game.a.x)
     const mb = Math.floor(game.prize.x/game.b.x)
+    console.log(game,{ma,mb})
     for (let na=0; na<=ma; na++)
       for (let nb=0; nb<=mb; nb++)
         if(na*game.a.x + nb*game.b.x == game.prize.x &&
           na*game.a.y + nb*game.b.y == game.prize.y)
-            one += 3*na+nb
+            {one += 3*na+nb; console.log({na,nb})}
   }
-  window.result.innerHTML = `${one} for part 1<br>${null} for part 2`
+
+  // Find the combination of two moves that vector sums to a distant goal.
+  let two = 0
+  console.log('part 2')
+  const d = 10000000000000
+  for (const game of games) {
+    const ma = Math.floor((game.prize.x+d)/game.a.x)
+    const za = Math.floor(d/game.a.x)
+    const mb = Math.floor((game.prize.x+d)/game.b.x)
+    const zb = Math.floor(d/game.b.x)
+    console.log(game,{ma,za,mb,zb})
+    for (let na=za; na<=ma; na++)
+      for (let nb=zb; nb<=mb; nb++)
+        if(na*game.a.x + nb*game.b.x == game.prize.x+d &&
+          na*game.a.y + nb*game.b.y == game.prize.y+d)
+            {two += 3*na+nb; console.log({na,nb})}
+  }
+  window.result.innerHTML = `${one} for part 1<br>${two} for part 2`
 
 </script>
