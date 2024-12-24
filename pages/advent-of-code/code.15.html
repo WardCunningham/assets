@@ -1,0 +1,11 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input/sample.15.txt'
+  const [map,moves] = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n\n/))
+    .then(([map,moves]) => [
+      map.trim().split(/\n/).map(line => line.trim().split('')),
+      moves.split(/\n/).join('')])
+  console.log({map,moves},moves.length)
+</script>

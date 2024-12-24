@@ -1,0 +1,64 @@
+<div id=result>working</div>
+<script type=module>
+  const url = 'http://ward.dojo.fed.wiki/assets/pages/advent-of-code/input/input.17.txt'
+  const [regs,prog] = await fetch(url)
+    .then(res => res.text())
+    .then(text => text.trim().split(/\n\n/))
+    .then(([regs,prog]) => [
+      regs.trim().split(/\n/).map(line => Number(line.split(/:/)[1])),
+      prog.split(/:/)[1].trim().split(/,/).map(Number)])
+  regs[0] = 4
+  console.log({regs,prog})
+
+// 2,4,1,2, 7,5,0,3, 4,7,1,7, 5,5,3,0
+
+  const seeds = [11347777,11347780,12396353,12396356]
+  for (let n = 1; n<=2; n++) {
+    const nn = n+8
+    const t0 = Date.now()
+    const goal = prog.slice(-nn).join(',')
+    const limit = 8**(n+4)
+    for (const seed of seeds) {
+      console.log(n,nn,goal,seed)
+      for (let a=0; a<limit; a++) {
+        const got = run([seed+a,0,0])
+        if(got.endsWith('4,7,1,7,5,5,3,0'))
+          console.log(seed+a,seed+a.toString(8),got)
+      }
+      console.log('runtime', (Date.now()-t0)/1000)
+    }
+  }
+
+  function run(regs) {
+    let ip = 0
+    let out = []
+    while(ip<prog.length) {
+      let ir = prog[ip++]
+      let op = prog[ip++]
+      switch (ir) {
+        case 0: regs[0] = Math.floor(regs[0]/2**combo(op)); break;
+        case 1: regs[1] = regs[1] ^ op; break;
+        case 2: regs[1] = combo(op) % 8; break;
+        case 3: if(regs[0]) ip = op; break;
+        case 4: regs[1] = regs[1] ^ regs[2]; break;
+        case 5: out.push(combo(op) % 8); break;
+        case 6: regs[1] = Math.floor(regs[0]/2**combo(op)); break;
+        case 7: regs[2] = Math.floor(regs[0]/2**combo(op)); break;
+      }
+      // console.log(ip,ir,op,regs.map(n => n.toString(8)).join("|"),out.join("|"))
+    }
+    return out.join(',')
+
+    function combo(op) {
+      switch (op) {
+        case 0: case 1: case 2: case 3: return op;
+        case 4: return regs[0];
+        case 5: return regs[1];
+        case 6: return regs[2];
+      }
+    }
+  }
+
+
+
+</script>
