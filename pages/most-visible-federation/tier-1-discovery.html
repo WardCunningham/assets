@@ -1,0 +1,109 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  const delay = time => new Promise(res => setTimeout(res,time))
+  const context = await frame.context()
+  console.log({context})
+  const tier1sites = context.page.story
+    .find(item => item.text.startsWith('Tier 1 '))
+    .text.split(/\n/).filter(line => line.match(/\./))
+  console.log({tier1sites})
+  const tier1surveys = await Promise.all(
+    tier1sites.map(site =>
+      fetch(`//${site}/journal-fork-survey.json`)
+        .then(res => res.ok ? res.json() : [])
+        .then(page => page.story
+          .find(item => item.type == 'frame' && item.survey).survey))
+  )
+  console.log({tier1surveys})
+  // const tier2sites = tier1surveys
+  //   .map((survey,i) => {
+  //     const site = tier1sites[i]
+  //     const info = survey.find(info => info.slug == 'journal-fork-survey')
+  //     console.log({site,i,survey,info})
+  //     return {site,info}
+  //   })
+  //   .filter(siteinfo => siteinfo.info)
+  // console.log({tier2sites})
+  const tier3sites = tier1surveys
+    .flat()
+    .map(survey => survey.forks)
+    .flat()
+    .filter(uniq)
+  console.log({tier3sites})
+
+  let possibles = []
+  window.dovalidate = async event => {
+    window.result.innerHTML = ''
+    possibles = await Promise.all(tier3sites
+      .filter(site => !site.match(/\blocalhost\b/))
+      .filter(site => !site.match(/\bfedwikihappening\b/))
+      .filter(site => !site.match(/\binnovateoretion\b/))
+      .filter(site => !site.match(/\bhapgood\b/))
+      .map(site => fetch(`//${site}/system/sitemap.json`,{signal:AbortSignal.timeout(15000)})
+        .then(res => {
+          if(res.ok) {
+            try{
+              const json = res.json()
+              return json
+            } catch(e) {
+              console.log('Error',site,e.message)
+              return []
+            }
+          } else {
+              console.log('Fail',site,res)
+              return []
+          }})
+        .then(sitemap => {
+          if(sitemap.length) {
+            const date = sitemap.toSorted((a,b) => (b.date||0) - (a.date||0))[0].date
+            const survey = sitemap.find(info => info.slug == 'journal-fork-survey')
+            window.result.innerHTML += ". "
+            return {site,date,survey}
+          } else {
+            console.log('Empty',site)
+            window.result.innerHTML += "z "
+            return null
+          }
+        })
+        .catch(err => {
+          console.log('Catch',site,err.message);
+          window.result.innerHTML += "x "
+          return []})
+      ))
+    console.log({possibles})
+    await delay(2000)
+    window.result.innerHTML = `
+      <p>${tier3sites.length} sites in forks
+      <br>${possibles.length} sites still accessable
+      <p><center><button onclick=doupdate(event)>update</button>
+    `
+  }
+
+  window.doupdate = async event => {
+    const title = context.page.title
+    const story = context.page.story.slice()
+    const tier1item = story.find(item => item.text.startsWith('Tier 1 '))
+    const tier2item = story.find(item => item.text.startsWith('Tier 2 '))
+    const tier3item = story.find(item => item.text.startsWith('Tier 3 '))
+    const surveys = possibles
+      .filter(info => info && info.date && info.survey && !tier1sites.includes(info.site))
+      .toSorted((a,b) => (b.date) - (a.date))
+      .map(active => active.site)
+    const sites = possibles
+      .filter(info => info && info.date)
+      .toSorted((a,b) => (b.date) - (a.date))
+      .map(active => active.site)
+    tier1item.text = `Tier 1 Surveys\n\n${tier1sites.join("\n")}`
+    tier2item.text = `Tier 2 Surveys\n\n${surveys.join("\n")}`
+    tier3item.text = `Tier 3 Sites\n\n${sites.join("\n")}`
+    frame.open({title,story},event.shiftKey)
+  }
+
+  window.result.innerHTML = `
+    <p>${tier3sites.length} sites in forks
+    <p><center><button onclick=dovalidate(event)>validate</button>
+  `
+
+</script>
