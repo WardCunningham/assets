@@ -17,15 +17,6 @@
           .find(item => item.type == 'frame' && item.survey).survey))
   )
   console.log({tier1surveys})
-  // const tier2sites = tier1surveys
-  //   .map((survey,i) => {
-  //     const site = tier1sites[i]
-  //     const info = survey.find(info => info.slug == 'journal-fork-survey')
-  //     console.log({site,i,survey,info})
-  //     return {site,info}
-  //   })
-  //   .filter(siteinfo => siteinfo.info)
-  // console.log({tier2sites})
   const tier3sites = tier1surveys
     .flat()
     .map(survey => survey.forks)
