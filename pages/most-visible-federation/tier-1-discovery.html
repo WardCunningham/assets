@@ -25,14 +25,16 @@
   console.log({tier3sites})
 
   let possibles = []
+  let accessibles = []
+  let newer = []
   window.dovalidate = async event => {
     window.result.innerHTML = ''
     possibles = await Promise.all(tier3sites
       .filter(site => !site.match(/\blocalhost\b/))
       .filter(site => !site.match(/\bfedwikihappening\b/))
-      .filter(site => !site.match(/\binnovateoretion\b/))
+      .filter(site => !site.match(/\binnovateoregon.org\b/))
       .filter(site => !site.match(/\bhapgood\b/))
-      .map(site => fetch(`//${site}/system/sitemap.json`,{signal:AbortSignal.timeout(15000)})
+      .map(site => fetch(`//${site}/system/sitemap.json`,{signal:AbortSignal.timeout(5000)})
         .then(res => {
           if(res.ok) {
             try{
@@ -63,11 +65,16 @@
           window.result.innerHTML += "x "
           return []})
       ))
-    console.log({possibles})
+    accessibles = possibles
+      .filter(info => info && info.date)
+    const updated = context.page.journal[0].date
+    newer = accessibles.filter(info => info.date > updated)
+    console.log({possibles,accessibles,updated,newer})
     await delay(2000)
     window.result.innerHTML = `
       <p>${tier3sites.length} sites in forks
-      <br>${possibles.length} sites still accessable
+      <br>${accessibles.length} sites still accessable
+      <br>${newer.length} sites changed since last update
       <p><center><button onclick=doupdate(event)>update</button>
     `
   }
@@ -78,14 +85,14 @@
     const tier1item = story.find(item => item.text.startsWith('Tier 1 '))
     const tier2item = story.find(item => item.text.startsWith('Tier 2 '))
     const tier3item = story.find(item => item.text.startsWith('Tier 3 '))
-    const surveys = possibles
-      .filter(info => info && info.date && info.survey && !tier1sites.includes(info.site))
+    const surveys = accessibles
+      .filter(info => info.survey && !tier1sites.includes(info.site))
       .toSorted((a,b) => (b.date) - (a.date))
       .map(active => active.site)
-    const sites = possibles
-      .filter(info => info && info.date)
+    const sites = accessibles
       .toSorted((a,b) => (b.date) - (a.date))
       .map(active => active.site)
+    if(newer.length) sites.splice(newer.length,0,"")
     tier1item.text = `Tier 1 Surveys\n\n${tier1sites.join("\n")}`
     tier2item.text = `Tier 2 Surveys\n\n${surveys.join("\n")}`
     tier3item.text = `Tier 3 Sites\n\n${sites.join("\n")}`
