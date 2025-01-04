@@ -87,7 +87,9 @@ export function link(title, keepLineup=false) {
 export function open(page, keepLineup=false, forks=[]) {
   let date = Date.now()
   for (let item of page.story) item.id ||= (Math.random()*10**20).toFixed(0)
-  page.journal ||= [{type:'create', date, item:asCopy(page)}, ...forks.map(site => ({type:'fork',date,site}))]
+  page.journal ||= [
+    {type:'create', date, item:asCopy({title:page.title,story:page.story})},
+    ...forks.map(site => ({type:'fork',date,site}))]
   let message = {action: "showResult", page, keepLineup}
   window.parent.postMessage(message, "*")
 }
