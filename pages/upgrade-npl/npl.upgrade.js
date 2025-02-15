@@ -6,6 +6,10 @@
 
 const bay = `./npl.bay.localhost`
 const asia = `./npl.asia.localhost`
+
+await Deno.remove(`${asia}/status/sitemap.json`)
+await Deno.remove(`${asia}/status/sitemap.xml`)
+
 const pages = `${bay}/pages`
 let updated
 for await (const file of Deno.readDir(pages)) {
