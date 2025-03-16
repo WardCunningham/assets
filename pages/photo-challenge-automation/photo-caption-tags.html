@@ -158,7 +158,8 @@
       todo.splice(todo.indexOf(start),1)
       const doing = [start]
       let choices = many(todo,doing)
-      while(choices.length) {
+      let limit=10
+      while(limit-- && choices.length) {
         const choice = any(choices)
         // choices.sort((a,b) => date(a.to) - date(b.to))
         // const choice = choices[0]
