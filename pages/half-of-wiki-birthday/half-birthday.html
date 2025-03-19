@@ -12,9 +12,11 @@
   while (step*(day/1000) > 1) {
     const half = age(federated)/age(original)
     const when = new Date(today+wait*day)
-    window.result.innerHTML = `${when.toLocaleString()} ≡ ${years(federated)} / ${years(original)}`
+    window.result.innerHTML = `${when.toLocaleString()} ≡ ${years(federated)} / ${years(original)}<br>`
     wait += half>=0.5 ? -step : step
     step *= 0.8
     await delay(200)
   }
+  const answer = new Date((federated-original)+federated.getTime())
+  window.result.innerHTML += `${answer.toLocaleString()} via simple arithmetic`
 </script>
