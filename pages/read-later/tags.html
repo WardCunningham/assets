@@ -1,0 +1,27 @@
+<div id=result></div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  console.log(context)
+  const tags = context.page.journal
+    .filter(action => action.attribution)
+    .map(action => action.attribution)
+  console.log(tags)
+  window.doview = event => {
+    console.log(event)
+    const img = event.target.previousElementSibling
+    console.log(img.dataset.site,img.dataset.slug)
+    frame.link({site:img.dataset.site,title:img.dataset.slug},event.shiftKey)
+  }
+  window.result.innerHTML = tags.map(tag => `
+    <img class="remote"
+      width=16
+      src="//${tag.site}/favicon.png"
+      title="${tag.page}"
+      data-site="${tag.site}"
+      data-slug="${frame.asSlug(tag.page)}">
+    <span onclick=doview(event) style="cursor:pointer">
+      ${tag.page}
+    </span>
+  `).join("<br>")
+</script>
