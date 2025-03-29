@@ -1,5 +1,5 @@
 // Find INSTITUTION nodes and relations in Markdown plugins
-// See http://code.fed.wiki/institution-survey-probe.html
+// See http://ward.dojo.fed.wiki/institution-survey-probe.html
 
 export const version = '0.1.0'
 
