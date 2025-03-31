@@ -1,0 +1,27 @@
+<dev id=result>working</dev>
+<script type=module>
+  
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const title = context.title
+  const journal = context.page.journal
+  const story = context.page.story.map(item => {
+    if(item.type != 'paragraph') return item
+    const action = journal.find(action => action.id == item.id && action.attribution)
+    if(!action) return item
+    return {
+      type:'reference',
+      id:item.id,
+      site:action.attribution.site||context.site,
+      slug:frame.asSlug(action.attribution.page),
+      title:action.attribution.page,
+      text:item.text
+    }
+  })
+
+  window.dotags = event =>
+    frame.open({title,story,journal},event.shiftKey)
+  
+  window.result.innerHTML = `<button onclick=dotags(event)>update</button>`
+
+</script>
