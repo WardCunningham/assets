@@ -16,7 +16,7 @@
       width=16
       src="//${tag.site}/favicon.png"
       title="${tag.page}"
-      data-site="${tag.site}"
+      data-site="${tag.site||context.site}"
       data-slug="${frame.asSlug(tag.page)}">
     <span onclick=doview(event) style="cursor:pointer">
       ${tag.page}
