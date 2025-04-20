@@ -1,0 +1,53 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  const context = await frame.context()
+  const solo = context.page.story.find(item => item.type == 'solo')
+  const name = node => node.props.name.replaceAll(/\n/g, ' ')
+  const old = { graph:solo.aspects[0].graph, nid:null, nnid:null }
+  const now = { graph:new Graph(), nid:null, nnid:null }
+  let sourceData = null
+
+
+  window.domore = event => {
+    const copy = node => now.graph.addNode(node.type,node.props)
+    const pick = event.target.innerText
+    old.nnid = old.graph.nodes.findIndex(node => name(node) == pick)
+    now.nnid = copy(old.graph.nodes[old.nnid])
+
+    if (now.nid != null) {
+      for (const rid of old.graph.nodes[old.nid].in)
+        if(old.graph.rels[rid].from == old.nnid)
+          now.graph.addRel('', now.nnid, now.nid, {})
+      for (const rid of old.graph.nodes[old.nid].out)
+        if(old.graph.rels[rid].to == old.nnid)
+          now.graph.addRel('', now.nid, now.nnid, {})
+    } 
+
+    old.nid = old.nnid
+    now.nid = now.nnid
+    sourceData = [{name:'walk-the-path', graph:now.graph}]
+    console.log({sourceData})
+    window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData},'*')
+
+    const outbound = old.graph.nodes[old.nid].out.map(rid => old.graph.rels[rid].to)
+    const inbound = old.graph.nodes[old.nid].in.map(rid => old.graph.rels[rid].from)
+    const bound = [...outbound,...inbound]
+    console.log({old,now,outbound,inbound,bound})
+    next(bound.map(nid => old.graph.nodes[nid]))
+  }
+
+  function next(nodes) {
+    const uniq = (value, index, self) => self.indexOf(value) === index
+    window.result.innerHTML = nodes
+      .map(node => name(node))
+      .filter(uniq)
+      .sort()
+      .map(name => `<span onclick=domore(event) style="cursor:pointer">${name}</span>`)
+      .join('<br>')
+  }
+
+  next(old.graph.nodes)
+
+</script>
