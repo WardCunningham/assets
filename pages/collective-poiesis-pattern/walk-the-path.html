@@ -7,8 +7,16 @@
   const name = node => node.props.name.replaceAll(/\n/g, ' ')
   const old = { graph:solo.aspects[0].graph, nid:null, nnid:null }
   const now = { graph:new Graph(), nid:null, nnid:null }
+  const sitemaps = {}
   let sourceData = null
 
+  window.dopreview = async event => {
+    const title = "Story Preview"
+    const story = [{type:'paragraph',text:`Story with ${now.graph.nodes.length} items.`}]
+    for (const node of now.graph.nodes)
+      story.push(await reference(node))
+    frame.open({title,story},event.shiftKey)
+  }
 
   window.domore = event => {
     const copy = node => now.graph.addNode(node.type,node.props)
@@ -28,26 +36,44 @@
     old.nid = old.nnid
     now.nid = now.nnid
     sourceData = [{name:'walk-the-path', graph:now.graph}]
-    console.log({sourceData})
     window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData},'*')
 
     const outbound = old.graph.nodes[old.nid].out.map(rid => old.graph.rels[rid].to)
     const inbound = old.graph.nodes[old.nid].in.map(rid => old.graph.rels[rid].from)
     const bound = [...outbound,...inbound]
-    console.log({old,now,outbound,inbound,bound})
-    next(bound.map(nid => old.graph.nodes[nid]))
+    const button = `<button onclick=dopreview(event)>preview</button><br>`
+    next(bound.map(nid => old.graph.nodes[nid]), button)
   }
 
-  function next(nodes) {
+  function next(nodes,preview='') {
     const uniq = (value, index, self) => self.indexOf(value) === index
-    window.result.innerHTML = nodes
+    const html = nodes
       .map(node => name(node))
       .filter(uniq)
       .sort()
       .map(name => `<span onclick=domore(event) style="cursor:pointer">${name}</span>`)
       .join('<br>')
+    window.result.innerHTML = `${preview}${html}`
   }
 
   next(old.graph.nodes)
+
+  async function reference(node) {
+    const site = node.props.site
+    const slug = frame.asSlug(name(node))
+    if(!sitemaps[site]) {
+      sitemaps[site] = await fetch(`//${site}/system/sitemap.json`)
+        .then(res => res.json())
+    }
+    const info = sitemaps[site]
+      .find(info => info.slug == slug)
+    return {
+      type:'reference',
+      site,
+      slug,
+      title:info.title,
+      text:info.synopsis
+    }
+  }
 
 </script>
