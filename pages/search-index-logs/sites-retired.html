@@ -22,7 +22,7 @@
     frame.open({title,story},event.shiftKey)
   }
   const rev = domain => domain.split('.').reverse().join('.')
-  const search = 'http://search.fed.wiki.org:3030'
+  const search = 'http://search.federatedwiki.org:3030'
   const lines = (await fetch(`${search}/logs/retired`).then(res => res.text()))
     .split(/\n/)
     .filter(line => line.includes('.'))
