@@ -1,0 +1,106 @@
+<div id=result>working</div>
+<script type=module>
+const slug = 'most-visible-federation'
+const response = query()
+const reports = []
+
+for (const site of response.result[slug]) {
+  const page = await fetch(`http://${site}/${slug}.json`).then(res => res.json())
+  const fails = Object.keys(page.fails)
+  const sites = accessed(page)
+  const age = days(page)
+  reports.push({site,age,fails,sites})
+  window.result.innerText += ' .'
+}
+
+reports.sort((a,b) => a.sites.length - b.sites.length)
+const have = []
+for (const report of reports) {
+  report.here = report.sites.filter(site => !have.includes(site))
+  have.push(...report.here)
+  report.total = have.length
+}
+console.log(reports)
+
+window.result.innerHTML = reports.map (report => `
+  <details><summary>${report.site} + ${report.here.length} ⇒ ${report.total}</summary>
+  ${report.here.map(s => ` &nbsp; &nbsp; ${s}`).join("<br>\n")}
+  </details>
+`).join("")
+
+function accessed(page) {
+  const roster = page.story.find(item => item.text.startsWith('Tier 3 Sites'))
+  return roster.text.split(/\n/).filter(site => site.match(/\./))
+}
+
+function days(page) {
+  const date = page.journal[0].date
+  const days = (Date.now()-date)/(24*60*60*1000)
+  return Number(days.toFixed(1))
+}
+
+function query () {
+  return {
+    "params": {
+      "match": "or",
+      "find": "slugs",
+      "search": "true",
+      "query": "most-visible-federation journal-fork-survey"
+    },
+    "result": {
+      "most-visible-federation": [
+        "alanz.fed.wiki",
+        "david.hitchhikers.earth",
+        "de.dreyeck.ch",
+        "en.dreyeck.ch",
+        "found.ward.fed.wiki",
+        "hsc.fed.wiki",
+        "marc.relocalizecreativity.net",
+        "mech.dreyeck.ch",
+        "paul.dojo.fed.wiki",
+        "petedaguru.fed.wiki",
+        "ward.dojo.fed.wiki",
+        "wellspring.fed.wiki",
+        "wiki.ralfbarkow.ch"
+      ],
+      "journal-fork-survey": [
+        "bm.san.dojo.fed.wiki",
+        "cactus.asia.wiki.org",
+        "code.dreyeck.ch",
+        "code.fed.wiki",
+        "de.dreyeck.ch",
+        "earth.fed.wiki",
+        "en.dreyeck.ch",
+        "forage.rodwell.me",
+        "forage.ward.fed.wiki.org",
+        "found.ward.bay.wiki.org",
+        "found.ward.fed.wiki",
+        "ft8.ward.asia.wiki.org",
+        "goals.pod.rodwell.me",
+        "hive.dreyeck.ch",
+        "hsc.fed.wiki",
+        "jeff.pixiereport.com",
+        "marc.relocalizecreativity.net",
+        "marc.tries.fed.wiki",
+        "marcus.relocalizecreativity.net",
+        "mech.dreyeck.ch",
+        "meeting-notes.wiki.rodwell.me",
+        "paul.dojo.fed.wiki",
+        "plugins.dojo.fed.wiki",
+        "rendanheyi.relocalizecreativity.net",
+        "round.asia.wiki.org",
+        "scripts.fed.wiki",
+        "thompson.fed.wiki",
+        "trails.ward.asia.wiki.org",
+        "video.fed.wiki.org",
+        "ward.asia.wiki.org",
+        "ward.bay.wiki.org",
+        "ward.dojo.fed.wiki",
+        "wellspring.fed.wiki",
+        "wiki.dbbs.co",
+        "wiki.ralfbarkow.ch"
+      ]
+    }
+  }
+}
+</script>
