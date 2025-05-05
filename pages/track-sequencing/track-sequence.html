@@ -1,0 +1,46 @@
+<div id=result>
+  <button>lineup</button>
+  <button>preview</button>
+  <button>print</button>
+</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const lines = context.item.text.split(/\n/).slice(2)
+  console.log({context,lines})
+  window.result.addEventListener('click',event => {
+    switch (event.target.innerText) {
+      case 'lineup': return lineup(event)
+      case 'preview': return preview(event)
+      case 'print': return print(event)
+    }
+  })
+
+  function lineup(event) {
+    let append = event.shiftKey
+    for (const line of lines) {
+      const [site,title] = line.split(/\//)
+      frame.link({site,title},append)
+      append = true
+    }
+  }
+
+  async function preview(event) {
+    const urls = lines.map(line => `//${line}.json`)
+    const pages = await Promise.all(urls.map(url => fetch(url)
+      .then(res => res.ok ? res.json() : {story:[]})))
+    const story = pages.map(page => page.story).flat()
+    const title = `Track Sequence Preview`
+    frame.open({title,story},event.shiftKey)
+  }
+
+  async function print(event) {
+    const urls = lines.map(line => `//${line}.json`)
+    const pages = await Promise.all(urls.map(url => fetch(url)
+      .then(res => res.ok ? res.json() : {story:[]})))
+    const story = pages.map(page => page.story).flat()
+    const paragraphs = story.map(item => `<div>${item.text}</div>`).join("<p>\n")
+    const html = `<div style="width:600px;margin:60px;">${paragraphs}</div>`
+    frame.download(html,'track-preview.html','text/html')
+  }
+</script>
