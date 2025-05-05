@@ -29,7 +29,8 @@
     const urls = lines.map(line => `//${line}.json`)
     const pages = await Promise.all(urls.map(url => fetch(url)
       .then(res => res.ok ? res.json() : {story:[]})))
-    const story = pages.map(page => page.story).flat()
+    const head = page => ({type:'html',text:`<h2>${page.title}</h2>`})
+    const story = pages.map(page => [head(page),...page.story]).flat()
     const title = `Track Sequence Preview`
     frame.open({title,story},event.shiftKey)
   }
@@ -38,9 +39,13 @@
     const urls = lines.map(line => `//${line}.json`)
     const pages = await Promise.all(urls.map(url => fetch(url)
       .then(res => res.ok ? res.json() : {story:[]})))
-    const story = pages.map(page => page.story).flat()
-    const paragraphs = story.map(item => `<div>${item.text}</div>`).join("<p>\n")
+    const paragraphs = pages.map(format).flat().join("<p>\n")
     const html = `<div style="width:600px;margin:60px;">${paragraphs}</div>`
     frame.download(html,'track-preview.html','text/html')
+  }
+
+  function format(page) {
+    const body = page.story.map(item => `<div>${item.text}</div>`)
+    return [`<h2>${page.title}</h2>`,...body]
   }
 </script>
