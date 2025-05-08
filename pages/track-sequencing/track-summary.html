@@ -1,13 +1,17 @@
 <div id=result>
   <button>synopses</button>
+  <button>preview</button>
   <button>print</button>
+</div>
 
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
   const uniq = (value, index, self) => self.indexOf(value) === index
   const context = await frame.context()
   const frames = context.page.story.filter(item =>
     item.type == 'frame' && item.text.match(/track-sequence.html/))
+  source()
   const lines = frames.map(frame => frame.text.split(/\n/).slice(2)).flat().filter(uniq)
   const synopsis = {type:'paragraph',text: `From [[${context.title}]]`}
   window.result.addEventListener('click',event => {
@@ -17,6 +21,26 @@
       case 'print': return print(event)
     }
   })
+
+  function source() {
+    const sourceData = []
+    for (const frame of frames) {
+      const lines = frame.text.split(/\n/).slice(2)
+      const graph = new Graph()
+      const [site,slug] = lines[0].split(/\//)
+      const title = slug => slug.replaceAll(/\-/g," ")
+      const node = (site,slug) => graph.addNode('',{name:title(slug),site,slug})
+      sourceData.push({name:slug,graph})
+      let nid = node(site,slug)
+      for (const line of lines.slice(1)) {
+        const [site,slug] = line.split(/\//)
+        const nnid = node(site,slug)
+        graph.addRel('',nid,nnid)
+        nid = nnid
+      }
+    }
+    window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData},'*')
+  }
 
   function lineup(event) {
     let append = event.shiftKey
