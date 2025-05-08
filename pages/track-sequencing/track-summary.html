@@ -1,17 +1,17 @@
 <div id=result>
-  <button>lineup</button>
   <button>synopses</button>
-  <button>preview</button>
   <button>print</button>
-</div>
+
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
   const context = await frame.context()
-  const lines = context.item.text.split(/\n/).slice(2)
+  const frames = context.page.story.filter(item =>
+    item.type == 'frame' && item.text.match(/track-sequence.html/))
+  const lines = frames.map(frame => frame.text.split(/\n/).slice(2)).flat().filter(uniq)
   const synopsis = {type:'paragraph',text: `From [[${context.title}]]`}
   window.result.addEventListener('click',event => {
     switch (event.target.innerText) {
-      case 'lineup': return lineup(event)
       case 'synopses': return synopses(event)
       case 'preview': return preview(event)
       case 'print': return print(event)
@@ -28,13 +28,14 @@
   }
 
   async function synopses(event) {
+
     const urls = lines.map(line => `//${line}.json`)
     const pages = await Promise.all(urls.map(url => fetch(url)
       .then(res => res.ok ? res.json() : {story:[],title:'missing'})))
     const head = page => ({type:'html',text:`<h2>${page.title}</h2>`})
     const first = page => page.story[0] || 'missing'
     const story = [synopsis,pages.map(page => [head(page),first(page)])].flat(2)
-    const title = `Track Sequence Synopses`
+    const title = `Tracks Sequence Synopses`
     frame.open({title,story},event.shiftKey)
   }
 
