@@ -52,11 +52,9 @@
   }
 
   async function synopses(event) {
-
     const urls = lines.map(line => `//${line}.json`)
     const pages = await Promise.all(urls.map(url => fetch(url)
       .then(res => res.ok ? res.json() : {story:[],title:'missing'})))
-    const head = page => ({type:'html',text:`<h2>${page.title}</h2>`})
     const first = page => page.story[0] || 'missing'
     const story = [synopsis,pages.map(page => [head(page),first(page)])].flat(2)
     const title = `Tracks Sequence Synopses`
@@ -67,9 +65,8 @@
     const urls = lines.map(line => `//${line}.json`)
     const pages = await Promise.all(urls.map(url => fetch(url)
       .then(res => res.ok ? res.json() : {story:[],title:'missing'})))
-    const head = page => ({type:'html',text:`<h2>${page.title}</h2>`})
     const story = [synopsis,pages.map(page => [head(page),...page.story])].flat(2)
-    const title = `Track Sequence Preview`
+    const title = `Tracks Sequence Preview`
     frame.open({title,story},event.shiftKey)
   }
 
@@ -89,4 +86,16 @@
     const body = page.story.map(item => `<div>${link(item.text??'')}</div>`)
     return [`<h2 id=${slug}>${page.title}</h2>`,...body]
   }
+
+  function head(page) {
+    const title = page.title
+    let id = 0
+    for (let i = 0; i < title.length; i++) {
+      const chr = title.charCodeAt(i);
+      id = ((id << 5) - id) + chr;
+      id |= 0; // Convert to 32bit integer
+    }
+    return {type:'html',id,text:`<h2>${title}</h2>`}
+  }
+
 </script>
