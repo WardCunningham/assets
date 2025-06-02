@@ -1,0 +1,49 @@
+<div id=result>working</div>
+<script type=module>
+  const cast = ['Alice','Bob','Charlie']
+  const state = {
+    Alice:   {Alice:{seen:true},Bob:{},Charlie:{}},
+    Bob:     {Alice:{},Bob:{},Charlie:{}},
+    Charlie: {Alice:{},Bob:{},Charlie:{}},
+  }
+  let num = 1
+  const page = await fetch(`http://ward.dojo.fed.wiki/sodoto-simulation.json`).then(res => res.json())
+  const scripts = page.story
+    .map((item,i,a) => item.type == 'code'
+      ? [{label:a[i-1].text,steps:item.text.split(/\n/)}]
+      : [])
+    .flat()
+  window.result.innerHTML = `
+    <table border=1 style="border-collapse:collapse;" >
+      <tr>${cast.map(who => `<td width=140>${who}`).join("")}
+      ${scripts.map(script => `
+        <tr><td colspan=3><center><b>${script.label}</b></center>
+        ${sim(script.steps)}`).join("")}
+    </table>`
+
+
+  function sim(steps) {
+    const score = facts => {
+      const checkbox = (name,abbr) => {
+        const checked = name in facts ? 'checked' : ''
+        return `<input type=checkbox name=${name} ${checked}><label for=${name}> ${abbr} </label>`
+      }
+      return `<div> ${checkbox('seen','so')} ${checkbox('done','do')} ${checkbox('taught','to')}</div>`
+    }
+    return steps.map(step => {
+      const tokens = step.split(/ /)
+      const who = tokens.shift()
+      let them = who
+      if(tokens[1] in state) them = tokens[1]
+      const target = tokens.slice(-1)[0]
+      if(tokens[0]=='click') state[who][them][target] = true
+      console.log({step, who, them, target})
+      const what = `${tokens.join(" ")} <sup>${num++}</sup>`
+      const show = score(state[who][them])
+      return '<tr>' + cast.map(name => name==who ? `<td>${what}<br>${show}` : `<td>`).join("")
+    }).join("")
+  }
+
+
+
+</script>
