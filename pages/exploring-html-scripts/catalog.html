@@ -1,0 +1,31 @@
+<div id=result></div>
+<script type=module>
+  const site = 'ward.dojo.fed.wiki'
+  const slug = 'exploring-html-scripts'
+  const page = await fetch(`http://${site}/${slug}.json`)
+    .then(res => res.json())
+  const first = type => page.story.find(item => item.type == type).text.split(/\n/)
+    .filter(line => line.match(/\w/))
+  const sites = first('roster')
+  const slugs = first('html').slice(1,-1)
+  const sitemap = site => fetch(`http://${site}/system/sitemap.json`)
+    .then(res => res.json())
+    .then(map => {map.site = site; return map})
+  const places = await Promise.all(sites.map(sitemap))
+  for (const place of places)
+    place.has = slugs.filter(slug => place.find(info => info.slug == slug))
+  window.result.innerHTML = places.map(place => `
+    <details><summary>${place.site} (${place.has.length})</summary>
+    ${place.has.map(have => `<li>${have}`).join("\n")}
+    </details>
+  `).join("\n")
+  const have = places.map(place => place.has).flat()
+  const wants = slugs.filter(got => !have.find(slug => slug==got))
+  window.result.innerHTML += `
+    <details><summary>missing (${wants.length})</summary>
+    ${wants.map(want => `<li>${want}`).join("\n")}
+    </details>
+  `
+  console.log({page,sites,slugs,places,have,wants})
+
+</script>
