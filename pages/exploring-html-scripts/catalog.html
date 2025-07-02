@@ -1,5 +1,11 @@
-<div id=result></div>
+<div id=result>working</div>
+<style>li {cursor:pointer;}</style>
 <script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const tick = mark => window.result.innerText += mark
+
+  // I N P U T S
+
   const site = 'ward.dojo.fed.wiki'
   const slug = 'exploring-html-scripts'
   const page = await fetch(`http://${site}/${slug}.json`)
@@ -8,17 +14,23 @@
     .filter(line => line.match(/\w/))
   const sites = first('roster')
   const slugs = first('html').slice(1,-1)
+
+  // L O C A T E
+
   const sitemap = site => fetch(`http://${site}/system/sitemap.json`)
     .then(res => res.json())
-    .then(map => {map.site = site; return map})
+    .then(map => {tick(' .'); map.site = site; return map})
   const places = await Promise.all(sites.map(sitemap))
   for (const place of places)
     place.has = slugs.filter(slug => place.find(info => info.slug == slug))
   window.result.innerHTML = places.map(place => `
     <details><summary>${place.site} (${place.has.length})</summary>
-    ${place.has.map(have => `<li>${have}`).join("\n")}
+    ${place.has.map(have => `<li data-site="${place.site}">${have}`).join("\n")}
     </details>
   `).join("\n")
+
+  // M I S S I N G
+
   const have = places.map(place => place.has).flat()
   const wants = slugs.filter(got => !have.find(slug => slug==got))
   window.result.innerHTML += `
@@ -27,5 +39,17 @@
     </details>
   `
   console.log({page,sites,slugs,places,have,wants})
+
+  // B R O W S E
+
+  window.result.addEventListener('click',event => {
+    const target = event.target
+    const site = target.dataset.site
+    if(site) {
+      const slug = target.innerText.trim()
+      console.log({site,slug})
+      frame.link({site,title:slug},event.shiftKey)
+    }
+  })
 
 </script>
