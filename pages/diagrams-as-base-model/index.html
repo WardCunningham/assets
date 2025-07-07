@@ -65,6 +65,25 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
         font-size:x-small;
       }
 
+      :root {--waveStep: 10px; }
+      @keyframes ripple {
+        from {r:calc(var(--waveStep)/2);  stroke-opacity: 0%;}
+        50%  {r:calc(2*var(--waveStep)); stroke-opacity: 100%;}
+        to   {r:calc(4*var(--waveStep)); stroke-opacity: 0%;}
+      }
+      .wave {
+        stroke: red;
+        stroke-width: 2;
+        fill: none;
+        width: 80px;
+        height: 80px;
+      }
+      .wave circle {
+        r:calc(var(--waveStep)/2);
+        animation: ripple
+        3s linear var(--dt)
+        infinite running;
+      }
     </style>
 
     <table id="metadata">
@@ -77,8 +96,16 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
     </table>
 
     <svg id="container">
+      <defs>
+        <g id="wave" class="wave" >
+          <circle fill=red />
+          <circle style="--dt:0s;"/>
+          <circle style="--dt:1s;"/>
+          <circle style="--dt:2s;"/>
+        </g>
+      </defs>
       <image id="draw"  x="0" y="0" width="100%" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E"/>
-      <circle id="dot" cx=300 cy=300 r=5 style="fill: red;" visibility="hidden" />
+      <use id="dot" href="#wave" x=300 y=300 visibility="hidden" />
       <line id="bolt" x1="0" y1="0" x2="100" y2="100" stroke="red" stroke-width="3" opacity=0.5 visibility="hidden" />
       <g id="glow" style="fill: red;"> </g>
       <rect id="irect" x=100 y=100 width=200 height=200 fill=none stroke=green stroke-dasharray="10" visibility="hidden" />
@@ -266,8 +293,8 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
           let thing = metadetails.things[selection.thing]
           if (thing.dot) {
             let screen = image2screen(thing.dot)
-            dot.setAttribute('cx',screen[0])
-            dot.setAttribute('cy',screen[1])
+            dot.setAttribute('x',screen[0])
+            dot.setAttribute('y',screen[1])
             dot.setAttribute('visibility','visibile')
           }
         }
@@ -291,8 +318,8 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
       function scroll (dx, dy) {
         draw.setAttribute('x',draw.getAttribute('x')*1 + dx)
         draw.setAttribute('y',draw.getAttribute('y')*1 + dy)
-        dot.setAttribute('cx', dot.getAttribute('cx')*1 + dx)
-        dot.setAttribute('cy', dot.getAttribute('cy')*1 + dy)
+        dot.setAttribute('x', dot.getAttribute('x')*1 + dx)
+        dot.setAttribute('y', dot.getAttribute('y')*1 + dy)
       }
 
 
@@ -568,10 +595,10 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
             let dot = metadetails.things[thing].dot
             if (dot) {
               let xy = image2screen(dot)
-              let el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-              el.setAttribute('r', '5');
-              el.setAttribute('cx', xy[0]);
-              el.setAttribute('cy', xy[1]);
+              let el = document.createElementNS("http://www.w3.org/2000/svg", "use");
+              el.setAttribute('href', '#wave');
+              el.setAttribute('x', xy[0]);
+              el.setAttribute('y', xy[1]);
               el.onclick = (e) => {selection.thing = thing; refresh(); window.location = urlhash()}
               glow.append(el)
             }
@@ -650,14 +677,14 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
 // E D I T
 
       function showdot(xy) {
-        let x1 = dot.getAttribute('cx')
-        let y1 = dot.getAttribute('cy')
+        let x1 = dot.getAttribute('x')
+        let y1 = dot.getAttribute('y')
         let screen = expose(image2screen(xy))
-        dot.setAttribute('cx',screen[0])
-        dot.setAttribute('cy',screen[1])
+        dot.setAttribute('x',screen[0])
+        dot.setAttribute('y',screen[1])
         dot.setAttribute('visibility','visible')
-        let x2 = dot.getAttribute('cx')
-        let y2 = dot.getAttribute('cy')
+        let x2 = dot.getAttribute('x')
+        let y2 = dot.getAttribute('y')
         flash(x1,y1,x2,y2)
       }
 
@@ -709,8 +736,8 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
         if (mouse.moved) return
         let x = e.offsetX
         let y = e.offsetY
-        dot.setAttribute('cx',x)
-        dot.setAttribute('cy',y)
+        dot.setAttribute('x',x)
+        dot.setAttribute('y',y)
         dot.setAttribute('visibility','visible')
         if (selection.thing) {
           let thing = metadetails.things[selection.thing]
@@ -765,7 +792,7 @@ iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlmVYSWZNTQAqAAAACAAFARIAAwAAAAEA
           metadetails.things[selection.thing] = thing
           index.data[selection.team][selection.diagram].things.push(selection.thing)
         }
-        let xy = [dot.getAttribute('cx'), dot.getAttribute('cy')]
+        let xy = [dot.getAttribute('x'), dot.getAttribute('y')]
         thing.dot = screen2image(xy)
         thing.description = dfield.value
         thing.type = xfield.value || 'any'
