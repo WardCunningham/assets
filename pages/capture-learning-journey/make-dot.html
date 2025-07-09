@@ -4,6 +4,9 @@
 <button id=tall>Tall</button>
 <button id=group>Group</button>
 <script type=module>
+
+  // D A T A
+
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const assets = 'http://ward.dojo.fed.wiki/assets'
   const page = 'pages/capture-learning-journey'
@@ -22,6 +25,8 @@
       .map(tupple))
   const defns = years.flat()
   console.log({files,defns,years})
+
+  // F O R M A T
 
   window.plain.addEventListener('click',event => {
     show(files[1],event)
@@ -49,6 +54,8 @@
     })
     show(groups.join('')+files[1],event)
   })
+
+  // I N T E G R A T E
 
   function show(dot,event) {
     console.log(dot)
