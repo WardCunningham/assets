@@ -1,0 +1,15 @@
+psfc -> gscs -> mtcs -> lcc -> t -> ri
+tb -> ts -> {pic pss}
+{t pic} -> ri
+{che ri pss} -> fhsc
+fhsc -> fa -> cd -> tft -> fia -> pia -> dia -> cce -> te -> ic -> i3c
+pss -> fhsc
+pss -> tf -> {tft io}
+up -> io -> {id app} -> deb
+i3c -> {gh id io}
+gh -> gh2 -> deb
+deb -> df -> {we qe see ue wve}
+qe -> {wce ge}
+see -> de
+wve -> {oe uae}
+ue -> ce

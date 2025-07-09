@@ -1,0 +1,55 @@
+psfc PPS School Fiscal Crisis
+gscs Glencoe Site Council Survey
+
+mtcs Mt Tabor Community School
+lcc Lewis & Clark Camp
+
+tb TAO Board
+
+t TaborSpace
+ts TAO Strategy
+pic PPB Innovation Council
+pss PDC Software Strategy
+che Caitlin's HS Experience
+
+ri Rosewood Initiative
+
+fhsc Franklin HS Site Council
+tf TAO Foundation
+fa FHS App
+
+cd Career Day
+tft Tech for Tomorrow
+fia Franklin Innovation Academy
+pia PDX Innovation Academy
+dia Dayton Innovation Academy
+cce Careers Class Experiment
+
+te Trig Experiment
+ic Innovations Class
+i3c I3 Center
+
+up Umatilla Partnership
+io Innovate Oregon
+
+gh Genius Hour
+id Innovate Dayton
+
+gh2 Genius Hour 2.0
+
+app Agile Partnership Program
+
+deb Dayton Experiment Book
+df DiG Framework
+we Willamina Experiment
+qe Queensland Experiment
+
+see St. Ebbes' Experiment
+ue Ubuntu Experiment
+wve Westerville Experiment
+wce Woodcrest Experiment
+ge Griffin Experiment
+ce Chicken Experiment
+oe Olentangy Experiment
+uae Upper Arlington Experiment
+de Denstone Experiment

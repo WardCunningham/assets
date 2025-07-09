@@ -1,0 +1,63 @@
+<button id=plain>Plain</button>
+<button id=hover>Hover</button>
+<button id=wide>Wide</button>
+<button id=tall>Tall</button>
+<button id=group>Group</button>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const assets = 'http://ward.dojo.fed.wiki/assets'
+  const page = 'pages/capture-learning-journey'
+  const files = await Promise.all(
+    (['nodes.txt','rels.txt']).map(file =>
+      fetch(`${assets}/${page}/${file}`)
+        .then(res => res.text())
+    ))
+  const tupple = line => {
+    const words = line.trim().split(/ /)
+    return [words[0],words.slice(1).join(" ")]
+  }
+  const words = line => line.split(/ /).join("\\n")
+  const years = files[0].trim().split(/\n\n/)
+    .map(year => year.split(/\n/)
+      .map(tupple))
+  const defns = years.flat()
+  console.log({files,defns,years})
+
+  window.plain.addEventListener('click',event => {
+    show(files[1],event)
+  })
+  window.hover.addEventListener('click',event => {
+    const hovers = defns.map(([k,v]) => `${k} [tooltip="${v}"]\n`)
+    show(hovers.join('')+files[1],event)
+  })
+  window.wide.addEventListener('click',event => {
+    const labels = defns.map(([k,v]) => `${k} [label="${v}"]\n`)
+    show(labels.join('')+files[1],event)
+  })
+  window.tall.addEventListener('click',event => {
+    const labels = defns.map(([k,v]) => `${k} [label="${words(v)}"]\n`)
+    show(labels.join('')+files[1],event)
+  })
+  window.group.addEventListener('click',event => {
+    const groups = years.map((year,i) => {
+      const labels = year.map(([k,v]) => `${k} [label="${words(v)}"]\n`)
+      return `subgraph cluster_${i} {
+        style=filled;
+        color=lightgrey;
+        ${labels.join('')}
+      }`
+    })
+    show(groups.join('')+files[1],event)
+  })
+
+  function show(dot,event) {
+    console.log(dot)
+    const button = event.target.innerText
+    const text = `strict digraph {node [style=filled fillcolor=bisque]${dot}}`
+    const title = `Roots Story Shown ${button}`
+    const story = [
+      {type:'paragraph',text:`From [[Capture Learning Journey]]`},
+      {type:'graphviz',text}]
+    frame.open({title,story},event.shiftKey)
+  }
+</script>
