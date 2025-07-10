@@ -1,8 +1,8 @@
 psfc PPS School Fiscal Crisis
-gscs Glencoe Site Council Survey
+gscs Glencoe Site_Council Survey
 
-mtcs Mt Tabor Community School
-lcc Lewis & Clark Camp
+mtcs Mt._Tabor Community School
+lcc Lewis_& Clark Camp
 
 tb TAO Board
 
@@ -10,24 +10,24 @@ t TaborSpace
 ts TAO Strategy
 pic PPB Innovation Council
 pss PDC Software Strategy
-che Caitlin's HS Experience
+che Caitlin's_HS Experience
 
 ri Rosewood Initiative
 
-fhsc Franklin HS Site Council
+fhsc Franklin_HS Site_Council
 tf TAO Foundation
 fa FHS App
 
 cd Career Day
-tft Tech for Tomorrow
-fia Franklin Innovation Academy
-pia PDX Innovation Academy
-dia Dayton Innovation Academy
-cce Careers Class Experiment
+tft Tech_for Tomorrow
+fia Franklin Innovation_Academy
+pia PDX Innovation_Academy
+dia Dayton Innovation_Academy
+cce Careers Class_Experiment
 
 te Trig Experiment
 ic Innovations Class
-i3c I3 Center
+i3c I3_Center
 
 up Umatilla Partnership
 io Innovate Oregon
@@ -35,7 +35,7 @@ io Innovate Oregon
 gh Genius Hour
 id Innovate Dayton
 
-gh2 Genius Hour 2.0
+gh2 Genius Hour_2.0
 
 app Agile Partnership Program
 
@@ -44,7 +44,7 @@ df DiG Framework
 we Willamina Experiment
 qe Queensland Experiment
 
-see St. Ebbes' Experiment
+see St._Ebbes' Experiment
 ue Ubuntu Experiment
 wve Westerville Experiment
 wce Woodcrest Experiment

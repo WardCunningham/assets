@@ -59,8 +59,9 @@
 
   function show(dot,event) {
     console.log(dot)
+    const clean = string => string.replaceAll(/(?<!cluster)_/g," ")
     const button = event.target.innerText
-    const text = `strict digraph {node [style=filled fillcolor=bisque]${dot}}`
+    const text = `strict digraph {node [style=filled fillcolor=bisque]${clean(dot)}}`
     const title = `Roots Story Shown ${button}`
     const story = [
       {type:'paragraph',text:`From [[Capture Learning Journey]]`},
