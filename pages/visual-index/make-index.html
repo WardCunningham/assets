@@ -9,22 +9,38 @@
   const images = survey.filter(info => info.types.image)
   const maps = survey.filter(info => info.types.map)
   console.log({graphs,images,maps})
+  const button = (survey,label) => `
+    <button data-label="${label}">index</button> ${survey.length} ${label} pages<br>`
   window.result.innerHTML = `
-    ${graphs.length} graphs<br>
-    ${images.length} images<br>
-    ${maps.length} maps<br>
-  `
-  const title = `Visual Index of Graphs`
-  const text = `Graphs individually complete so easily copied.`
-  const story = [{type:'paragraph',text}]
-  for (const info of graphs) {
-    window.result.innerHTML += '. '
-    story.push({type:'paragraph',text:`[[${info.title}]]`})
-    const page = await fetch(`${context}/${info.slug}.json`).then(res => res.json())
-    const items = page.story
-      .filter(item => item.type=='graphviz')
-      .filter(item => !item.text.match(/^DOT/))
-    story.push(...items)
+    ${button(graphs,'graph')}
+    ${button(images,'image')}
+    ${button(maps,'map')}`
+  window.result.querySelectorAll('button')
+    .forEach(button => button.addEventListener('click',doindex))
+
+  async function doindex(event) {
+    const target = event.target
+    const label = target.dataset.label
+    const configs = {
+      graph: {title:'Graphs', type:'graphviz', survey:graphs, ignore:/^DOT/},
+      image: {title:'Images', type:'image', survey:images, ignore:/^DOT/},
+      map: {title:'Maps', type:'map', survey:maps, ignore:/PAGE|LINEUP/}
+    }
+    const config = configs[label]
+    console.log({event,target,label,config})
+    const title = `Visual Index of ${config.title}`
+    const text = `Items individually complete so easily copied.`
+    const story = [{type:'paragraph',text}]
+    for (const info of config.survey) {
+      window.result.innerHTML += '. '
+      story.push({type:'html',text:`<br>[[${info.title}]]<br>`})
+      const page = await fetch(`${context.origin}/${info.slug}.json`).then(res => res.json())
+      const items = page.story
+        .filter(item => item.type==config.type)
+        .filter(item => !item.text.match(config.ignore))
+      story.push(...items)
+    }
+    window.result.innerHTML += '<br>'
+    frame.open({title,story},false)
   }
-  frame.open({title,story},false)
 </script>
