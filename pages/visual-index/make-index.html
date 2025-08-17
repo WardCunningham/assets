@@ -1,0 +1,30 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const page = await fetch(`${context.origin}/item-type-survey.json`).then(res => res.json())
+  const survey = page.story.find(item => item.type=='frame').survey
+  console.log({survey})
+  const graphs = survey.filter(info => info.types.graphviz)
+  const images = survey.filter(info => info.types.image)
+  const maps = survey.filter(info => info.types.map)
+  console.log({graphs,images,maps})
+  window.result.innerHTML = `
+    ${graphs.length} graphs<br>
+    ${images.length} images<br>
+    ${maps.length} maps<br>
+  `
+  const title = `Visual Index of Graphs`
+  const text = `Graphs individually complete so easily copied.`
+  const story = [{type:'paragraph',text}]
+  for (const info of graphs) {
+    window.result.innerHTML += '. '
+    story.push({type:'paragraph',text:`[[${info.title}]]`})
+    const page = await fetch(`${context}/${info.slug}.json`).then(res => res.json())
+    const items = page.story
+      .filter(item => item.type=='graphviz')
+      .filter(item => !item.text.match(/^DOT/))
+    story.push(...items)
+  }
+  frame.open({title,story},false)
+</script>
