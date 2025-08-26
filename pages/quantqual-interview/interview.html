@@ -1,0 +1,82 @@
+<div id=result></div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const asSlug = title => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
+  const asId = string => string.replaceAll(/[^A-Za-z]/g,'_')
+  const context = await frame.context()
+
+  let transcript = []
+  let path = [{site:context.site,slug:context.slug,step:0}]
+  window.result.addEventListener('submit', next)  
+  present()
+
+  async function present() {
+    const here = path.length - 1
+    const url = `${path[here].site}/${path[here].slug}.json`
+    console.log('present',url,path[here].step)
+    const page = await fetch(`//${url}`).then(res => res.json())
+    let asks = page.story
+      .filter(item => item.type == 'markdown')
+      .map(item => parse(item.text))
+    const ask = asks[path[here].step]
+    path[here].ask = ask
+    window.result.innerHTML += `
+      <details open name=interview><summary>${ask.summary}</summary>
+      <form data-here="${here}">
+        ${ask.details}
+        ${inputs(ask.summary,ask.choices)}
+        <center><button>next</button></center>
+      </form>
+      </details>`
+    }
+  
+  function parse(text) {
+    const lines = text.trim().split(/\n+/)
+    const summary = lines.shift()
+    const details = lines.shift()
+    const choices = []
+    while (lines.length && lines[0].startsWith("-")) {
+      const [option, choice] = lines.shift().replace(/- */,'').split(/ *⇒ /)
+      choices.push({option,choice})
+    }
+    return {summary,details,choices}
+  }
+
+  function inputs(summary,choices) {
+    if(choices.length) {
+      return choices.map(each => `<br>
+          <input type=radio id="${asId(each.option)}" name="${asId(summary)}" />
+          <label for="${asId(each.option)}">${each.option}</label>
+      `).join("\n")
+    } else {
+      return `<br>
+          <textarea style="width:100%; height:160px;"></textarea>`
+    }
+  }
+
+  function next(event) {
+    event.preventDefault()
+    const form = event.target
+    const here = form.dataset.here
+    const place = path[here]
+    console.log({form,here,place})
+    const answers = [...form].filter(elem => elem.type == 'radio')
+    console.log({answers})
+    for (let i=0; i<answers.length; i++) {
+      const elem = answers[i]
+      const ask = place.ask.choices[i]
+      if(elem.checked) {
+        const choice = ask.choice
+        if(choice.match(/\[\[.*?\]\]/)) {
+          console.log('no way yet')
+        } else {
+          form.parentElement.open = false
+          const next = {site:place.site,slug:place.slug,step:place.step+1}
+          path.push(next)
+          console.log({path})
+          present()
+        }
+      }
+    }
+ }
+</script>
