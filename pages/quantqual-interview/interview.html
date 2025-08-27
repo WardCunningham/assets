@@ -1,6 +1,7 @@
 <div id=result></div>
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import * as index from 'http://code.fed.wiki/assets/v1/index.js'
   const asSlug = title => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
   const asId = string => string.replaceAll(/[^A-Za-z]/g,'_')
   const context = await frame.context()
@@ -14,8 +15,18 @@
     const here = path.length - 1
     const url = `${path[here].site}/${path[here].slug}.json`
     console.log('present',url,path[here].step)
-    const page = await fetch(`//${url}`).then(res => res.json())
-    let asks = page.story
+    const page = await fetch(`//${url}`).then(res => res.ok? res.json() : null)
+    if (!page) {
+      frame.link({site:path[here].site,title:path[here].slug},false)
+      return done(`can't find "${path[here].slug}"`)
+    }
+    const folds = index.folds(page.story)
+    console.log({folds})
+    if(!('interview' in folds)) {
+      frame.link({site:path[here].site,title:path[here].slug},false)
+      return done(`can't find "interview" here`)
+    }
+    let asks = folds.interview
       .filter(item => item.type == 'markdown')
       .map(item => parse(item.text))
     const ask = asks[path[here].step]
@@ -59,24 +70,30 @@
     const form = event.target
     const here = form.dataset.here
     const place = path[here]
-    console.log({form,here,place})
+    console.log({event})
+    if (!place.ask.choices.length) {
+      form.parentElement.open = false
+      return done()
+    }
     const answers = [...form].filter(elem => elem.type == 'radio')
-    console.log({answers})
     for (let i=0; i<answers.length; i++) {
       const elem = answers[i]
       const ask = place.ask.choices[i]
       if(elem.checked) {
+        form.parentElement.open = false
         const choice = ask.choice
-        if(choice.match(/\[\[.*?\]\]/)) {
-          console.log('no way yet')
-        } else {
-          form.parentElement.open = false
-          const next = {site:place.site,slug:place.slug,step:place.step+1}
-          path.push(next)
-          console.log({path})
-          present()
-        }
+        const link = choice.match(/\[\[(.*?)\]\]/)
+        const next = link ?
+          {site:place.site,slug:asSlug(link[1]),step:0} :
+          {site:place.site,slug:place.slug,step:place.step+1}
+        path.push(next)
+        present()
       }
     }
- }
+  }
+
+  function done(message="thank you") {
+    window.result.innerHTML += `
+      <center>done, ${message}</center>`
+  }
 </script>
