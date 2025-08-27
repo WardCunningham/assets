@@ -36,7 +36,7 @@
       <form data-here="${here}">
         ${ask.details}
         ${inputs(ask.summary,ask.choices)}
-        <center><button>next</button></center>
+        <center><button>next</button> <button>why</button></center>
       </form>
       </details>`
     }
@@ -68,9 +68,13 @@
   function next(event) {
     event.preventDefault()
     const form = event.target
+    const button = event.submitter.innerText
     const here = form.dataset.here
     const place = path[here]
-    console.log({event})
+    console.log({event,form,button,here,place})
+    if (button=='why') {
+      return frame.link({site:place.site,title:place.slug},false)
+    }
     if (!place.ask.choices.length) {
       form.parentElement.open = false
       return done()
