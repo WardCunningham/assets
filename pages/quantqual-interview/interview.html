@@ -7,23 +7,22 @@
   const context = await frame.context()
 
   let transcript = []
-  let path = [{site:context.site,slug:context.slug,step:0}]
+  let path = [{site:context.site,title:context.title,step:0}]
   window.result.addEventListener('submit', next)  
   present()
 
   async function present() {
     const here = path.length - 1
-    const url = `${path[here].site}/${path[here].slug}.json`
-    console.log('present',url,path[here].step)
+    const url = `${path[here].site}/${asSlug(path[here].title)}.json`
     const page = await fetch(`//${url}`).then(res => res.ok? res.json() : null)
     if (!page) {
-      frame.link({site:path[here].site,title:path[here].slug},false)
-      return done(`can't find "${path[here].slug}"`)
+      frame.link({site:path[here].site,title:path[here].title},false)
+      return done(`can't find "${path[here].title}"`)
     }
     const folds = index.folds(page.story)
     console.log({folds})
     if(!('interview' in folds)) {
-      frame.link({site:path[here].site,title:path[here].slug},false)
+      frame.link({site:path[here].site,title:path[here].title},false)
       return done(`can't find "interview" here`)
     }
     let asks = folds.interview
@@ -47,7 +46,7 @@
     const details = lines.shift()
     const choices = []
     while (lines.length && lines[0].startsWith("-")) {
-      const [option, choice] = lines.shift().replace(/- */,'').split(/ *⇒ /)
+      const [option, choice] = lines.shift().replace(/- */,'').split(/ *⇒ */)
       choices.push({option,choice})
     }
     return {summary,details,choices}
@@ -56,7 +55,7 @@
   function inputs(summary,choices) {
     if(choices.length) {
       return choices.map(each => `<br>
-          <input type=radio id="${asId(each.option)}" name="${asId(summary)}" />
+          <input type=radio id="${asId(each.option)}" name="choice" />
           <label for="${asId(each.option)}">${each.option}</label>
       `).join("\n")
     } else {
@@ -73,7 +72,7 @@
     const place = path[here]
     console.log({event,form,button,here,place})
     if (button=='why') {
-      return frame.link({site:place.site,title:place.slug},false)
+      return frame.link({site:place.site,title:place.title},false)
     }
     if (!place.ask.choices.length) {
       form.parentElement.open = false
@@ -88,8 +87,8 @@
         const choice = ask.choice
         const link = choice.match(/\[\[(.*?)\]\]/)
         const next = link ?
-          {site:place.site,slug:asSlug(link[1]),step:0} :
-          {site:place.site,slug:place.slug,step:place.step+1}
+          {site:place.site,title:link[1],step:0} :
+          {site:place.site,title:place.title,step:place.step+1}
         path.push(next)
         present()
       }
