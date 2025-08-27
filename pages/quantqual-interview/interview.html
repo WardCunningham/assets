@@ -30,15 +30,18 @@
       .map(item => parse(item.text))
     const ask = asks[path[here].step]
     path[here].ask = ask
-    window.result.innerHTML += `
+    const elem = document.createElement('div')
+    elem.id = here
+    elem.innerHTML = `
       <details open name=interview><summary>${ask.summary}</summary>
       <form data-here="${here}">
         ${ask.details}
         ${inputs(ask.summary,ask.choices)}
-        <center><button>next</button> <button>why</button></center>
+        <center><button>why</button> <button>next</button></center>
       </form>
       </details>`
-    }
+    window.result.append(elem)
+  }
   
   function parse(text) {
     const lines = text.trim().split(/\n+/)
@@ -96,7 +99,9 @@
   }
 
   function done(message="thank you") {
-    window.result.innerHTML += `
-      <center>done, ${message}</center>`
+    const elem = document.createElement('div')
+    elem.id = path.length
+    elem.innerHTML = `<center>done, ${message}</center>`
+    window.result.append(elem)
   }
 </script>
