@@ -28,17 +28,25 @@
     let asks = folds.interview
       .filter(item => item.type == 'markdown')
       .map(item => parse(item.text))
+    if(path[here].step >= asks.length)
+      return done()
     const ask = asks[path[here].step]
     path[here].ask = ask
     const elem = document.createElement('div')
     elem.id = here
     elem.innerHTML = `
-      <details open name=interview><summary>${ask.summary}</summary>
+      <details open name=interview>
+        <summary>
+          ${ask.summary}
+          <span style="color:#666"></span>
+        </summary>
+      <hr>
       <form data-here="${here}">
         ${ask.details}
         ${inputs(ask.summary,ask.choices)}
         <center><button>why</button> <button>next</button></center>
       </form>
+      <hr>
       </details>`
     window.result.append(elem)
   }
@@ -78,14 +86,20 @@
       return frame.link({site:place.site,title:place.title},false)
     }
     if (!place.ask.choices.length) {
+      const words = form[0].value.matchAll(/[A-Za-z]+/g)
+      if(words)
+        form.parentElement.querySelector('span').innerText = [...words].slice(0,4).join(" ")
       form.parentElement.open = false
-      return done()
+      const next = {site:place.site,title:place.title,step:place.step+1}
+      path.push(next)
+      return present()
     }
     const answers = [...form].filter(elem => elem.type == 'radio')
     for (let i=0; i<answers.length; i++) {
       const elem = answers[i]
       const ask = place.ask.choices[i]
       if(elem.checked) {
+        form.parentElement.querySelector('span').innerText = ask.option
         form.parentElement.open = false
         const choice = ask.choice
         const link = choice.match(/\[\[(.*?)\]\]/)
