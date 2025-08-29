@@ -86,30 +86,28 @@
     if (button=='why') {
       return frame.link({site:place.site,title:place.title},false)
     }
+    let report
+    let next = {site:place.site,title:place.title,step:place.step+1}
     if (!place.ask.choices.length) {
       const words = form[0].value.matchAll(/[A-Za-z]+/g)
-      if(words)
-        form.parentElement.querySelector('span').innerText = [...words].slice(0,4).join(" ")
-      form.parentElement.open = false
-      const next = {site:place.site,title:place.title,step:place.step+1}
-      path.push(next)
-      return present()
-    }
-    const answers = [...form].filter(elem => elem.type == 'radio')
-    for (let i=0; i<answers.length; i++) {
-      const elem = answers[i]
-      const ask = place.ask.choices[i]
-      if(elem.checked) {
-        form.parentElement.querySelector('span').innerText = ask.option
-        form.parentElement.open = false
-        const choice = ask.choice
-        const link = choice.match(/\[\[(.*?)\]\]/)
-        const next = link ?
-          {site:place.site,title:link[1],step:0} :
-          {site:place.site,title:place.title,step:place.step+1}
-        path.push(next)
-        present()
+      if(words) report = [...words].slice(0,4).join(" ")
+    } else {
+      const answers = [...form].filter(elem => elem.type == 'radio')
+      for (let i=0; i<answers.length; i++) {
+        const ask = place.ask.choices[i]
+        if(answers[i].checked) {
+          report = ask.option
+          const link = ask.choice.match(/\[\[(.*?)\]\]/)
+          if(link) next = {site:place.site,title:link[1],step:0}
+        }
       }
+    }
+    if (report) {
+      const details = form.parentElement
+      details.querySelector('span').innerText = report
+      details.open = false
+      path.push(next)
+      present()
     }
   }
 
