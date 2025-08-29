@@ -21,7 +21,6 @@
       return done(`can't find "${place.title}"`)
     }
     const folds = index.folds(page.story)
-    console.log({folds})
     if(!('interview' in folds)) {
       frame.link({site:place.site,title:place.title},false)
       return done(`can't find "interview" here`)
@@ -82,7 +81,6 @@
     const button = event.submitter.innerText
     const here = form.dataset.here
     const place = path[here]
-    console.log({event,form,button,here,place})
     if (button=='why') {
       return frame.link({site:place.site,title:place.title},false)
     }
@@ -103,12 +101,18 @@
       }
     }
     if (report) {
+      erase(here)
       const details = form.parentElement
       details.querySelector('span').innerText = report
       details.open = false
       path.push(next)
       present()
     }
+  }
+
+  function erase(here) {
+    const divs = [...window.result.children].reverse()
+    while(Number(divs[0].id) > here) divs.shift().remove()
   }
 
   function done(message="thank you") {
