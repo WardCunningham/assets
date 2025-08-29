@@ -13,25 +13,26 @@
 
   async function present() {
     const here = path.length - 1
-    const url = `${path[here].site}/${asSlug(path[here].title)}.json`
+    const place = path[here]
+    const url = `${place.site}/${asSlug(place.title)}.json`
     const page = await fetch(`//${url}`).then(res => res.ok? res.json() : null)
     if (!page) {
-      frame.link({site:path[here].site,title:path[here].title},false)
-      return done(`can't find "${path[here].title}"`)
+      frame.link({site:place.site,title:place.title},false)
+      return done(`can't find "${place.title}"`)
     }
     const folds = index.folds(page.story)
     console.log({folds})
     if(!('interview' in folds)) {
-      frame.link({site:path[here].site,title:path[here].title},false)
+      frame.link({site:place.site,title:place.title},false)
       return done(`can't find "interview" here`)
     }
     let asks = folds.interview
       .filter(item => item.type == 'markdown')
       .map(item => parse(item.text))
-    if(path[here].step >= asks.length)
+    if(place.step >= asks.length)
       return done()
-    const ask = asks[path[here].step]
-    path[here].ask = ask
+    const ask = asks[place.step]
+    place.ask = ask
     const elem = document.createElement('div')
     elem.id = here
     elem.innerHTML = `
