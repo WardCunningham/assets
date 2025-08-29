@@ -2,6 +2,7 @@
 <script type=module>
   import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   import * as index from 'http://code.fed.wiki/assets/v1/index.js'
+  // import {Accordion} from './accordion.js'
   const asSlug = title => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
   const asId = string => string.replaceAll(/[^A-Za-z]/g,'_')
   const context = await frame.context()
@@ -40,14 +41,17 @@
           ${ask.summary}
           <span style="color:#666"></span>
         </summary>
-      <hr>
-      <form data-here="${here}">
-        ${ask.details}
-        ${inputs(ask.summary,ask.choices)}
-        <center><button>why</button> <button>next</button></center>
-      </form>
-      <hr>
+      <div class="content">
+        <hr>
+        <form data-here="${here}">
+          ${ask.details}
+          ${inputs(ask.summary,ask.choices)}
+          <center><button>why</button> <button>next</button></center>
+        </form>
+        <hr>
+      </div>
       </details>`
+    // new Accordion(elem)
     window.result.append(elem)
   }
   
@@ -102,7 +106,7 @@
     }
     if (report) {
       erase(here)
-      const details = form.parentElement
+      const details = form.closest('details')
       details.querySelector('span').innerText = report
       details.open = false
       path.push(next)
