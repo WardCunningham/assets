@@ -5,6 +5,7 @@
   // import {Accordion} from './accordion.js'
   const asSlug = title => title.replace(/\s/g, '-').replace(/[^A-Za-z0-9-]/g, '').toLowerCase()
   const asId = string => string.replaceAll(/[^A-Za-z]/g,'_')
+  const delay = time => new Promise(res => setTimeout(res,time));
   const context = await frame.context()
 
   let transcript = []
@@ -16,7 +17,9 @@
     const here = path.length - 1
     const place = path[here]
     const url = `${place.site}/${asSlug(place.title)}.json`
+    const think = delay(600) // start thinking
     const page = await fetch(`//${url}`).then(res => res.ok? res.json() : null)
+    await think
     if (!page) {
       frame.link({site:place.site,title:place.title},false)
       return done(`can't find "${place.title}"`)
