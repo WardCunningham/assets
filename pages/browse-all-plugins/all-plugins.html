@@ -1,0 +1,70 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const endpoint = `/assets/plugins/browse-all-plugins/plugins.json`
+  const plugins = await fetch(endpoint).then(res => res.json())
+  const install = plugins.install
+  const categories = ['format','data','other','none']
+  console.log({install})
+
+
+  window.result.innerHTML = categories.map(category => `
+    <h3>${category}</h3>
+    ${install
+      .filter(plugin => (plugin.factory?.category??'none') == category)
+      .map(format)
+      .join("\n")}`
+    )
+
+  function format(plugin) {
+    return `
+      <details>
+        <summary><a href=# style="text-decoration: none;">
+          ${plugin.plugin}</a> — ${plugin.factory?.title??'<i style="color:#888">missing</i>'}
+        </summary>
+        ${details(plugin)}
+      </details>
+    `
+  }
+
+  function details(plugin) {
+    function escape(markup) {
+      return markup
+        .replaceAll(/&/g, '&amp;')
+        .replaceAll(/</g, '&lt;')
+        .replaceAll(/>/g, '&gt;')
+        .replaceAll(/\[\[(.*?)\]\]/g, '$1')
+        .replaceAll(/\[.*? (.*?)\]/g, '$1')
+    }
+    const html = (plugin.pages||[]).map(page => `
+      <p><a href=# style="text-decoration: none;" data-slug=${page.slug}>
+          ${page.title}</a> — ${escape(page.synopsis??'')}
+      </p>
+    `).join("\n")
+    const report = {
+      author: plugin?.package.author,
+      contributors: plugin?.package.contributors,
+      version: plugin?.package.version,
+      repository: plugin?.package.repository
+    }
+    return `
+      <hr>
+      ${html}
+      <details><summary>more ...</summary>
+        <pre>${JSON.stringify(report,null,2)}</pre>
+      </details>
+      <hr>`
+  }
+
+  for (const anchor of window.result.querySelectorAll('a')) {
+    anchor.addEventListener('click',event => {
+      event.preventDefault()
+      const target = event.target
+      const type = target.innerText.trim()
+      const slug = target.dataset?.slug ?
+        target.dataset.slug :
+        `about-${type}-plugin`
+      frame.link(slug,event.shiftKey)
+    })
+  }
+</script>
