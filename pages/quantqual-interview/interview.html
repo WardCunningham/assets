@@ -110,7 +110,7 @@
     const details = lines.shift()
     const choices = []
     while (lines.length && lines[0].startsWith("-")) {
-      const [option, choice] = lines.shift().replace(/- */,'').split(/ *⇒ */)
+      const [option, _, choice] = lines.shift().replace(/- */,'').split(/ *(⇒|=>) */)
       choices.push({option,choice})
     }
     return {summary,details,choices}
