@@ -80,6 +80,7 @@
     const place = path[here]
     const ask = place.ask
     if(!ask) return done()
+    if(ask.summary == 'jump') return
     const elem = document.createElement('div')
     elem.id = here
     elem.innerHTML = `
@@ -208,14 +209,16 @@
     const elem = document.createElement('div')
     elem.id = path.length
     elem.innerHTML = `<center>done, ${message}<br><button>save</button></center>`
-    elem.querySelector('button').addEventListener('click',event => {
-      const title = `Saved ${context.title}`
-      const text = `Saved interview from [[${context.title}]].`
-      const item = context.page.story.find(item => item.type == 'frame')
-      item.path = path
-      const story = [{type:'paragraph',text},item]
-      frame.open({title,story},event.shiftKey)
-    })
+    if(!(item?.path)) {
+      elem.querySelector('button').addEventListener('click',event => {
+        const title = `Saved ${context.title}`
+        const text = `Saved interview from [[${context.title}]].`
+        const item = context.page.story.find(item => item.type == 'frame')
+        item.path = path
+        const story = [{type:'paragraph',text},item]
+        frame.open({title,story},event.shiftKey)
+      })  
+    }
     window.result.append(elem)
   }
 

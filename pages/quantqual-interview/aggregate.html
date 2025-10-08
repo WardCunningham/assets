@@ -1,0 +1,43 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+
+  const context = await frame.context()
+  const paths = context.page.story
+    .map(item => item.path)
+    .filter(path => path)
+  const aspects = []
+
+  for (const path of paths) {
+    console.log({path})
+    let prev
+    for (const step of path) {
+      let aspect = aspects.find(aspect => aspect.name == step.title)
+      if(!aspect) {
+        aspect = {name:step.title, graph:new Graph()}
+        aspects.push(aspect)
+      }
+      if(step.ask && step.report) {
+        const nid = aspect.graph.addUniqNode(step.ask.summary,{name:step.report})
+        if(prev) {
+          if(prev.aspect === aspect) {
+            aspect.graph.addRel('',prev.nid,nid)
+          } else {
+            console.log('different aspect')
+            const other = prev.aspect.graph.nodes[prev.nid]
+            const onid = aspect.graph.addUniqNode(other.type,other.props)
+            aspect.graph.addRel('',onid,nid)
+          }
+        }
+        console.log(step.title,':',step.ask.summary,':',step.report)
+        prev = {nid,aspect}
+      }
+    }
+  }
+
+  window.result.innerHTML = `${aspects.length} aspects`
+  const sourceData = aspects
+  window.parent.postMessage({action: "publishSourceData", name:'aspect', sourceData},'*')
+
+</script>
