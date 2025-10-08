@@ -19,7 +19,12 @@
         aspects.push(aspect)
       }
       if(step.ask && step.report) {
-        const nid = aspect.graph.addUniqNode(step.ask.summary,{name:step.report})
+        const props = {
+          name:step.report,
+          site:step.site,
+          title:step.title
+        }
+        const nid = aspect.graph.addUniqNode(step.ask.summary,props)
         if(prev) {
           if(prev.aspect === aspect) {
             aspect.graph.addRel('',prev.nid,nid)
