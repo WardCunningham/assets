@@ -1,0 +1,78 @@
+<div id=result>working</div>
+<script type=module>
+  import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
+  const uniq = (value, index, self) => self.indexOf(value) === index
+  const words = name => name.replaceAll(/([a-z])([A-Z])/g, (a,b,c) => `${b}\n${c}`)
+
+// fetch the nodes and edges from the lines provided
+
+  const site = "http://ward.dojo.fed.wiki"
+  const asset = "wiki-in-1996/c2Wiki1996.graphml"
+  const graphml = await fetch(`${site}/assets/pages/${asset}`).then(res => res.text())
+  const lines = graphml.split("\n")
+  const pages = lines.filter(line => line.match('<node'))
+  const links = lines.filter(line => line.match('<edge'))
+  window.result.innerText = `
+    ${lines.length} lines
+    ${pages.length} pages
+    ${links.length} links`
+
+// number each node and index in and out nodes as numbers
+
+  const index = new Map() // name => {i, in:[], out:[]}
+  const names = []
+  pages.forEach((page,i) => {
+    const name = page.match(/"(.*?)"/)[1]
+    index.set(name,{i, in:[], out:[]})
+    names.push(name)
+  })
+  links.forEach(link => {
+    const [,source,target] = link.match(/source="(.*?)" target="(.*?)"/)
+    if(source != target) {
+      const s = index.get(source)
+      const t = index.get(target)
+      s.out.push(t.i)
+      t.in.push(s.i)
+    }
+  })
+
+// add aspects made from randomly selected starting points
+
+  const aspects = []
+  while (aspects.length < 30) {
+    const random = Math.floor(names.length * Math.random())
+    const name = names[random]
+    const here = index.get(name)
+    if (here.out.length < 2) continue
+    const graph = new Graph()
+    graph.addNode('',{name:words(name)})
+    aspects.push({name,graph})
+    const todo = here.out.slice(0,5)
+    for(const doing of todo) {
+      const nid = graph.addUniqNode('',{name:words(names[doing])})
+      graph.addRel('',0,nid)
+    }
+  }
+
+// count unique nodes to charaterize this selection
+
+  console.log({aspects})
+  const all = aspects
+    .map(aspect => aspect.graph.nodes)
+    .flat()
+    .map(node => node.props.name)
+    .filter(uniq)
+
+// share these aspects with other pages in the lineub
+
+  const sourceData = aspects
+  console.log(sourceData)
+  window.parent.postMessage({
+    action: "publishSourceData",
+    name:'aspect',
+    sourceData},'*')
+  window.result.innerText += `
+    ${aspects.length} aspects
+    ${all.length} nodes  `
+
+</script>
