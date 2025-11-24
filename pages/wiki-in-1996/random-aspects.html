@@ -1,4 +1,9 @@
-<div id=result>working</div>
+<table><tr>
+  <td id=result>working
+  <td id=stats>
+  <td><button hidden>again</button>
+</table>
+
 <script type=module>
   import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
   const uniq = (value, index, self) => self.indexOf(value) === index
@@ -16,6 +21,7 @@
     ${lines.length} lines
     ${pages.length} pages
     ${links.length} links`
+  lines.length = 0
 
 // number each node and index in and out nodes as numbers
 
@@ -26,6 +32,7 @@
     index.set(name,{i, in:[], out:[]})
     names.push(name)
   })
+  pages.length = 0
   links.forEach(link => {
     const [,source,target] = link.match(/source="(.*?)" target="(.*?)"/)
     if(source != target) {
@@ -35,19 +42,31 @@
       t.in.push(s.i)
     }
   })
+  links.length = 0
+  again()
+  const button = document.querySelector('button')
+  button.addEventListener('click',again)
+  button.hidden = false
+
+  function again() {
 
 // add aspects made from randomly selected starting points
 
   const aspects = []
+  const done = []
   while (aspects.length < 30) {
     const random = Math.floor(names.length * Math.random())
     const name = names[random]
     const here = index.get(name)
-    if (here.out.length < 2) continue
+    const out = here.out
+      .filter(i => index.get(names[i]).in.length < 5)
+    if (out.length < 2) continue
+    if (done.includes(here.i)) continue
+    done.push(here.i)
     const graph = new Graph()
     graph.addNode('',{name:words(name)})
     aspects.push({name,graph})
-    const todo = here.out.slice(0,5)
+    const todo = out.slice(0,5)
     for(const doing of todo) {
       const nid = graph.addUniqNode('',{name:words(names[doing])})
       graph.addRel('',0,nid)
@@ -60,6 +79,7 @@
   const all = aspects
     .map(aspect => aspect.graph.nodes)
     .flat()
+  const most = all
     .map(node => node.props.name)
     .filter(uniq)
 
@@ -71,8 +91,11 @@
     action: "publishSourceData",
     name:'aspect',
     sourceData},'*')
-  window.result.innerText += `
+  window.stats.innerText = `
     ${aspects.length} aspects
-    ${all.length} nodes  `
+    ${most.length} nodes
+    ${all.length - most.length} dups`
+
+  }
 
 </script>
