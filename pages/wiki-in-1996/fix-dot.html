@@ -1,0 +1,25 @@
+<pre id=result>working</pre>
+<script type=module>
+  
+  //  curl -s http://ward.dojo.fed.wiki/patterns-on-wiki-1996.json | jq -r '.story[]|select(.type=="graphviz")|.text' | perl -e '$_ = join("", <STDIN>);s/label="[^"]*?\n.*?"/($& =~ s/\\n/\\\n/)/g; print;'
+
+  const page = await fetch('http://ward.dojo.fed.wiki/patterns-on-wiki-1996.json').then(res => res.json())
+  const item = page.story.find(item => item.type == 'graphviz')
+  const text = item.text
+  let openquote = false
+
+  window.result.innerText = text.split(/\n/).reduce(fixer,'')
+ 
+  function fixer(sum,each) {
+    if(openquote) {
+      if (each.match(/"/)) openquote = false
+      return sum + "\\n" + each
+    } else if(each.match(/\[label="[^"]*$/)) {
+      openquote = true
+      return sum + "\n" + each
+    } else {
+      return sum + "\n" + each
+    }
+  }
+
+</script>
