@@ -1,0 +1,24 @@
+<pre id=result>working</pre>
+<script type=module>
+
+  const site = "http://ward.dojo.fed.wiki"
+  const asset = "wiki-in-1996/c2Wiki1996.graphml"
+  const graphml = await fetch(`${site}/assets/pages/${asset}`)
+    .then(res => res.text())
+  const pages = graphml
+    .split("\n")
+    .filter(line => line.match('<node'))
+
+  const url = `https://c2.com/wiki/remodel/allUserNames.txt`
+  const people = (await fetch(url).then(res => res.text()))
+    .trim().split(/\n/).map(line => line.trim().split(/\s+/)[1])
+
+  const skip = pages
+    .map(line => line.match(/"(.+?)"/)[1])
+    .filter(name => people.includes(name))
+
+  window.result.innerText = skip.join("\n")
+  pages.length = 0
+  people.length = 0
+
+</script>
