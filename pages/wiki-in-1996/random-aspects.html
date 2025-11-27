@@ -7,7 +7,9 @@
 <script type=module>
   import {Graph} from 'https://wardcunningham.github.io/graph/graph.js'
   const uniq = (value, index, self) => self.indexOf(value) === index
+  const any = array => array[Math.floor(array.length * Math.random())]
   const words = name => name.replaceAll(/([a-z])([A-Z])/g, (a,b,c) => `${b}\n${c}`)
+  const params = Object.fromEntries(new URLSearchParams(location.search).entries())
 
 // fetch the nodes and edges from the lines provided
 
@@ -17,7 +19,7 @@
   const lines = graphml.split("\n")
   const pages = lines.filter(line => line.match('<node'))
   const links = lines.filter(line => line.match('<edge'))
-  window.result.innerText = `
+  window.result.innerText = ` -- ${params.method||''} --
     ${lines.length} lines
     ${pages.length} pages
     ${links.length} links`
@@ -25,8 +27,8 @@
 
 // number each node and index in and out nodes as numbers
 
-  const index = new Map() // name => {i, in:[], out:[]}
-  const names = []
+  const index = new Map()  // name => {i, in:[s,...], out:[j,...]}
+  const names = []         // i => name
   pages.forEach((page,i) => {
     const name = page.match(/"(.*?)"/)[1]
     index.set(name,{i, in:[], out:[]})
@@ -54,14 +56,18 @@
 
   const aspects = []
   const done = []
-  while (aspects.length < 30) {
-    const random = Math.floor(names.length * Math.random())
-    const name = names[random]
+
+  const nodes = name => {
+    const graph = new Graph()
+    graph.addNode('',{name:words(name)})
+    aspects.push({name,graph})
+  }
+
+  const tree = name => {
     const here = index.get(name)
-    const out = here.out
-      .filter(i => index.get(names[i]).in.length < 5)
-    if (out.length < 2) continue
-    if (done.includes(here.i)) continue
+    const out = here.out.filter(i => index.get(names[i]).in.length < 5)
+    if (out.length < 2) return
+    if (done.includes(here.i)) return
     done.push(here.i)
     const graph = new Graph()
     graph.addNode('',{name:words(name)})
@@ -70,6 +76,33 @@
     for(const doing of todo) {
       const nid = graph.addUniqNode('',{name:words(names[doing])})
       graph.addRel('',0,nid)
+    }
+  }
+
+  const blanket = name => {
+    const here = index.get(name)
+    const jrs = here.out.slice(0,5)
+    const srs = here.in.slice(0,3)
+    console.log(name,jrs[0],names[jrs[0]])
+    const srjrs = jrs
+      .map(jr => [jr, index.get(names[jr]).in.slice(0,3)])
+    const graph = new Graph()
+    const page = i => graph.addUniqNode('',{name:words(names[i])})
+    graph.addNode('',{name:words(name)})
+    srs.forEach(sr => graph.addRel('',page(sr),0))
+    jrs.forEach(jr => graph.addRel('',0,page(jr)))
+    srjrs.forEach(([jr,srs]) =>
+      srs.forEach(sr => graph.addRel('',page(sr),page(jr))))
+    aspects.push({name,graph})
+  }
+
+  while (aspects.length < 30) {
+    const name = any(names)
+    switch (params.method) {
+    case 'nodes': nodes(name); break
+    case 'tree': tree(name); break
+    case 'blanket': blanket(name); break
+    default: tree(name)
     }
   }
 
