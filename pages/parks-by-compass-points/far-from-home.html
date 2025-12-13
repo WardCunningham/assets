@@ -1,0 +1,32 @@
+<div id=result>working</div>
+<script type=module>
+  
+  const site = `http://found.ward.fed.wiki`
+  const slug = `places-winter-25`
+  const page = await fetch(`${site}/${slug}.json`).then(res => res.json())
+  const items = page.story
+    .filter(item => ['pagefold','map'].includes(item.type))
+  const actions = page.journal
+    .filter(action => action.type == 'edit' && action.item.type == 'map')
+    .filter(action => action.item.text.split(/\n/).length > 1)
+
+  window.result.innerHTML = actions
+    .map(action => {
+      const when = new Date(action.date)
+      const date = when.toLocaleDateString().slice(0,-5)
+      const day = when.toLocaleString(window.navigator.language, {weekday: 'short'})
+      const fold = items[items.findIndex(item => item.id == action.id)-1].text
+      const coord = action.item.text.split(/\n/).pop()
+      return `${day} ${date} ⇒ ${dist(coord)} ${fold}`
+    })
+    .join("<br>")
+
+  function dist(coord) {
+    const home = {lat:45.4701282, lon:-122.7462476}
+    const [lat,lon] = coord.split(/,/)
+    const dx = Math.abs(home.lon - lon) * 49
+    const dy = Math.abs(home.lat - lat) * 69
+    return (2*(dx+dy)).toFixed(2)
+  }
+
+</script>
