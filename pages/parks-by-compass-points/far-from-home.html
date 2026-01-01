@@ -1,6 +1,7 @@
 <div id=result>working</div>
 <script type=module>
 
+  const home = {lat:45.4701282, lon:-122.7462476}
   const site = `http://found.ward.fed.wiki`
   const slug = `places-winter-25`
   const page = await fetch(`${site}/${slug}.json`).then(res => res.json())
@@ -21,7 +22,7 @@
       const fold = items[items.findIndex(item => item.id == action.id)-1].text
       const coord = action.item.text.split(/\n/).pop()
       if(occupied(fold)) {rows.push(row); row = {}}
-      row[fold] = `${day} ⇒ ${dist(coord)}`
+      row[fold] = {day,date,coord}
       return `${day} ${date} ⇒ ${dist(coord)} ${fold}`
     })
     .join("<br>")
@@ -33,7 +34,7 @@
         ${quad}`).join("")}`}
       ${rows.map(row =>
         `<tr>${quads.map(quad => `<td style="border: 1px solid black; padding: 6px">
-          ${row[quad]||""}`).join("")}`
+          ${format(row[quad])}`).join("")}`
       ).join("")}
     </table>`
 
@@ -43,15 +44,36 @@
     <details><summary>data</summary>
       ${list}
     </details>
-
   `
 
+  function format(item) {
+    if (item) {
+      const {day,date,coord} = item
+      return `<span title="${bearing(coord)} on ${date}">${day} ⇒ ${dist(coord)}</span>`
+    }
+    return ''
+  }
+
   function dist(coord) {
-    const home = {lat:45.4701282, lon:-122.7462476}
     const [lat,lon] = coord.split(/,/)
     const dx = Math.abs(home.lon - lon) * 49
     const dy = Math.abs(home.lat - lat) * 69
     return (2*(dx+dy)).toFixed(2)
+  }
+
+  function bearing(coord) {
+    const [lat,lon] = coord.split(/,/)
+
+    const φ1 = home.lat * Math.PI / 180;
+    const φ2 = lat * Math.PI / 180;
+    const Δλ = (lon - home.lon) * Math.PI / 180;
+
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+    const θ = Math.atan2(y, x); // Radians
+
+    const brng = (θ * 180 / Math.PI + 360) % 360;
+    return `${Math.round(brng)}°`;
   }
 
   function occupied(fold) {
