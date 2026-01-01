@@ -38,11 +38,12 @@
     </table>`
 
   window.result.innerHTML = `
+    ${table}
+    <br>
     <details><summary>data</summary>
       ${list}
     </details>
-    <br>
-      ${table}
+
   `
 
   function dist(coord) {
