@@ -18,11 +18,12 @@
     .map(action => {
       const when = new Date(action.date)
       const date = when.toLocaleDateString().slice(0,-5)
+      const month = date.split(/\//)[0]
       const day = when.toLocaleString(window.navigator.language, {weekday: 'short'})
       const fold = items[items.findIndex(item => item.id == action.id)-1].text
       const coord = action.item.text.split(/\n/).pop()
       if(occupied(fold)) {rows.push(row); row = {}}
-      row[fold] = {day,date,coord}
+      row[fold] = {day,date,month,coord}
       return `${day} ${date} ⇒ ${dist(coord)} ${fold}`
     })
     .join("<br>")
@@ -32,9 +33,8 @@
     <table style="border-collapse: collapse;">
       ${`<tr>${quads.map(quad => `<th  style="text-align: center">
         ${quad}`).join("")}`}
-      ${rows.map(row =>
-        `<tr>${quads.map(quad => `<td style="border: 1px solid black; padding: 6px">
-          ${format(row[quad])}`).join("")}`
+      ${rows.map((row, r) =>
+        `<tr>${quads.map((quad, c) => format(row[quad],r,c)).join("")}`
       ).join("")}
     </table>`
 
@@ -46,12 +46,16 @@
     </details>
   `
 
-  function format(item) {
+  function format(item, r, c) {
+    const style = `border: 1px solid black; padding: 6px`
     if (item) {
+      console.log(item,rows[r][quads[c]])
       const {day,date,coord} = item
-      return `<span title="${bearing(coord)} on ${date}">${day} ⇒ ${dist(coord)}</span>`
+      const title = `${bearing(coord)} on ${date} at ${r},${c}`
+      const field = `${day} ⇒ ${dist(coord)}`
+      return `<td title="${title}" style="${style}">${field}`
     }
-    return ''
+    return `<td style="${style}">`
   }
 
   function dist(coord) {
