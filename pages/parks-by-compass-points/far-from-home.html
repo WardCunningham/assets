@@ -47,15 +47,22 @@
   `
 
   function format(item, r, c) {
-    const style = `border: 1px solid black; padding: 6px`
+    let style = `border: 1px solid black; padding: 6px; `
     if (item) {
-      console.log(item,rows[r][quads[c]])
-      const {day,date,coord} = item
+      const {day,date,month,coord} = item
+      if(diff(month,r-1,c)) style += "border-top:2px solid black; "
+      if(diff(month,r,c-1)) style += "border-left:2px solid black; "
       const title = `${bearing(coord)} on ${date} at ${r},${c}`
       const field = `${day} ⇒ ${dist(coord)}`
       return `<td title="${title}" style="${style}">${field}`
     }
     return `<td style="${style}">`
+  }
+
+  function diff(month, r, c) {
+    if (r<0 || c<0) return false
+    if (!(quads[c] in rows[r])) return false
+    return month != rows[r][quads[c]].month
   }
 
   function dist(coord) {
