@@ -1,0 +1,49 @@
+<div id=result>working</div>
+<script type=module>
+  // import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  // const context = await frame.context()
+  const sitemap = await fetch('/system/sitemap.json').then(res => res.json())
+  window.result.innerHTML = `
+    <pre></pre>
+    <button>start</button>
+  `
+  let start = 0
+  const button = window.result.querySelector('button')
+  const result = window.result.querySelector('pre')
+  button.addEventListener('click',e => more())
+
+  async function more() {
+    button.disabled = true
+    const todo = sitemap.slice(start,start+=50)
+    await scan(todo)
+    button.innerText = `more of ${sitemap.length-start}`
+    button.disabled = false
+  }
+
+  async function scan(todo) {
+    return Promise.all(
+      todo.map(async info => {
+        await fetch(`/${info.slug}.json`)
+          .then(res => res.json())
+          .then(page => check(info,page))
+      })
+    )
+  }
+
+// jq '.journal|group_by(.id)|.[]|select(any(.type=="remove") and any(.item.type=="assets"))
+
+  function check(infox,page) {
+    const groups = Object.groupBy(page.journal, info => info.id)
+    const want = Object.entries(groups).filter(([id,actions]) => 
+      actions.some(action => action.type == "remove") &&
+      actions.some(action => action.item?.type == "assets"))
+    if(want.length>0) {
+      result.innerHTML += `${infox.title} has\n`
+      for (const wanted of want) {
+        console.log(infox.title, wanted[0], wanted[1])
+        result.innerHTML += `  ${wanted[0]} ${wanted[1].map(action => action.type).join(" ")}\n`
+      }
+    }
+  }
+
+</script>
