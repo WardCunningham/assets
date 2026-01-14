@@ -14,9 +14,9 @@
 
   async function more() {
     button.disabled = true
-    const todo = sitemap.slice(start,start+=50)
+    const todo = sitemap.slice(start,start+=100)
     await scan(todo)
-    button.innerText = `more of ${sitemap.length-start}`
+    button.innerText = `more of ${Math.max(sitemap.length-start,0)}`
     button.disabled = false
   }
 
@@ -30,19 +30,20 @@
     )
   }
 
-// jq '.journal|group_by(.id)|.[]|select(any(.type=="remove") and any(.item.type=="assets"))
+  // jq '.journal|group_by(.id)|.[]|select(any(.type=="remove") and any(.item.type=="assets"))
 
-  function check(infox,page) {
-    const groups = Object.groupBy(page.journal, info => info.id)
-    const want = Object.entries(groups).filter(([id,actions]) => 
+  function check(info,page) {
+    const groups = Object.groupBy(page.journal, action => action.id)
+    const wanted = Object.entries(groups).filter(([id,actions]) =>
       actions.some(action => action.type == "remove") &&
       actions.some(action => action.item?.type == "assets"))
-    if(want.length>0) {
-      result.innerHTML += `${infox.title} has\n`
-      for (const wanted of want) {
-        console.log(infox.title, wanted[0], wanted[1])
-        result.innerHTML += `  ${wanted[0]} ${wanted[1].map(action => action.type).join(" ")}\n`
-      }
+    if(wanted.length>0) {
+      result.innerHTML += `${info.title}\n`
+      wanted.forEach(([id,actions]) => {
+        result.innerHTML += `  ${id} ${actions
+          .map(action => `<span title="${JSON.stringify(action,null,2).replaceAll(/"/g,"'")}">${action.type}</span>`)
+          .join(" ")}\n`
+      })
     }
   }
 
