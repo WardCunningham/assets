@@ -1,8 +1,9 @@
 <div id=result>working</div>
 <script type=module>
-  // import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  // const context = await frame.context()
-  const sitemap = await fetch('/system/sitemap.json').then(res => res.json())
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const origin = context.origin
+  const sitemap = await fetch(`${origin}/system/sitemap.json`).then(res => res.json())
   window.result.innerHTML = `
     <pre></pre>
     <button>start</button>
@@ -23,7 +24,7 @@
   async function scan(todo) {
     return Promise.all(
       todo.map(async info => {
-        await fetch(`/${info.slug}.json`)
+        await fetch(`${origin}/${info.slug}.json`)
           .then(res => res.json())
           .then(page => check(info,page))
       })
