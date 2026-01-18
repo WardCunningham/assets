@@ -24,7 +24,7 @@
       const coord = action.item.text.split(/\n/).pop()
       if(occupied(fold)) {rows.push(row); row = {}}
       row[fold] = {day,date,month,coord}
-      return `${day} ${date} ⇒ ${dist(coord)} ${fold}`
+      return `${day} ${date} ⇒ ${dist(coord).toFixed(3)} ${fold}`
     })
     .join("<br>")
     rows.push(row)
@@ -52,8 +52,9 @@
       const {day,date,month,coord} = item
       if(diff(month,r-1,c)) style += "border-top:2.5px solid black; "
       if(diff(month,r,c-1)) style += "border-left:2.5px solid black; "
+      if(best(r,c)) style += "background:gold; "
       const title = `${bearing(coord)} on ${date}`
-      const field = `${day} ⇒ ${dist(coord)}`
+      const field = `${day} ⇒ ${dist(coord).toFixed(2)}`
       return `<td title="${title}" style="${style}">${field}`
     }
     return `<td style="${style}">`
@@ -65,11 +66,18 @@
     return month != rows[r][quads[c]].month
   }
 
+  function best(r, c) {
+    const quad = quads[c]
+    const here  = dist(rows[r][quad].coord)
+    const others = rows.map(row => (quad in row) ? (dist(row[quad].coord)) : 0)
+    return !others.some(other => other > here )
+  }
+
   function dist(coord) {
     const [lat,lon] = coord.split(/,/)
     const dx = Math.abs(home.lon - lon) * 49
     const dy = Math.abs(home.lat - lat) * 69
-    return (2*(dx+dy)).toFixed(2)
+    return (2*(dx+dy))
   }
 
   function bearing(coord) {
