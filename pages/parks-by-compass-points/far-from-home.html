@@ -1,6 +1,6 @@
 <div id=result>working</div>
 <script type=module>
-
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const home = {lat:45.4701282, lon:-122.7462476}
   const site = `http://found.ward.fed.wiki`
   const slug = `places-winter-25`
@@ -30,14 +30,14 @@
     rows.push(row)
 
   const table = `
-    <table style="border-collapse: collapse;">
+    <table style="border-collapse: collapse;" onclick=preview(event)>
       ${`<tr>${quads.map(quad => `<th  style="text-align: center">
         ${quad}`).join("")}`}
       ${rows.map((row, r) =>
         `<tr>${quads.map((quad, c) => format(row[quad],r,c)).join("")}`
       ).join("")}
     </table>`
-
+  window.preview = preview
   window.result.innerHTML = `
     ${table}
     <br>
@@ -100,6 +100,22 @@
     for(const want of wants)
       if(want in row) return true
     return false
+  }
+
+  function preview(event) {
+    const target = event.target
+    const c = target.cellIndex
+    const r = target.parentNode.rowIndex - 1
+    if(r<0 || !(quads[c] in rows[r])) return
+    const {day,date,month,coord} = rows[r][quads[c]]
+    const detail = `${dist(coord).toFixed(2)} miles ${quads[c]} at ${bearing(coord)}`
+    const title = `Place on ${day} ${date}`
+    console.log(title, detail)
+    const story = [
+      {type:'paragraph', text:detail},
+      {type:'map',text:`${coord} ${detail}`}
+    ]
+    frame.open({title,story},event.shiftKey)
   }
 
 </script>
