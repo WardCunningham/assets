@@ -1,18 +1,19 @@
-<div id=result>working</div>
-<script type=module>
-  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
-  const home = {lat:45.4701282, lon:-122.7462476}
-  const site = `http://found.ward.fed.wiki`
-  const slug = `places-winter-25`
-  const page = await fetch(`${site}/${slug}.json`).then(res => res.json())
-  const items = page.story
-    .filter(item => ['pagefold','map'].includes(item.type))
-  const actions = page.journal
-    .filter(action => action.type == 'edit' && action.item.type == 'map')
-    .filter(action => action.item.text.split(/\n/).length > 1)
-  const quads = ['north','south','east','west']
-  const rows = []
-  let row = {}
+<div id="result">working</div>
+<script type="module">
+    import * as frame from "http://code.fed.wiki/assets/v1/frame.js";
+    const home = { lat: 45.4701282, lon: -122.7462476 };
+    const site = `http://found.ward.fed.wiki`;
+    const slug = `places-winter-25`;
+    const page = await fetch(`${site}/${slug}.json`).then((res) => res.json());
+    const items = page.story.filter((item) =>
+        ["pagefold", "map"].includes(item.type),
+    );
+    const actions = page.journal
+        .filter((action) => action.type == "edit" && action.item.type == "map")
+        .filter((action) => action.item.text.split(/\n/).length > 1);
+    const quads = ["north", "south", "east", "west"];
+    const rows = [];
+    let row = {};
 
   const list = actions
     .map(action => {
