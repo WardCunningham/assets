@@ -15,108 +15,143 @@
     const rows = [];
     let row = {};
 
-  const list = actions
-    .map(action => {
-      const when = new Date(action.date)
-      const date = when.toLocaleDateString().slice(0,-5)
-      const month = date.split(/\//)[0]
-      const day = when.toLocaleString(window.navigator.language, {weekday: 'short'})
-      const fold = items[items.findIndex(item => item.id == action.id)-1].text
-      const coord = action.item.text.split(/\n/).pop()
-      if(occupied(fold)) {rows.push(row); row = {}}
-      row[fold] = {day,date,month,coord}
-      return `${day} ${date} ⇒ ${dist(coord).toFixed(3)} ${fold}`
-    })
-    .join("<br>")
-    rows.push(row)
+    const list = actions
+        .map((action) => {
+            const when = new Date(action.date);
+            const date = when.toLocaleDateString().slice(0, -5);
+            const month = date.split(/\//)[0];
+            const day = when.toLocaleString(window.navigator.language, {
+                weekday: "short",
+            });
+            const fold =
+                items[items.findIndex((item) => item.id == action.id) - 1].text;
+            const coord = action.item.text.split(/\n/).pop();
+            const miles = dist(coord);
+            if (occupied(fold)) {
+                rows.push(row);
+                row = {};
+            }
+            row[fold] = { day, date, month, fold, coord, miles };
+            return `${day} ${date} ⇒ ${dist(coord).toFixed(3)} ${fold}`;
+        })
+        .join("<br>");
+    rows.push(row);
 
-  const table = `
-    <table style="border-collapse: collapse;" onclick=preview(event)>
-      ${`<tr>${quads.map(quad => `<th  style="text-align: center">
-        ${quad}`).join("")}`}
-      ${rows.map((row, r) =>
-        `<tr>${quads.map((quad, c) => format(row[quad],r,c)).join("")}`
-      ).join("")}
-    </table>`
-  window.preview = preview
-  window.result.innerHTML = `
-    ${table}
-    <br>
-    <details><summary>data</summary>
-      ${list}
-    </details>
-  `
+    const table = `
+      <table style="border-collapse: collapse;" onclick=preview(event)>
+        ${`<tr>${quads
+            .map(
+                (quad) => `<th  style="text-align: center">
+          ${quad}`,
+            )
+            .join("")}`}
+        ${rows
+            .map(
+                (row, r) =>
+                    `<tr>${quads.map((quad, c) => format(row[quad], r, c)).join("")}`,
+            )
+            .join("")}
+      </table>`;
+    window.preview = preview;
+    window.groups = groups;
+    window.result.innerHTML = `
+      ${table}
+      <p>
+      <button onclick=groups(event)>groups</button>
+      <\p>
+      <details><summary>data</summary>
+        ${list}
+      </details>
+    `;
 
-  function format(item, r, c) {
-    let style = `border: 1px solid black; padding: 6px; `
-    if (item) {
-      const {day,date,month,coord} = item
-      if(diff(month,r-1,c)) style += "border-top:2.5px solid black; "
-      if(diff(month,r,c-1)) style += "border-left:2.5px solid black; "
-      if(best(r,c)) style += "background:gold; "
-      const title = `${bearing(coord)} on ${date}`
-      const field = `${day} ⇒ ${dist(coord).toFixed(2)}`
-      return `<td title="${title}" style="${style}">${field}`
+    function format(item, r, c) {
+        let style = `border: 1px solid black; padding: 6px; `;
+        if (item) {
+            const { day, date, month, coord } = item;
+            if (diff(month, r - 1, c))
+                style += "border-top:2.5px solid black; ";
+            if (diff(month, r, c - 1))
+                style += "border-left:2.5px solid black; ";
+            if (best(r, c)) style += "background:gold; ";
+            const title = `${bearing(coord)} on ${date}`;
+            const field = `${day} ⇒ ${dist(coord).toFixed(2)}`;
+            return `<td title="${title}" style="${style}">${field}`;
+        }
+        return `<td style="${style}">`;
     }
-    return `<td style="${style}">`
-  }
 
-  function diff(month, r, c) {
-    if (r<0 || c<0) return false
-    if (!(quads[c] in rows[r])) return false
-    return month != rows[r][quads[c]].month
-  }
+    function diff(month, r, c) {
+        if (r < 0 || c < 0) return false;
+        if (!(quads[c] in rows[r])) return false;
+        return month != rows[r][quads[c]].month;
+    }
 
-  function best(r, c) {
-    const quad = quads[c]
-    const here  = dist(rows[r][quad].coord)
-    const others = rows.map(row => (quad in row) ? (dist(row[quad].coord)) : 0)
-    return !others.some(other => other > here )
-  }
+    function best(r, c) {
+        const quad = quads[c];
+        const here = dist(rows[r][quad].coord);
+        const others = rows.map((row) =>
+            quad in row ? dist(row[quad].coord) : 0,
+        );
+        return !others.some((other) => other > here);
+    }
 
-  function dist(coord) {
-    const [lat,lon] = coord.split(/,/)
-    const dx = Math.abs(home.lon - lon) * 49
-    const dy = Math.abs(home.lat - lat) * 69
-    return (2*(dx+dy))
-  }
+    function dist(coord) {
+        const [lat, lon] = coord.split(/,/);
+        const dx = Math.abs(home.lon - lon) * 49;
+        const dy = Math.abs(home.lat - lat) * 69;
+        return 2 * (dx + dy);
+    }
 
-  function bearing(coord) {
-    const [lat,lon] = coord.split(/,/)
+    function bearing(coord) {
+        const [lat, lon] = coord.split(/,/);
 
-    const φ1 = home.lat * Math.PI / 180;
-    const φ2 = lat * Math.PI / 180;
-    const Δλ = (lon - home.lon) * Math.PI / 180;
+        const φ1 = (home.lat * Math.PI) / 180;
+        const φ2 = (lat * Math.PI) / 180;
+        const Δλ = ((lon - home.lon) * Math.PI) / 180;
 
-    const y = Math.sin(Δλ) * Math.cos(φ2);
-    const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-    const θ = Math.atan2(y, x); // Radians
+        const y = Math.sin(Δλ) * Math.cos(φ2);
+        const x =
+            Math.cos(φ1) * Math.sin(φ2) -
+            Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+        const θ = Math.atan2(y, x); // Radians
 
-    const brng = (θ * 180 / Math.PI + 360) % 360;
-    return `${Math.round(brng)}°`;
-  }
+        const brng = ((θ * 180) / Math.PI + 360) % 360;
+        return `${Math.round(brng)}°`;
+    }
 
-  function occupied(fold) {
-    const wants = quads.slice(quads.indexOf(fold))
-    for(const want of wants)
-      if(want in row) return true
-    return false
-  }
+    function occupied(fold) {
+        const wants = quads.slice(quads.indexOf(fold));
+        for (const want of wants) if (want in row) return true;
+        return false;
+    }
 
-  function preview(event) {
-    const target = event.target
-    const c = target.cellIndex
-    const r = target.parentNode.rowIndex - 1
-    if(r<0 || !(quads[c] in rows[r])) return
-    const {day,date,month,coord} = rows[r][quads[c]]
-    const detail = `${dist(coord).toFixed(2)} miles ${quads[c]} at ${bearing(coord)}`
-    const title = `Place on ${day} ${date}`
-    console.log(title, detail)
-    const story = [
-      {type:'paragraph', text:detail},
-      {type:'map',text:`${coord} ${detail}`}
-    ]
-    frame.open({title,story},event.shiftKey)
-  }
+    function preview(event) {
+        const target = event.target;
+        const c = target.cellIndex;
+        const r = target.parentNode.rowIndex - 1;
+        if (r < 0 || !(quads[c] in rows[r])) return;
+        const { day, date, month, coord } = rows[r][quads[c]];
+        const detail = `${dist(coord).toFixed(2)} miles ${quads[c]} at ${bearing(coord)}`;
+        const title = `Place on ${day} ${date}`;
+        console.log(title, detail);
+        const story = [
+            { type: "paragraph", text: detail },
+            { type: "map", text: `${coord} ${detail}` },
+        ];
+        frame.open({ title, story }, event.shiftKey);
+    }
 
+    function groups(event) {
+        const list = rows.map((row) => Object.values(row)).flat(2);
+        const segs = Object.groupBy(list, ({miles}) => Math.round(miles));
+        const mark = ({ day, date, fold, coord, miles }) =>
+            `${coord} ${day} ${date}, ${fold} ${miles.toFixed(2)} miles`;
+        const story = Object.keys(segs).map((seg) => [
+            { type: "paragraph", text:`Around ${seg} miles.`},
+            { type: "map", text: segs[seg].map(mark).join("\n")}
+        ]).flat();
+        const title = `Places by Distance`;
+        story.unshift({type:"paragraph",text:"Runs organized by Manhattan distance."})
+        frame.open({ title, story }, event.shiftKey);
+    }
 </script>
