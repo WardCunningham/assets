@@ -4,7 +4,8 @@
     const home = { lat: 45.4701282, lon: -122.7462476 };
     const site = `http://found.ward.fed.wiki`;
     const slug = `places-winter-25`;
-    const page = await fetch(`${site}/${slug}.json`).then((res) => res.json());
+    const context = await frame.context()
+    const page = context.page || (await fetch(`${site}/${slug}.json`).then((res) => res.json()))
     const items = page.story.filter((item) =>
         ["pagefold", "map"].includes(item.type),
     );
