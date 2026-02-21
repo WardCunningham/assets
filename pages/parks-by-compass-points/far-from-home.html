@@ -145,7 +145,7 @@
         const list = rows.map((row) => Object.values(row)).flat(2);
         const segs = Object.groupBy(list, ({miles}) => Math.round(miles));
         const mark = ({ day, date, fold, coord, miles }) =>
-            `${coord} ${day} ${date}, ${fold} ${miles.toFixed(2)} miles`;
+            `${coord} ${day} ${date}, ${fold} ${miles.toFixed(2)} miles at ${bearing(coord)}`;
         const story = Object.keys(segs).map((seg) => [
             { type: "paragraph", text:`Around ${seg} miles.`},
             { type: "map", text: segs[seg].map(mark).join("\n")}
