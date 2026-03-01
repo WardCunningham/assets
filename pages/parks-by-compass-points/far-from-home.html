@@ -55,10 +55,12 @@
       </table>`;
     window.preview = preview;
     window.groups = groups;
+    window.clone = clone;
     window.result.innerHTML = `
       ${table}
       <p>
       <button onclick=groups(event)>groups</button>
+      <button onclick=clone(event)>clone</button>
       <\p>
       <details><summary>data</summary>
         ${list}
@@ -154,5 +156,16 @@
         const title = `Places by Distance`;
         story.unshift({type:"paragraph",text:"Runs organized by Manhattan distance."})
         frame.open({ title, story }, event.shiftKey);
+    }
+
+    function clone(event) {
+        const title = page.title
+        const story = page.story.map(item => {
+            if(item.type == 'map')
+                return {type:'map',text:item.text.split(/\n/)[0]}
+            else
+                return item
+        })
+        frame.open({title,story},event.shiftKey)
     }
 </script>
