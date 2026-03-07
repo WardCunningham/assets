@@ -15,6 +15,14 @@
     const quads = ["north", "south", "east", "west"];
     const rows = [];
     let row = {};
+    const sources = await frame.sources('marker')
+    const markers = sources
+        .filter(source => source.panel.slug.match(/^places-/))
+        .map(source => source.markerData
+            .filter(data => !data.label.match(/^home/i))
+            .map(({lat,lon}) => `${lat}, ${lon}`))
+        .flat()
+    console.log({sources,markers})
 
     const list = actions
         .map((action) => {
@@ -145,7 +153,13 @@
     }
 
     function groups(event) {
-        const list = rows.map((row) => Object.values(row)).flat(2);
+        const recent = rows
+            .map((row) => Object.values(row))
+            .flat(2);
+
+
+        console.log({recent,markers})
+        const list = [recent].flat()
         const segs = Object.groupBy(list, ({miles}) => Math.round(miles));
         const mark = ({ day, date, fold, coord, miles }) =>
             `${coord} ${day} ${date}, ${fold} ${miles.toFixed(2)} miles at ${bearing(coord)}`;
