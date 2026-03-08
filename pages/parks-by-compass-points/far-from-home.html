@@ -15,14 +15,14 @@
     const quads = ["north", "south", "east", "west"];
     const rows = [];
     let row = {};
-    const sources = await frame.sources('marker')
+    const sources = await frame.sources('marker') || []
     const markers = sources
         .filter(source => source.panel.slug.match(/^places-/))
+        .filter(source => source.panel.slug != context?.slug)
         .map(source => source.markerData
             .filter(data => !data.label.match(/^home/i))
             .map(({lat,lon}) => `${lat}, ${lon}`))
         .flat()
-    console.log({sources,markers})
 
     const list = actions
         .map((action) => {
@@ -84,7 +84,7 @@
             if (diff(month, r, c - 1))
                 style += "border-left:2.5px solid black; ";
             if (best(r, c)) style += "background:gold; ";
-            const title = `${bearing(coord)} on ${date}`;
+            const title = `${bearing(coord)}° on ${date}`;
             const field = `${day} ⇒ ${dist(coord).toFixed(2)}`;
             return `<td title="${title}" style="${style}">${field}`;
         }
@@ -127,7 +127,7 @@
         const θ = Math.atan2(y, x); // Radians
 
         const brng = ((θ * 180) / Math.PI + 360) % 360;
-        return `${Math.round(brng)}°`;
+        return Math.round(brng);
     }
 
     function occupied(fold) {
@@ -142,9 +142,8 @@
         const r = target.parentNode.rowIndex - 1;
         if (r < 0 || !(quads[c] in rows[r])) return;
         const { day, date, month, coord } = rows[r][quads[c]];
-        const detail = `${dist(coord).toFixed(2)} miles ${quads[c]} at ${bearing(coord)}`;
+        const detail = `${dist(coord).toFixed(2)} miles ${quads[c]} at ${bearing(coord)}°`;
         const title = `Place on ${day} ${date}`;
-        console.log(title, detail);
         const story = [
             { type: "paragraph", text: detail },
             { type: "map", text: `${coord} ${detail}` },
@@ -155,17 +154,24 @@
     function groups(event) {
         const recent = rows
             .map((row) => Object.values(row))
-            .flat(2);
-
-
-        console.log({recent,markers})
-        const list = [recent].flat()
-        const segs = Object.groupBy(list, ({miles}) => Math.round(miles));
-        const mark = ({ day, date, fold, coord, miles }) =>
-            `${coord} ${day} ${date}, ${fold} ${miles.toFixed(2)} miles at ${bearing(coord)}`;
+            .flat(2)
+            .map(({ day, date, fold, coord, miles }) => ({
+                group:Math.round(miles),
+                coord,
+                label:`${day} ${date}, ${fold} ${miles.toFixed(2)} miles at ${bearing(coord)}°`}))
+        const others = markers.map(coord => {
+            const miles = dist(coord)
+            const group = Math.round(miles)
+            const compass = bearing(coord)
+            const fold = ['North','East','South','West'][Math.trunc((compass+45)/90)]
+            const label = `${fold} ${miles.toFixed(2)} miles at ${compass}°`
+            return {group, coord, label}
+        })
+        const list = [recent,others].flat()
+        const segs = Object.groupBy(list, ({group}) => group);
         const story = Object.keys(segs).map((seg) => [
             { type: "paragraph", text:`Around ${seg} miles.`},
-            { type: "map", text: segs[seg].map(mark).join("\n")}
+            { type: "map", text: segs[seg].map(({coord,label}) => `${coord} ${label}`).join("\n")}
         ]).flat();
         const title = `Places by Distance`;
         story.unshift({type:"paragraph",text:"Runs organized by Manhattan distance."})
