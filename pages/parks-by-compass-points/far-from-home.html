@@ -163,7 +163,7 @@
             const miles = dist(coord)
             const group = Math.round(miles)
             const compass = bearing(coord)
-            const fold = ['North','East','South','West'][Math.trunc((compass+45)/90)]
+            const fold = ['North','East','South','West','North'][Math.trunc((compass+45)/90)]
             const label = `${fold} ${miles.toFixed(2)} miles at ${compass}°`
             return {group, coord, label}
         })
