@@ -1,10 +1,10 @@
-<pre id=result></pre>
+<pre id=result>working</pre>
 <script type="module">
-  const show = date => window.result.innerText +=
-    `${date.getTime()} ${date.toString().replace(/:00 GMT.*\)/,'')}\n`
   const today = new Date()
   today.setHours(16,0,0)
   today.setMilliseconds(0)
   const t = today.getTime()
-  for(const dt of [-3,-2,-1,0,1,2,3]) show(new Date(t+(dt*24*60*60*1000)))
+  const show = date => `${date.getTime()} ${date.toString().replace(/:00 GMT.*\)/,'')}\n`
+  const days = dts => dts.map(dt => show(new Date(t+(dt*24*60*60*1000)))).join('')
+  window.result.innerText = `${days([-3,-2,-1])}\n${days([0])}\n${days([1,2,3])}`
 </script>
