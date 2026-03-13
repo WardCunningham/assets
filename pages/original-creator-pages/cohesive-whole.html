@@ -1,0 +1,19 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const context = await frame.context()
+  const rosters = context.page.story.filter(item => item.type == "roster")
+  const parse = roster => roster.text.match(/\b\w+(\.\w+)+\b/g)
+  const sites = rosters.map(parse).flat()
+  const getpage = site => fetch(`http://${site}/journal-fork-survey.json`).then(res => res.ok?res.json():{})
+  const pages = await Promise.all(sites.map(getpage))
+  const survey = page => page?.story ? page.story.find(item => item.type == "frame")?.survey || [] : []
+  const surveys = pages.map((page,i) => [sites[i],survey(page)])
+  const original = info => info.forks.length == 0
+  const title = info => `<span>${info.title}</span>`
+  const details = survey => survey.filter(original).map(title).join("<br>")
+  const reports = surveys.map(([site,survey]) => `<h3>${site}</h3>${details(survey)}`).join("")
+  window.result.innerHTML = reports
+  const link = event => frame.link(event.target.innerText,event.shiftKey)
+  window.result.querySelectorAll('span').forEach(span => span.addEventListener('click',link))
+</script>
