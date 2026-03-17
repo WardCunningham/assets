@@ -9,19 +9,21 @@
   const title = 'Regions'
   const story = []
   report(group(images,scale))
+  const lat = item => item.text.split(",")[0]*1
+  story.sort((a,b) => lat(b)-lat(a))
   window.result.innerHTML = `<button>preview</button> regions`
   const preview = event => frame.open({title,story},event.shiftKey)
   window.result.querySelector('button').addEventListener('click',preview)
-  console.log(story)
+  console.log(story.map(item => item.text.split("\n")[0]))
 
   function group(images, scale) {
-     const square = loc => Math.round((loc.latitude*69*scale) - (loc.longitude*49*scale))
+     const square = loc =>
+      Math.round(loc.latitude*69*scale) * 10000 -
+      Math.round(loc.longitude*49*scale)
     const regions = Object.values(Object.groupBy(images,image => square(image.location)))
-    regions.sort((a,b) => b[0].location.latitude - a[0].location.latitude)
-    // console.log(scale, regions)
     for(let i = 0; i < regions.length; i++)
-      if(regions[i].length > 14)
-        regions[i] = group(regions[i],scale*20)
+      if(regions[i].length > 20)
+        regions[i] = group(regions[i],scale*2)
     return regions
   }
 
