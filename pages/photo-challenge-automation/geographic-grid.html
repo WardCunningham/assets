@@ -1,0 +1,39 @@
+<div id=result>working</div>
+<script type=module>
+  import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const site = 'photos.ward.dojo.fed.wiki'
+  const slug = 'little-libraries-to-explore'
+  const page = await fetch(`http://${site}/${slug}.json`).then(res => res.json())
+  const images = page.story.filter(item => item.type == 'image')
+  const scale = .01
+  const title = 'Regions'
+  const story = []
+  report(group(images,scale))
+  window.result.innerHTML = `<button>preview</button> regions`
+  const preview = event => frame.open({title,story},event.shiftKey)
+  window.result.querySelector('button').addEventListener('click',preview)
+  console.log(story)
+
+  function group(images, scale) {
+     const square = loc => Math.round((loc.latitude*69*scale) - (loc.longitude*49*scale))
+    const regions = Object.values(Object.groupBy(images,image => square(image.location)))
+    regions.sort((a,b) => b[0].location.latitude - a[0].location.latitude)
+    // console.log(scale, regions)
+    for(let i = 0; i < regions.length; i++)
+      if(regions[i].length > 14)
+        regions[i] = group(regions[i],scale*20)
+    return regions
+  }
+
+  function report(regions) {
+    for(const region of regions) {
+      if(Array.isArray(region[0])) report(region)
+      else story.push({type:'map',text:region.map(markup).join("\n")})
+    }
+  }
+
+  function markup(image) {
+    const loc = image.location
+    return `${loc.latitude}, ${loc.longitude} ${image.text}`
+  }
+</script>
