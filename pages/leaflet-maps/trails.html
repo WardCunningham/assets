@@ -62,7 +62,12 @@
       map.addControl(new Tally())
     })
 
-
+    fetch(`places.json`).then(res => res.json()).then(places => {
+      places.map(place => {
+        let dot = L.circle(place.latlon,24,{color:'green'})
+        dot.addTo(map).bindPopup(place.title)
+      })
+    })
 
     map.on('locationfound', e => {
       let radius = e.accuracy;
@@ -72,7 +77,20 @@
     })
     map.locate({setView:false})
 
-    map.on('click', e => console.log(`${e.latlng.lat.toFixed(7)}, ${e.latlng.lng.toFixed(7)}\n`))
+    map.on('click', e => {
+      let dy = 69 * (e.latlng.lat - 45.4701282)
+      let dx = 49 * (e.latlng.lng - -122.7462476)
+      let mx = Math.abs(dx)
+      let my = Math.abs(dy)
+      let dist = 2 * (mx + my).toFixed(2)
+      let dir = my > mx ?
+        (dy>0 ? 'North': 'South') :
+        (dx>0 ? 'East': 'West')
+      let popup = L.popup()
+      .setLatLng([e.latlng.lat, e.latlng.lng])
+      .setContent(`${dir} ${dist} miles`)
+      .openOn(map)
+    })
 
 
   </script>
