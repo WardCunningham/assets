@@ -1,0 +1,120 @@
+<div id=result>
+  <h3>Pages</h3>
+  <div id=pages></div>
+  <h3>Items</h3>
+  <div id=items></div>
+  <h3>Actions</h3>
+  <div id=actions></div>
+  <h3>Text</h3>
+  <div id=text></div>
+</div>
+
+<script type=module>
+  // import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
+  const escape = text => text.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
+  const excerpt = item => escape(item.text.split(/\n/)[0].substring(0,30)) + "..."
+  window.page = event => page(event)
+  window.item = event => item(event)
+  window.action = event => action(event)
+
+  // let context = await frame.context()
+  let lineup = await fetch('./lineup.json').then(res => res.json())
+  window.pages.innerHTML = lineup.map((info,i) => 
+    `<span onclick=page(${i})>${info.title}</span>`).join("<br>")
+
+  let apage
+  function page(i) {
+    apage = lineup[i].page
+    apage.site = lineup[i].site
+    window.items.innerHTML = apage.story.map((item,i) =>
+      `<span onclick=item(${i})>${apage.story[i].type} - ${excerpt(apage.story[i])}</span>`).join("<br>")
+  }
+
+  let prev = null
+  let arevs
+  function item(i) {
+    prev = null; window.text.innerText = ''
+    let site = apage.site
+    apage.journal.slice().reverse().forEach(action => {
+      if (action.site)
+        site = action.site
+      else
+        action.site = site
+    })
+    let id = apage.story[i].id
+    arevs = apage.journal.filter(action => action.id == id)
+    let t = Date.now()
+    arevs.slice().reverse().forEach(action => {
+      action.dt = t-(action.date||0)
+      t = action.date||0
+    })
+    let dt = rev => elapsed(rev.dt)
+    window.actions.innerHTML = arevs
+      .map((rev,i) => `<span onclick=action(${i})>
+        ${i} <img width=16 src=//${rev.site}/favicon.png>
+        ${rev.type} ${rev.item?.type||""} 
+        ${new Date(rev.date).toLocaleString()} — ${dt(rev)}</span>`)
+      .join("<br>")
+  }
+
+  let atext,aindex
+  function action(i) {
+    let span = [...window.actions.querySelectorAll('span')][i].innerHTML
+    aindex = i
+    let rev = arevs[i]
+    let text = diff({when:i,what:rev.item.text||""})
+    if(rev.item) window.text.innerHTML = `${span}<br><pre style="white-space:pre-wrap;">${text}</pre>`
+  }
+
+  function elapsed (msec) {
+    let sec = Math.floor(msec/1000); if(sec < 2) return `${msec} msec`
+    let min = Math.floor(sec/60); if(min < 2) return `${sec} seconds`
+    let hour = Math.floor(min/60); if(hour < 2) return `${min} minutes`
+    let day = Math.floor(hour/24); if(day < 2) return `<b>${hour} hours</b>`
+    let week = Math.floor(day/7); if(week < 2) return `<b>${day} days</b>`
+    let month = Math.floor(day/30); if(month < 2) return `<b>${week} weeks</b>`
+    let year = Math.floor(day/365); if(year < 2) return `<b>${month} months</b>`
+    return `${year} years`
+  }
+
+  function diff(now) {
+    if(!prev || (prev.what == now.what)) {
+      prev = now
+      return escape(now.what)
+    }
+    let left = 0
+    let right = 0
+    let pt = escape(prev.what)
+    let nt = escape(now.what)
+    while(pt.charAt(left) == nt.charAt(left))
+      left += 1
+    while(pt.charAt(pt.length-right-1) == nt.charAt(nt.length-right-1))
+      right += 1
+    let color = now.when > prev.when ? 'lightgreen' : 'lightpink'
+    let front = nt.substring(0,left)
+    let back = nt.substring(nt.length-right)
+    let added = `<span style="background-color:${color};">${nt.substring(left,nt.length-right)}</span>`
+    console.log({prev,now,left,right,pt,nt,color,front,back,added})
+    prev = now
+    return `${front}${added}${back}`
+  }
+
+  window.addEventListener("keydown", (event) => {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+      event.preventDefault();
+    }
+    switch (event.key) {
+      case "ArrowUp":
+        break;
+      case "ArrowDown":
+        break;
+      case "ArrowLeft":
+        action(Math.max(aindex-1, 0))
+        break;
+      case "ArrowRight":
+        action(Math.min(aindex+1, arevs.length-1))
+        break;
+    }
+  });
+
+</script>
