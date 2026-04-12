@@ -10,24 +10,28 @@
 </div>
 
 <script type=module>
-  // import * as frame from 'http://code.fed.wiki/assets/v1/frame.js'
   const escape = text => text.replaceAll(/&/g,'&amp;').replaceAll(/</g,'&lt;')
-  const excerpt = item => escape(item.text.split(/\n/)[0].substring(0,30)) + "..."
+  const excerpt = item => (item.text||'empty').split(/\W+/).slice(0,4).join(" ")
+  const datetime = epoch => new Date(epoch)
+    .toLocaleString()
+    .replace(/\/\d\d\d\d/,'')
+    .replace(/:\d\d /,' ')
   window.page = event => page(event)
   window.item = event => item(event)
   window.action = event => action(event)
 
-  // let context = await frame.context()
   let lineup = await fetch('./lineup.json').then(res => res.json())
   window.pages.innerHTML = lineup.map((info,i) => 
     `<span onclick=page(${i})>${info.title}</span>`).join("<br>")
+
 
   let apage
   function page(i) {
     apage = lineup[i].page
     apage.site = lineup[i].site
+    const actions = item => apage.journal.filter(action => action.id == item.id).length
     window.items.innerHTML = apage.story.map((item,i) =>
-      `<span onclick=item(${i})>${apage.story[i].type} - ${excerpt(apage.story[i])}</span>`).join("<br>")
+      `<span onclick=item(${i})>${apage.story[i].type} (${actions(item)}) — ${excerpt(apage.story[i])}</span>`).join("<br>")
   }
 
   let prev = null
@@ -52,8 +56,8 @@
     window.actions.innerHTML = arevs
       .map((rev,i) => `<span onclick=action(${i})>
         ${i} <img width=16 src=//${rev.site}/favicon.png>
-        ${rev.type} ${rev.item?.type||""} 
-        ${new Date(rev.date).toLocaleString()} — ${dt(rev)}</span>`)
+        ${rev.type} ${rev.item?.type||""}  —
+        ${datetime(rev.date)} — ${dt(rev)}</span>`)
       .join("<br>")
   }
 
