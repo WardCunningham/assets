@@ -78,7 +78,7 @@
     let week = Math.floor(day/7); if(week < 2) return `<b>${day} days</b>`
     let month = Math.floor(day/30); if(month < 2) return `<b>${week} weeks</b>`
     let year = Math.floor(day/365); if(year < 2) return `<b>${month} months</b>`
-    return `${year} years`
+    return `<b>${year} years</b>`
   }
 
   function diff(now) {
