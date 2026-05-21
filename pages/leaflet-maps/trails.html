@@ -69,6 +69,22 @@
       })
     })
 
+    fetch(`libraries.json`).then(res => res.json()).then(places => {
+      places.map(place => {
+        let link = `<a href=${place.url} target=_blank>${place.title}</a>`
+        let dot = L.circle(place.latlon,12,{color:'brown'})
+        dot.addTo(map).bindPopup(link)
+      })
+    })
+
+    fetch(`challenge.json`).then(res => res.json()).then(places => {
+      places.map(place => {
+        let link = `<a href=${place.url} target=_blank>${place.title}</a>`
+        let dot = L.circle(place.latlon,5,{color:'purple'})
+        dot.addTo(map).bindPopup(link)
+      })
+    })
+
     map.on('locationfound', e => {
       let radius = e.accuracy;
       let latlon = [e.latlng.lat, e.latlng.lng]
