@@ -66,6 +66,7 @@
       places.map(place => {
         let dot = L.circle(place.latlon,24,{color:'green'})
         dot.addTo(map).bindPopup(place.title)
+        L.polyline([place.latlon,place.other],{color:'green',opacity:0.3}).addTo(map)
       })
     })
 
