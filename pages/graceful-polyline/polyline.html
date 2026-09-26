@@ -1,0 +1,39 @@
+<div>
+<svg height="210" width="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="5"
+      refY="5"
+      markerWidth="6"
+      markerHeight="6"
+      fill=red
+      orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" />
+    </marker>
+  </defs>
+  <path id=trail style="fill:none;stroke:red;stroke-width:10;" marker-start="url(#arrow)"/>
+</svg>
+</div>
+<script type=module>
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+const points = [[30, 50], [100, 200], [200, 30], [350, 130], [200, 150]];
+
+// Create a line generator with a graceful curve
+// Consider d3.curveBasis or d3.curveCardinal or d3.curveCatmullRom
+const lineGenerator = d3.line().curve(d3.curveNatural);
+
+// Generate the SVG path data string
+const pathData = lineGenerator(points);
+
+// Apply to an SVG path element
+d3.select("#trail").attr("d", pathData);
+  
+// Apply to an SVG path element
+d3.select("svg").selectAll("circle")
+  .data(points)
+  .join("circle")
+    .attr("cx", d => d[0]).attr("cy", d => d[1])
+    .attr("r", 10).attr("fill", "steelblue").attr("opacity",.8);
+</script>
